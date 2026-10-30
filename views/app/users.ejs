@@ -1,0 +1,66 @@
+<%- include('../partials/app-top') %>
+<div class="page-head">
+  <p>Give people the right access. <strong>Managers</strong> review admissions, donations and messages. <strong>Admins</strong> can also manage users.</p>
+  <button class="btn btn--blue btn--sm" type="button" data-toggle="new-user"><%- include('../partials/icon', { name: 'plus' }) %>Add user</button>
+</div>
+
+<section class="card card--form" id="new-user" <%= typeof openForm !== 'undefined' && openForm ? '' : 'hidden' %>>
+  <div class="card-head"><h2>Add a user</h2></div>
+  <form method="post" action="/app/users" novalidate>
+    <input type="hidden" name="_csrf" value="<%= csrf %>">
+    <div class="field-row field-row--4">
+      <div class="field <%= errors.name ? 'invalid' : '' %>"><label for="nu-name">Name</label><input id="nu-name" name="name" value="<%= values.name || '' %>" required><span class="err"><%= errors.name %></span></div>
+      <div class="field <%= errors.email ? 'invalid' : '' %>"><label for="nu-email">Email</label><input id="nu-email" name="email" type="email" value="<%= values.email || '' %>" required><span class="err"><%= errors.email %></span></div>
+      <div class="field"><label for="nu-phone">Phone <span class="opt">optional</span></label><input id="nu-phone" name="phone" type="tel" value="<%= values.phone || '' %>"></div>
+      <div class="field"><label for="nu-role">Role</label>
+        <select id="nu-role" name="role"><% ['user','manager','admin'].forEach(function (r) { %><option value="<%= r %>" <%= values.role === r ? 'selected' : '' %>><%= ROLE_LABELS[r] %></option><% }) %></select>
+      </div>
+    </div>
+    <p class="hint">A temporary password is generated and shown once. Share it with the person and ask them to change it from My profile.</p>
+    <button class="btn btn--gold" type="submit">Create account</button>
+  </form>
+</section>
+
+<form class="filters" method="get">
+  <input type="search" name="q" placeholder="Search name, email or phone" value="<%= filters.q || '' %>" aria-label="Search">
+  <select name="role" aria-label="Role">
+    <option value="">All roles</option>
+    <% ['admin','manager','user'].forEach(function (r) { %><option value="<%= r %>" <%= filters.role === r ? 'selected' : '' %>><%= ROLE_LABELS[r] %></option><% }) %>
+  </select>
+  <button class="btn btn--line btn--sm" type="submit">Filter</button>
+</form>
+
+<section class="card card--flush">
+  <div class="table-wrap"><table class="table">
+    <thead><tr><th>Person</th><th>Phone</th><th>Joined</th><th>Last sign-in</th><th>Role &amp; status</th><th></th></tr></thead>
+    <tbody>
+    <% rows.forEach(function (p) { const self = p.id === user.id; %>
+      <tr class="<%= p.status === 'suspended' ? 'row-muted' : '' %>">
+        <td><div class="person"><span class="avatar avatar--sm"><%= initials(p.name) %></span><span><strong><%= p.name %><% if (self) { %> (you)<% } %></strong><small><%= p.email %></small></span></div></td>
+        <td><%= p.phone || '—' %></td>
+        <td><%= fmtDate(p.created_at) %></td>
+        <td><%= p.last_login ? fmtDateTime(p.last_login) : 'Never' %></td>
+        <td>
+          <% if (self) { %>
+            <span class="badge badge--role-<%= p.role %>"><%= ROLE_LABELS[p.role] %></span>
+          <% } else { %>
+            <form class="role-form" method="post" action="/app/users/<%= p.id %>">
+              <input type="hidden" name="_csrf" value="<%= csrf %>">
+              <select name="role" aria-label="Role for <%= p.name %>"><% ['user','manager','admin'].forEach(function (r) { %><option value="<%= r %>" <%= p.role === r ? 'selected' : '' %>><%= ROLE_LABELS[r] %></option><% }) %></select>
+              <select name="status" aria-label="Status for <%= p.name %>"><option value="active" <%= p.status === 'active' ? 'selected' : '' %>>Active</option><option value="suspended" <%= p.status === 'suspended' ? 'selected' : '' %>>Suspended</option></select>
+              <button class="btn-sm" type="submit">Save</button>
+            </form>
+          <% } %>
+        </td>
+        <td class="t-right nowrap">
+          <% if (!self) { %>
+            <form class="inline" method="post" action="/app/users/<%= p.id %>/reset" data-confirm="Generate a new temporary password for <%= p.name %>?"><input type="hidden" name="_csrf" value="<%= csrf %>"><button class="btn-sm" type="submit">Reset password</button></form>
+            <form class="inline" method="post" action="/app/users/<%= p.id %>/delete" data-confirm="Delete <%= p.name %>'s account? Their applications are deleted too. This cannot be undone."><input type="hidden" name="_csrf" value="<%= csrf %>"><button class="btn-sm btn-sm--danger" type="submit">Delete</button></form>
+          <% } %>
+        </td>
+      </tr>
+    <% }) %>
+    </tbody>
+  </table></div>
+</section>
+<%- include('../partials/app-bottom') %>

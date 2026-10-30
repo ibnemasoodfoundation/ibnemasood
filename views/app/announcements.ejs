@@ -1,0 +1,24 @@
+<%- include('../partials/app-top') %>
+<% const staffView = user.role !== 'user'; %>
+<div class="<%= staffView ? 'grid-2 grid-2--wide' : '' %>">
+  <section class="card">
+    <%- include('_announcement-list', { list: rows, canDelete: staffView ? (n) => user.role === 'admin' || n.author_id === user.id : null }) %>
+  </section>
+  <% if (staffView) { %>
+    <section class="card card--form">
+      <div class="card-head"><h2>Post an announcement</h2></div>
+      <form method="post" action="/app/announcements" novalidate>
+        <input type="hidden" name="_csrf" value="<%= csrf %>">
+        <div class="field <%= errors.title ? 'invalid' : '' %>"><label for="title">Title</label><input id="title" name="title" value="<%= values.title || '' %>" required><span class="err"><%= errors.title %></span></div>
+        <div class="field <%= errors.body ? 'invalid' : '' %>"><label for="body">Message</label><textarea id="body" name="body" required><%= values.body || '' %></textarea><span class="err"><%= errors.body %></span></div>
+        <fieldset class="choice">
+          <legend>Who can see it</legend>
+          <label><input type="radio" name="audience" value="all" <%= values.audience !== 'staff' ? 'checked' : '' %>> Everyone with an account</label>
+          <label><input type="radio" name="audience" value="staff" <%= values.audience === 'staff' ? 'checked' : '' %>> Staff only (managers and admins)</label>
+        </fieldset>
+        <button class="btn btn--blue" type="submit">Post</button>
+      </form>
+    </section>
+  <% } %>
+</div>
+<%- include('../partials/app-bottom') %>

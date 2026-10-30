@@ -1,0 +1,45 @@
+<%- include('../partials/app-top') %>
+<% const staffView = user.role !== 'user'; %>
+<p class="crumb"><a href="/app/admissions">← <%= staffView ? 'All admissions' : 'My applications' %></a></p>
+
+<div class="grid-2 grid-2--wide">
+  <section class="card">
+    <div class="card-head"><h2><%= a.student_name %></h2><%- include('../partials/badge', { s: a.status }) %></div>
+    <dl class="details">
+      <div><dt>Father / guardian</dt><dd><%= a.father_name %></dd></div>
+      <div><dt>Date of birth</dt><dd><%= a.dob ? fmtDate(a.dob) : '—' %></dd></div>
+      <div><dt>Branch</dt><dd><%= BRANCHES[a.branch] %></dd></div>
+      <div><dt>Programme</dt><dd><%= a.programme %></dd></div>
+      <div><dt>Phone</dt><dd><a href="tel:<%= a.phone %>"><%= a.phone %></a></dd></div>
+      <div><dt>Address</dt><dd><%= a.address || '—' %></dd></div>
+      <div><dt>Submitted</dt><dd><%= fmtDateTime(a.created_at) %></dd></div>
+      <% if (staffView) { %><div><dt>Account</dt><dd><%= a.applicant %> (<%= a.applicant_email %>)</dd></div><% } %>
+    </dl>
+    <% if (a.notes) { %><h3 class="sub">Notes from the applicant</h3><p class="pre"><%= a.notes %></p><% } %>
+  </section>
+
+  <section class="card">
+    <% if (staffView) { %>
+      <div class="card-head"><h2>Review</h2></div>
+      <form method="post" action="/app/admissions/<%= a.id %>/review">
+        <input type="hidden" name="_csrf" value="<%= csrf %>">
+        <fieldset class="choice">
+          <legend>Decision</legend>
+          <% ['pending','approved','waitlisted','rejected'].forEach(function (s) { %>
+            <label><input type="radio" name="status" value="<%= s %>" <%= a.status === s ? 'checked' : '' %>> <%= cap(s) %></label>
+          <% }) %>
+        </fieldset>
+        <div class="field"><label for="note">Note for the family <span class="opt">optional</span></label><textarea id="note" name="note" placeholder="e.g. Please bring the B-form and two photos on Monday."><%= a.review_note || '' %></textarea></div>
+        <button class="btn btn--blue" type="submit">Save decision</button>
+      </form>
+      <% if (a.reviewer) { %><p class="muted small">Last reviewed by <%= a.reviewer %>, <%= fmtDateTime(a.updated_at) %></p><% } %>
+    <% } else { %>
+      <div class="card-head"><h2>Status</h2></div>
+      <% const msg = { pending: 'Your application is with the office. They will contact you soon, in sha Allah.', approved: 'Mubarak! The application is approved.', waitlisted: 'The class is currently full. The application is on the waiting list.', rejected: 'The office could not accept this application.' }; %>
+      <p class="status-msg status-msg--<%= a.status %>"><%= msg[a.status] %></p>
+      <% if (a.review_note) { %><h3 class="sub">Message from the office</h3><p class="pre"><%= a.review_note %></p><% } %>
+      <p class="muted small">Questions? Call <a href="tel:+923003948748">0300 394 8748</a>.</p>
+    <% } %>
+  </section>
+</div>
+<%- include('../partials/app-bottom') %>

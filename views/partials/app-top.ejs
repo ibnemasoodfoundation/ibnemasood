@@ -1,0 +1,52 @@
+<%- include('head') %>
+<%
+const staffRole = user.role === 'admin' || user.role === 'manager';
+const nav = [
+  { href: '/app', label: user.role === 'user' ? 'My dashboard' : 'Overview', icon: 'home' },
+  { href: '/app/admissions', label: staffRole ? 'Admissions' : 'My applications', icon: 'file' },
+  { href: '/app/donations', label: staffRole ? 'Donations' : 'My donations', icon: 'heart' },
+];
+if (staffRole) nav.push({ href: '/app/messages', label: 'Messages', icon: 'mail' });
+nav.push({ href: '/app/announcements', label: 'Announcements', icon: 'bell' });
+if (user.role === 'admin') {
+  nav.push({ href: '/app/users', label: 'Users & roles', icon: 'users' });
+  nav.push({ href: '/app/activity', label: 'Activity log', icon: 'list' });
+}
+nav.push({ href: '/app/profile', label: 'My profile', icon: 'user' });
+const isOn = (href) => href === '/app' ? (path === '/app' || path === '/app/') : path.startsWith(href);
+%>
+<body class="app-body">
+<a class="skip" href="#app-main">Skip to content</a>
+<div class="app">
+  <aside class="side" id="side">
+    <a class="side-brand" href="/">
+      <img src="/assets/images/logo-sm.jpg" alt="" width="44" height="44">
+      <span><strong>Jamia Arabia</strong><small>Abdullah Bin Masood</small></span>
+    </a>
+    <div class="side-role role-<%= user.role %>"><%- include('icon', { name: 'shield' }) %><%= ROLE_LABELS[user.role] %> portal</div>
+    <nav class="side-nav" aria-label="Dashboard">
+      <% nav.forEach(function (n) { %>
+        <a href="<%= n.href %>" <% if (isOn(n.href)) { %>aria-current="page"<% } %>><%- include('icon', { name: n.icon }) %><span><%= n.label %></span></a>
+      <% }) %>
+    </nav>
+    <div class="side-foot">
+      <a href="/"><%- include('icon', { name: 'globe' }) %><span>Public website</span></a>
+      <form method="post" action="/logout">
+        <input type="hidden" name="_csrf" value="<%= csrf %>">
+        <button type="submit"><%- include('icon', { name: 'out' }) %><span>Sign out</span></button>
+      </form>
+    </div>
+  </aside>
+  <div class="side-scrim" data-close-side></div>
+
+  <div class="app-main">
+    <header class="topnav">
+      <button class="side-toggle" type="button" aria-controls="side" aria-expanded="false" aria-label="Open menu"><%- include('icon', { name: 'menu' }) %></button>
+      <h1 class="topnav-title"><%= title %></h1>
+      <a class="me" href="/app/profile" title="My profile">
+        <span class="avatar"><%= initials(user.name) %></span>
+        <span class="me-text"><strong><%= user.name %></strong><small><%= ROLE_LABELS[user.role] %></small></span>
+      </a>
+    </header>
+    <main id="app-main" class="content">
+      <% if (flash) { %><div class="flash flash--<%= flash.type %>" role="status"><%= flash.msg %></div><% } %>

@@ -1,0 +1,33 @@
+<%- include('../partials/app-top') %>
+<div class="page-head"><p>Messages sent from the contact form on the website.</p></div>
+
+<form class="filters" method="get">
+  <select name="status" aria-label="Status">
+    <option value="">All messages</option>
+    <% ['new','read','closed'].forEach(function (s) { %><option value="<%= s %>" <%= filters.status === s ? 'selected' : '' %>><%= cap(s) %></option><% }) %>
+  </select>
+  <button class="btn btn--line btn--sm" type="submit">Filter</button>
+</form>
+
+<% if (!rows.length) { %>
+  <section class="card"><p class="empty">No messages.</p></section>
+<% } else { %>
+  <div class="msgs">
+    <% rows.forEach(function (m) { %>
+      <article class="card msg msg--<%= m.status %>">
+        <div class="msg-head">
+          <div><strong><%= m.name %></strong> <a href="tel:<%= m.phone %>"><%= m.phone %></a><small><%= m.topic || 'General' %> · <%= fmtDateTime(m.created_at) %></small></div>
+          <%- include('../partials/badge', { s: m.status }) %>
+        </div>
+        <p class="pre"><%= m.message %></p>
+        <div class="msg-actions">
+          <a class="btn-sm" href="https://wa.me/<%= m.phone.replace(/\D/g, '').replace(/^0/, '92') %>" target="_blank" rel="noopener">Reply on WhatsApp</a>
+          <% ['new','read','closed'].filter(s => s !== m.status).forEach(function (s) { %>
+            <form class="inline" method="post" action="/app/messages/<%= m.id %>/status"><input type="hidden" name="_csrf" value="<%= csrf %>"><input type="hidden" name="status" value="<%= s %>"><button class="btn-sm" type="submit">Mark <%= s %></button></form>
+          <% }) %>
+        </div>
+      </article>
+    <% }) %>
+  </div>
+<% } %>
+<%- include('../partials/app-bottom') %>

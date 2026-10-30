@@ -1,0 +1,39 @@
+<%- include('../partials/app-top') %>
+<section class="card card--form">
+  <p class="lede">Fill in the student’s details. The office will review the application and may call you to arrange a meeting.</p>
+  <form method="post" action="/app/admissions" novalidate>
+    <input type="hidden" name="_csrf" value="<%= csrf %>">
+    <div class="field-row">
+      <div class="field <%= errors.student_name ? 'invalid' : '' %>"><label for="student_name">Student’s full name</label><input id="student_name" name="student_name" value="<%= values.student_name || '' %>" required><span class="err"><%= errors.student_name %></span></div>
+      <div class="field <%= errors.father_name ? 'invalid' : '' %>"><label for="father_name">Father’s / guardian’s name</label><input id="father_name" name="father_name" value="<%= values.father_name || '' %>" required><span class="err"><%= errors.father_name %></span></div>
+    </div>
+    <div class="field-row">
+      <div class="field <%= errors.dob ? 'invalid' : '' %>"><label for="dob">Date of birth <span class="opt">optional</span></label><input id="dob" name="dob" type="date" value="<%= values.dob || '' %>"><span class="err"><%= errors.dob %></span></div>
+      <div class="field <%= errors.phone ? 'invalid' : '' %>"><label for="phone">Contact phone</label><input id="phone" name="phone" type="tel" placeholder="03XX XXXXXXX" value="<%= values.phone || '' %>" required><span class="err"><%= errors.phone %></span></div>
+    </div>
+    <div class="field-row">
+      <div class="field <%= errors.branch ? 'invalid' : '' %>">
+        <label for="branch">Branch</label>
+        <select id="branch" name="branch" required data-programmes="<%= JSON.stringify(PROGRAMMES) %>">
+          <option value="">Choose a branch</option>
+          <% Object.keys(BRANCHES).forEach(function (k) { %><option value="<%= k %>" <%= values.branch === k ? 'selected' : '' %>><%= BRANCHES[k] %></option><% }) %>
+        </select>
+        <span class="err"><%= errors.branch %></span>
+      </div>
+      <div class="field <%= errors.programme ? 'invalid' : '' %>">
+        <label for="programme">Programme</label>
+        <select id="programme" name="programme" required data-value="<%= values.programme || '' %>">
+          <option value="">Choose a branch first</option>
+        </select>
+        <span class="err"><%= errors.programme %></span>
+      </div>
+    </div>
+    <div class="field"><label for="address">Home address <span class="opt">optional</span></label><input id="address" name="address" value="<%= values.address || '' %>"></div>
+    <div class="field"><label for="notes">Anything we should know? <span class="opt">optional</span></label><textarea id="notes" name="notes" placeholder="Previous madrasa or school, how much Quran is memorised, health needs, hostel required…"><%= values.notes || '' %></textarea></div>
+    <div class="btn-row">
+      <button class="btn btn--gold" type="submit">Submit application</button>
+      <a class="btn btn--line" href="/app/admissions">Cancel</a>
+    </div>
+  </form>
+</section>
+<%- include('../partials/app-bottom') %>

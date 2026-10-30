@@ -1,0 +1,18 @@
+<%- include('../partials/app-top') %>
+<div class="page-head"><p>The latest 300 actions taken in the portal.</p></div>
+<section class="card card--flush">
+  <div class="table-wrap"><table class="table">
+    <thead><tr><th>When</th><th>Who</th><th>Action</th><th>Detail</th></tr></thead>
+    <tbody>
+    <% rows.forEach(function (a) { %>
+      <tr>
+        <td class="nowrap"><%= fmtDateTime(a.created_at) %></td>
+        <td><%= a.name || 'System' %><% if (a.email) { %><small><%= a.email %></small><% } %></td>
+        <td><code><%= a.action %></code></td>
+        <td><%= a.detail || '' %></td>
+      </tr>
+    <% }) %>
+    </tbody>
+  </table></div>
+</section>
+<%- include('../partials/app-bottom') %>

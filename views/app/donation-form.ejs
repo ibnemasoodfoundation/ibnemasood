@@ -1,0 +1,43 @@
+<%- include('../partials/app-top') %>
+<div class="grid-2 grid-2--wide">
+  <section class="card card--form">
+    <p class="lede">Sent a donation by bank or mobile wallet? Record it here so the office can match and confirm it.</p>
+    <form method="post" action="/app/donations" novalidate>
+      <input type="hidden" name="_csrf" value="<%= csrf %>">
+      <div class="field-row">
+        <div class="field <%= errors.donor_name ? 'invalid' : '' %>"><label for="donor_name">Donor name</label><input id="donor_name" name="donor_name" value="<%= values.donor_name || '' %>" required><span class="err"><%= errors.donor_name %></span></div>
+        <div class="field <%= errors.amount ? 'invalid' : '' %>"><label for="amount">Amount (Rs)</label><input id="amount" name="amount" type="number" min="1" step="1" inputmode="numeric" value="<%= values.amount || '' %>" required><span class="err"><%= errors.amount %></span></div>
+      </div>
+      <div class="field-row">
+        <div class="field <%= errors.kind ? 'invalid' : '' %>">
+          <label for="kind">Type</label>
+          <select id="kind" name="kind"><% DONATION_KINDS.forEach(function (k) { %><option <%= values.kind === k ? 'selected' : '' %>><%= k %></option><% }) %></select>
+          <span class="err"><%= errors.kind %></span>
+        </div>
+        <div class="field <%= errors.method ? 'invalid' : '' %>">
+          <label for="method">Sent by</label>
+          <select id="method" name="method"><% DONATION_METHODS.forEach(function (m) { %><option <%= values.method === m ? 'selected' : '' %>><%= m %></option><% }) %></select>
+          <span class="err"><%= errors.method %></span>
+        </div>
+      </div>
+      <div class="field"><label for="reference">Transaction ID / reference <span class="opt">optional</span></label><input id="reference" name="reference" value="<%= values.reference || '' %>" placeholder="Helps the office find your transfer"></div>
+      <% if (user.role !== 'user') { %>
+        <label class="check"><input type="checkbox" name="verified" value="1"> Received at the office, mark as verified now</label>
+      <% } %>
+      <div class="btn-row">
+        <button class="btn btn--gold" type="submit">Save donation</button>
+        <a class="btn btn--line" href="/app/donations">Cancel</a>
+      </div>
+    </form>
+  </section>
+  <aside class="card card--accounts">
+    <h2>Donation accounts</h2>
+    <dl class="details">
+      <div><dt>Bank Al Habib</dt><dd class="num">1096 0081 0053 68013</dd></div>
+      <div><dt>JazzCash</dt><dd class="num">0300 394 8748</dd></div>
+      <div><dt>EasyPaisa</dt><dd class="num">0300 394 8748</dd></div>
+    </dl>
+    <p class="muted small">Full details on the <a href="/donate">donations page</a>.</p>
+  </aside>
+</div>
+<%- include('../partials/app-bottom') %>

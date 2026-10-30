@@ -1,0 +1,53 @@
+<%- include('../partials/app-top') %>
+<% const staffView = user.role !== 'user'; %>
+<div class="page-head">
+  <p><%= staffView ? 'Confirm donations once they appear in the bank or wallet account.' : 'Donations you have told the office about.' %></p>
+  <a class="btn btn--gold btn--sm" href="/app/donations/new"><%- include('../partials/icon', { name: 'plus' }) %>Record a donation</a>
+</div>
+
+<div class="stats stats--two">
+  <div class="stat stat--gold"><small>Verified</small><strong><%= money(totals.verified) %></strong></div>
+  <div class="stat"><small>Waiting for confirmation</small><strong><%= money(totals.pending) %></strong></div>
+</div>
+
+<form class="filters" method="get">
+  <select name="status" aria-label="Status">
+    <option value="">All statuses</option>
+    <% ['pending','verified','rejected'].forEach(function (s) { %><option value="<%= s %>" <%= filters.status === s ? 'selected' : '' %>><%= cap(s) %></option><% }) %>
+  </select>
+  <button class="btn btn--line btn--sm" type="submit">Filter</button>
+</form>
+
+<section class="card card--flush">
+  <% if (!rows.length) { %>
+    <p class="empty">No donations to show.</p>
+  <% } else { %>
+    <div class="table-wrap"><table class="table">
+      <thead><tr><th>#</th><th>Donor</th><th>Type</th><th>Method / reference</th><th class="t-right">Amount</th><th>Date</th><th>Status</th><% if (staffView) { %><th></th><% } %></tr></thead>
+      <tbody>
+      <% rows.forEach(function (d) { %>
+        <tr>
+          <td class="muted"><%= d.id %></td>
+          <td><strong><%= d.donor_name %></strong></td>
+          <td><%= d.kind %></td>
+          <td><%= d.method %><% if (d.reference) { %><small>Ref: <%= d.reference %></small><% } %></td>
+          <td class="t-right num"><%= money(d.amount) %></td>
+          <td><%= fmtDate(d.created_at) %></td>
+          <td><%- include('../partials/badge', { s: d.status }) %></td>
+          <% if (staffView) { %>
+            <td class="t-right nowrap">
+              <% if (d.status !== 'verified') { %>
+                <form class="inline" method="post" action="/app/donations/<%= d.id %>/status"><input type="hidden" name="_csrf" value="<%= csrf %>"><input type="hidden" name="status" value="verified"><button class="btn-sm btn-sm--ok" type="submit">Verify</button></form>
+              <% } %>
+              <% if (d.status !== 'rejected') { %>
+                <form class="inline" method="post" action="/app/donations/<%= d.id %>/status" data-confirm="Mark this donation as rejected?"><input type="hidden" name="_csrf" value="<%= csrf %>"><input type="hidden" name="status" value="rejected"><button class="btn-sm btn-sm--danger" type="submit">Reject</button></form>
+              <% } %>
+            </td>
+          <% } %>
+        </tr>
+      <% }) %>
+      </tbody>
+    </table></div>
+  <% } %>
+</section>
+<%- include('../partials/app-bottom') %>

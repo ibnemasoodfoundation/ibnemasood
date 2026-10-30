@@ -1,0 +1,26 @@
+<%- include('../partials/app-top') %>
+<div class="grid-2">
+  <section class="card card--form">
+    <div class="card-head"><h2>Your details</h2><span class="badge badge--role-<%= user.role %>"><%= ROLE_LABELS[user.role] %></span></div>
+    <form method="post" action="/app/profile" novalidate>
+      <input type="hidden" name="_csrf" value="<%= csrf %>">
+      <div class="field <%= errors.name ? 'invalid' : '' %>"><label for="name">Full name</label><input id="name" name="name" value="<%= values.name %>" required><span class="err"><%= errors.name %></span></div>
+      <div class="field"><label for="email">Email</label><input id="email" value="<%= values.email %>" disabled></div>
+      <div class="field <%= errors.phone ? 'invalid' : '' %>"><label for="phone">Phone</label><input id="phone" name="phone" type="tel" value="<%= values.phone || '' %>"><span class="err"><%= errors.phone %></span></div>
+      <p class="muted small">Member since <%= fmtDate(user.created_at) %>. To change your email, contact an admin.</p>
+      <button class="btn btn--blue" type="submit">Save details</button>
+    </form>
+  </section>
+
+  <section class="card card--form">
+    <div class="card-head"><h2>Change password</h2></div>
+    <form method="post" action="/app/profile/password" novalidate>
+      <input type="hidden" name="_csrf" value="<%= csrf %>">
+      <div class="field <%= errors.current ? 'invalid' : '' %>"><label for="current">Current password</label><input id="current" name="current" type="password" autocomplete="current-password" required><span class="err"><%= errors.current %></span></div>
+      <div class="field <%= errors.password ? 'invalid' : '' %>"><label for="password">New password</label><input id="password" name="password" type="password" autocomplete="new-password" minlength="8" required><span class="err"><%= errors.password %></span></div>
+      <div class="field <%= errors.confirm ? 'invalid' : '' %>"><label for="confirm">Confirm new password</label><input id="confirm" name="confirm" type="password" autocomplete="new-password" required><span class="err"><%= errors.confirm %></span></div>
+      <button class="btn btn--line" type="submit">Change password</button>
+    </form>
+  </section>
+</div>
+<%- include('../partials/app-bottom') %>

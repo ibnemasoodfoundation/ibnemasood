@@ -1,0 +1,19 @@
+{
+  "name": "jaabm-webapp",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Jamia Arabia Abdullah Bin Masood: public website with sign-in and Admin, Manager and User dashboards",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "engines": {
+    "node": ">=22.13"
+  },
+  "dependencies": {
+    "cookie-session": "^2.1.0",
+    "ejs": "^3.1.10",
+    "express": "^4.21.2"
+  }
+}

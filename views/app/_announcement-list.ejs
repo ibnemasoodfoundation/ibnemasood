@@ -1,0 +1,19 @@
+<% if (!list.length) { %>
+  <p class="empty">No announcements yet.</p>
+<% } else { %>
+  <ul class="notes">
+    <% list.forEach(function (n) { %>
+      <li>
+        <div class="notes-meta"><%= fmtDate(n.created_at) %><% if (n.author) { %> · <%= n.author %><% } %><% if (n.audience === 'staff') { %> <span class="badge badge--staff">Staff only</span><% } %></div>
+        <h3><%= n.title %></h3>
+        <p><%= n.body %></p>
+        <% if (typeof canDelete === 'function' && canDelete(n)) { %>
+          <form method="post" action="/app/announcements/<%= n.id %>/delete" data-confirm="Remove this announcement?">
+            <input type="hidden" name="_csrf" value="<%= csrf %>">
+            <button class="link-danger" type="submit">Remove</button>
+          </form>
+        <% } %>
+      </li>
+    <% }) %>
+  </ul>
+<% } %>

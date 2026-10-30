@@ -1,0 +1,43 @@
+<%- include('../partials/app-top') %>
+<% const staffView = user.role !== 'user'; %>
+<div class="page-head">
+  <p><%= staffView ? 'All admission applications across the three branches.' : 'Applications you have submitted to the Jamia.' %></p>
+  <a class="btn btn--blue btn--sm" href="/app/admissions/new"><%- include('../partials/icon', { name: 'plus' }) %>New application</a>
+</div>
+
+<form class="filters" method="get">
+  <% if (staffView) { %><input type="search" name="q" placeholder="Search student, father or phone" value="<%= filters.q %>" aria-label="Search"><% } %>
+  <select name="status" aria-label="Status">
+    <option value="">All statuses</option>
+    <% ['pending','approved','waitlisted','rejected'].forEach(function (s) { %><option value="<%= s %>" <%= filters.status === s ? 'selected' : '' %>><%= cap(s) %></option><% }) %>
+  </select>
+  <select name="branch" aria-label="Branch">
+    <option value="">All branches</option>
+    <% Object.keys(BRANCHES).forEach(function (k) { %><option value="<%= k %>" <%= filters.branch === k ? 'selected' : '' %>><%= BRANCHES[k] %></option><% }) %>
+  </select>
+  <button class="btn btn--line btn--sm" type="submit">Filter</button>
+</form>
+
+<section class="card card--flush">
+  <% if (!rows.length) { %>
+    <p class="empty">No applications match.</p>
+  <% } else { %>
+    <div class="table-wrap"><table class="table">
+      <thead><tr><th>#</th><th>Student</th><th>Branch / programme</th><% if (staffView) { %><th>Phone</th><th>Applied by</th><% } %><th>Received</th><th>Status</th><th></th></tr></thead>
+      <tbody>
+      <% rows.forEach(function (a) { %>
+        <tr>
+          <td class="muted"><%= a.id %></td>
+          <td><strong><%= a.student_name %></strong><small>s/o, d/o <%= a.father_name %></small></td>
+          <td><%= cap(a.branch) %><small><%= a.programme %></small></td>
+          <% if (staffView) { %><td><a href="tel:<%= a.phone %>"><%= a.phone %></a></td><td><%= a.applicant %></td><% } %>
+          <td><%= fmtDate(a.created_at) %></td>
+          <td><%- include('../partials/badge', { s: a.status }) %></td>
+          <td class="t-right"><a class="btn-sm" href="/app/admissions/<%= a.id %>"><%= staffView ? 'Review' : 'View' %></a></td>
+        </tr>
+      <% }) %>
+      </tbody>
+    </table></div>
+  <% } %>
+</section>
+<%- include('../partials/app-bottom') %>

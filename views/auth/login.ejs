@@ -1,0 +1,29 @@
+<%- include('../partials/head') %>
+<body class="auth-body">
+<div class="auth">
+  <%- include('_panel') %>
+  <main class="auth-form">
+    <div class="auth-card">
+      <a class="auth-mobile-brand" href="/"><img src="/assets/images/logo-sm.jpg" alt="" width="48" height="48"><span>Jamia Arabia<br>Abdullah Bin Masood</span></a>
+      <h1>Sign in</h1>
+      <p class="auth-sub">Welcome back. Sign in to your Jamia portal account.</p>
+      <% if (flash) { %><div class="flash flash--<%= flash.type %>" role="status"><%= flash.msg %></div><% } %>
+      <% if (errors.form) { %><div class="flash flash--err" role="alert"><%= errors.form %></div><% } %>
+      <form method="post" action="/login" novalidate>
+        <input type="hidden" name="_csrf" value="<%= csrf %>">
+        <input type="hidden" name="next" value="<%= next %>">
+        <div class="field"><label for="email">Email address</label><input id="email" name="email" type="email" autocomplete="email" value="<%= values.email || '' %>" required autofocus></div>
+        <div class="field">
+          <label for="password">Password</label>
+          <div class="pw"><input id="password" name="password" type="password" autocomplete="current-password" required><button type="button" class="pw-toggle" data-pw="password">Show</button></div>
+        </div>
+        <button class="btn btn--blue btn--block" type="submit">Sign in</button>
+      </form>
+      <p class="auth-alt">New here? <a href="/signup">Create an account</a></p>
+      <p class="auth-help">Forgot your password? Ask the Jamia office at <a href="tel:+923003948748">0300 394 8748</a> to reset it.</p>
+    </div>
+  </main>
+</div>
+<script src="/assets/js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,63 @@
+<%- include('../partials/app-top') %>
+<div class="welcome">
+  <div>
+    <span class="ar" lang="ar">السلام علیکم</span>
+    <h2>Admin overview</h2>
+    <p>Everything across the Jamia: people, admissions, donations and activity.</p>
+  </div>
+  <a class="btn btn--gold" href="/app/users"><%- include('../partials/icon', { name: 'users' }) %>Manage users</a>
+</div>
+
+<div class="stats stats--people">
+  <a class="stat" href="/app/users?role=admin"><small>Admins</small><strong><%= roleCounts.admin %></strong></a>
+  <a class="stat" href="/app/users?role=manager"><small>Managers</small><strong><%= roleCounts.manager %></strong></a>
+  <a class="stat" href="/app/users?role=user"><small>Members</small><strong><%= roleCounts.user %></strong></a>
+  <a class="stat" href="/app/users"><small>Suspended</small><strong><%= suspended %></strong></a>
+</div>
+
+<%- include('_staff-panels') %>
+
+<div class="grid-2">
+  <section class="card">
+    <div class="card-head"><h2>Verified donations, last 6 months</h2></div>
+    <%
+      const months = [];
+      const now = new Date();
+      for (let i = 5; i >= 0; i--) {
+        const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - i, 1));
+        const key = d.toISOString().slice(0, 7);
+        const row = monthly.find(m => m.m === key);
+        months.push({ label: d.toLocaleDateString('en-GB', { month: 'short', timeZone: 'UTC' }), total: row ? row.total : 0 });
+      }
+      const maxM = Math.max(1, ...months.map(m => m.total));
+    %>
+    <div class="cols" role="img" aria-label="Verified donations per month">
+      <% months.forEach(function (m) { %>
+        <div class="col">
+          <span class="col-val"><%= m.total ? money(m.total) : '' %></span>
+          <span class="col-bar" style="height:<%= Math.max(2, Math.round(m.total / maxM * 100)) %>%" title="<%= m.label %>: <%= money(m.total) %>"></span>
+          <span class="col-label"><%= m.label %></span>
+        </div>
+      <% }) %>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="card-head"><h2>Newest accounts</h2><a href="/app/users">All users</a></div>
+    <ul class="people">
+      <% newUsers.forEach(function (p) { %>
+        <li><span class="avatar avatar--sm"><%= initials(p.name) %></span><span><strong><%= p.name %></strong><small><%= p.email %></small></span><span class="badge badge--role-<%= p.role %>"><%= ROLE_LABELS[p.role] %></span></li>
+      <% }) %>
+    </ul>
+  </section>
+</div>
+
+<section class="card">
+  <div class="card-head"><h2>Recent activity</h2><a href="/app/activity">Full log</a></div>
+  <ul class="log">
+    <% activity.forEach(function (a) { %>
+      <li><span class="log-time"><%= fmtDateTime(a.created_at) %></span><span><strong><%= a.name || 'System' %></strong> <code><%= a.action %></code> <%= a.detail || '' %></span></li>
+    <% }) %>
+  </ul>
+</section>
+<%- include('../partials/app-bottom') %>

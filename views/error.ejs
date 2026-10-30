@@ -1,0 +1,13 @@
+<%- include('partials/head') %>
+<body class="auth-body">
+<main class="error-page">
+  <img src="/assets/images/logo-sm.jpg" alt="" width="72" height="72">
+  <h1><%= title %></h1>
+  <p><%= message %></p>
+  <div class="btn-row" style="justify-content:center">
+    <% if (user) { %><a class="btn btn--blue" href="/app">Go to dashboard</a><% } else { %><a class="btn btn--blue" href="/login">Sign in</a><% } %>
+    <a class="btn btn--line" href="/">Website home</a>
+  </div>
+</main>
+</body>
+</html>

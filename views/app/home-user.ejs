@@ -1,0 +1,58 @@
+<%- include('../partials/app-top') %>
+<div class="welcome">
+  <div>
+    <span class="ar" lang="ar">السلام علیکم</span>
+    <h2>Welcome, <%= user.name.split(' ')[0] %></h2>
+    <p>Apply for admission, follow your applications and keep a record of what you give.</p>
+  </div>
+</div>
+
+<div class="actions">
+  <a class="action" href="/app/admissions/new">
+    <span class="action-icon"><%- include('../partials/icon', { name: 'book' }) %></span>
+    <span><strong>Apply for admission</strong><small>Boys’ madrasa, girls’ madrasa or Iqra Islamia Public School</small></span>
+  </a>
+  <a class="action" href="/app/donations/new">
+    <span class="action-icon action-icon--gold"><%- include('../partials/icon', { name: 'heart' }) %></span>
+    <span><strong>Record a donation</strong><small>Let the office know about a transfer you sent</small></span>
+  </a>
+  <div class="action action--stat">
+    <small>Your verified giving</small>
+    <strong><%= money(given) %></strong>
+    <span>May Allah accept it from you.</span>
+  </div>
+</div>
+
+<div class="grid-2">
+  <section class="card">
+    <div class="card-head"><h2>My applications</h2><a href="/app/admissions">View all</a></div>
+    <% if (!admissions.length) { %>
+      <p class="empty">You have not applied yet. <a href="/app/admissions/new">Start an application</a>.</p>
+    <% } else { %>
+      <ul class="rows">
+        <% admissions.forEach(function (a) { %>
+          <li><a href="/app/admissions/<%= a.id %>"><span><strong><%= a.student_name %></strong><small><%= a.programme %>, <%= BRANCHES[a.branch] %></small></span><%- include('../partials/badge', { s: a.status }) %></a></li>
+        <% }) %>
+      </ul>
+    <% } %>
+  </section>
+
+  <section class="card">
+    <div class="card-head"><h2>My donations</h2><a href="/app/donations">View all</a></div>
+    <% if (!donations.length) { %>
+      <p class="empty">No donations recorded yet. See the <a href="/donate">donation accounts</a>.</p>
+    <% } else { %>
+      <ul class="rows">
+        <% donations.forEach(function (d) { %>
+          <li><span><strong><%= money(d.amount) %></strong><small><%= d.kind %> via <%= d.method %>, <%= fmtDate(d.created_at) %></small></span><%- include('../partials/badge', { s: d.status }) %></li>
+        <% }) %>
+      </ul>
+    <% } %>
+  </section>
+</div>
+
+<section class="card">
+  <div class="card-head"><h2>Announcements</h2><a href="/app/announcements">All announcements</a></div>
+  <%- include('_announcement-list', { list: announcements }) %>
+</section>
+<%- include('../partials/app-bottom') %>
