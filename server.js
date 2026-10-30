@@ -1,4 +1,5 @@
-/* Jamia Arabia Abdullah Bin Masood — web app server */
+/* Jamia Arabia Abdullah Bin Masood — web app server.
+   Runs locally with `npm start`, and on Vercel through api/index.js. */
 "use strict";
 const fs = require("node:fs");
 const path = require("node:path");
@@ -8,17 +9,15 @@ if (fs.existsSync(path.join(__dirname, ".env"))) process.loadEnvFile(path.join(_
 
 const express = require("express");
 const cookieSession = require("cookie-session");
-const { one, seedAdmin } = require("./src/db");
+const { one, ready } = require("./src/db");
 const { csrfToken } = require("./src/auth");
 const helpers = require("./src/helpers");
 
 const app = express();
-const PORT = Number(process.env.PORT) || 3000;
 const isProd = process.env.NODE_ENV === "production";
 
 let secret = process.env.SESSION_SECRET;
-if (!secret) {
-  if (isProd) { console.error("SESSION_SECRET must be set in production."); process.exit(1); }
+if (!secret && !isProd) {
   secret = crypto.randomBytes(32).toString("hex");
   console.warn("SESSION_SECRET not set: using a temporary one, everyone is signed out on restart.");
 }
@@ -28,25 +27,41 @@ app.set("views", path.join(__dirname, "views"));
 app.set("trust proxy", 1);
 app.disable("x-powered-by");
 
+/* Missing settings on the host: say exactly what to add instead of crashing */
+const missing = [];
+if (!secret) missing.push("SESSION_SECRET");
+if (!process.env.DATABASE_URL && !process.env.POSTGRES_URL) missing.push("DATABASE_URL");
+if (missing.length) console.error("Missing environment variables: " + missing.join(", "));
+app.use((req, res, next) => {
+  if (!missing.length) return next();
+  res.status(500).type("text").send(
+    "The portal is not configured yet.\n\nAdd these Environment Variables in Vercel (Project > Settings > Environment Variables), then redeploy:\n  " +
+    missing.join("\n  ")
+  );
+});
+
 app.use(express.urlencoded({ extended: false, limit: "100kb" }));
 app.use(express.json({ limit: "50kb" }));
 app.use(cookieSession({
   name: "jaabm.sid",
-  keys: [secret],
+  keys: [secret || "unset"],
   httpOnly: true,
   sameSite: "lax",
   secure: isProd,
   maxAge: 7 * 24 * 60 * 60 * 1000,
 }));
 
-app.use((req, res, next) => {
+app.use(async (req, res, next) => {
   res.setHeader("X-Content-Type-Options", "nosniff");
   res.setHeader("X-Frame-Options", "SAMEORIGIN");
   res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+  Object.assign(res.locals, helpers);
+  res.locals.user = null;
 
+  await ready();
   req.user = null;
   if (req.session.uid) {
-    const user = one("SELECT id, name, email, phone, role, status, created_at, last_login FROM users WHERE id = ?", req.session.uid);
+    const user = await one("SELECT id, name, email, phone, role, status, created_at, last_login FROM users WHERE id = ?", req.session.uid);
     if (user && user.status === "active") req.user = user;
     else req.session.uid = null;
   }
@@ -56,7 +71,6 @@ app.use((req, res, next) => {
   res.locals.flash = req.session.flash || null;
   req.session.flash = null;
   req.flash = (type, msg) => { req.session.flash = { type, msg }; };
-  Object.assign(res.locals, helpers);
   next();
 });
 
@@ -64,13 +78,21 @@ app.use("/", require("./src/routes/auth"));
 app.use("/api", require("./src/routes/api"));
 app.use("/app", require("./src/routes/app"));
 
+// On Vercel the public/ folder is served by the CDN; this covers local runs
 app.use(express.static(path.join(__dirname, "public"), { extensions: ["html"], maxAge: isProd ? "1d" : 0 }));
 
 app.use((req, res) => res.status(404).render("error", { title: "Page not found", message: "We could not find that page." }));
 app.use((err, req, res, next) => {
   console.error(err);
-  res.status(500).render("error", { title: "Something went wrong", message: "Please try again in a moment." });
+  const message = err.setup || /ECONNREFUSED|ENOTFOUND|password authentication|timeout/i.test(err.message)
+    ? "The portal cannot reach its database right now. Please try again shortly."
+    : "Please try again in a moment.";
+  res.status(500).render("error", { title: "Something went wrong", message });
 });
 
-seedAdmin();
-app.listen(PORT, () => console.log("JAABM web app running on http://localhost:" + PORT));
+module.exports = app;
+
+if (require.main === module) {
+  const PORT = Number(process.env.PORT) || 3000;
+  app.listen(PORT, () => console.log("JAABM web app running on http://localhost:" + PORT));
+}

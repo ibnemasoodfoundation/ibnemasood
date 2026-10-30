@@ -18,17 +18,23 @@ const DONATION_METHODS = ["Bank Al Habib", "JazzCash", "EasyPaisa", "Cash at the
 
 const ROLE_LABELS = { admin: "Admin", manager: "Manager", user: "Member" };
 
-/* SQLite stores UTC as "YYYY-MM-DD HH:MM:SS" */
-function toDate(s) { return s ? new Date(String(s).replace(" ", "T") + (String(s).endsWith("Z") ? "" : "Z")) : null; }
+/* Postgres gives timestamps as Date objects and DATE columns as "YYYY-MM-DD" */
+function toDate(s) {
+  if (!s) return null;
+  if (s instanceof Date) return s;
+  return new Date(/^\d{4}-\d{2}-\d{2}$/.test(s) ? s + "T00:00:00Z" : s);
+}
+const TZ = "Asia/Karachi";
 
 function fmtDate(s) {
   const d = toDate(s);
-  return d ? d.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : "—";
+  const dateOnly = typeof s === "string" && /^\d{4}-\d{2}-\d{2}$/.test(s);
+  return d ? d.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: dateOnly ? "UTC" : TZ }) : "—";
 }
 
 function fmtDateTime(s) {
   const d = toDate(s);
-  return d ? d.toLocaleString("en-GB", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "—";
+  return d ? d.toLocaleString("en-GB", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", timeZone: TZ }) : "—";
 }
 
 function money(n) { return "Rs " + Number(n || 0).toLocaleString("en-PK"); }

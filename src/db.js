@@ -1,117 +1,78 @@
-/* SQLite database (built into Node 22.13+), schema and first-admin seed */
+/* Supabase (Postgres) connection, schema setup and first-admin seed */
 "use strict";
 const fs = require("node:fs");
 const path = require("node:path");
-const crypto = require("node:crypto");
-const { DatabaseSync } = require("node:sqlite");
+const { Pool, types } = require("pg");
 const { hashPassword } = require("./auth");
 
-const dbPath = path.resolve(process.env.DB_PATH || path.join(__dirname, "..", "data", "jaabm.db"));
-fs.mkdirSync(path.dirname(dbPath), { recursive: true });
+// COUNT() and SUM(integer) come back as int8; amounts here fit safely in a JS number
+types.setTypeParser(20, (v) => Number(v));
+// Keep DATE columns (date of birth) as plain "YYYY-MM-DD" so no timezone shift
+types.setTypeParser(1082, (v) => v);
 
-const db = new DatabaseSync(dbPath);
-db.exec("PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON;");
+let pool = null;
 
-db.exec(`
-CREATE TABLE IF NOT EXISTS users (
-  id            INTEGER PRIMARY KEY AUTOINCREMENT,
-  name          TEXT NOT NULL,
-  email         TEXT NOT NULL UNIQUE COLLATE NOCASE,
-  phone         TEXT,
-  password_hash TEXT NOT NULL,
-  role          TEXT NOT NULL DEFAULT 'user' CHECK (role IN ('admin','manager','user')),
-  status        TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active','suspended')),
-  created_at    TEXT NOT NULL DEFAULT (datetime('now')),
-  last_login    TEXT
-);
+function getPool() {
+  if (pool) return pool;
+  const raw = process.env.DATABASE_URL || process.env.POSTGRES_URL;
+  if (!raw) throw Object.assign(new Error("DATABASE_URL is not set"), { setup: true });
+  // sslmode in the URL would override the ssl option below, so drop it
+  const url = new URL(raw);
+  url.searchParams.delete("sslmode");
+  const local = ["localhost", "127.0.0.1"].includes(url.hostname);
+  pool = new Pool({
+    connectionString: url.toString(),
+    ssl: local ? false : { rejectUnauthorized: false },
+    max: process.env.VERCEL ? 2 : 10,
+    idleTimeoutMillis: 10000,
+    connectionTimeoutMillis: 10000,
+  });
+  pool.on("error", (err) => console.error("Postgres pool error:", err.message));
+  return pool;
+}
 
-CREATE TABLE IF NOT EXISTS admissions (
-  id           INTEGER PRIMARY KEY AUTOINCREMENT,
-  user_id      INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  student_name TEXT NOT NULL,
-  father_name  TEXT NOT NULL,
-  dob          TEXT,
-  branch       TEXT NOT NULL CHECK (branch IN ('boys','girls','school')),
-  programme    TEXT NOT NULL,
-  phone        TEXT NOT NULL,
-  address      TEXT,
-  notes        TEXT,
-  status       TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','approved','waitlisted','rejected')),
-  review_note  TEXT,
-  reviewed_by  INTEGER REFERENCES users(id) ON DELETE SET NULL,
-  created_at   TEXT NOT NULL DEFAULT (datetime('now')),
-  updated_at   TEXT NOT NULL DEFAULT (datetime('now'))
-);
+/* Queries are written with ? placeholders and converted to $1, $2, ... */
+function toPg(sql) {
+  let i = 0;
+  return sql.replace(/\?/g, () => "$" + ++i);
+}
 
-CREATE TABLE IF NOT EXISTS donations (
-  id          INTEGER PRIMARY KEY AUTOINCREMENT,
-  user_id     INTEGER REFERENCES users(id) ON DELETE SET NULL,
-  donor_name  TEXT NOT NULL,
-  amount      INTEGER NOT NULL CHECK (amount > 0),
-  kind        TEXT NOT NULL,
-  method      TEXT NOT NULL,
-  reference   TEXT,
-  status      TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','verified','rejected')),
-  verified_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
-  created_at  TEXT NOT NULL DEFAULT (datetime('now'))
-);
+async function all(sql, ...params) { return (await getPool().query(toPg(sql), params)).rows; }
+async function one(sql, ...params) { return (await all(sql, ...params))[0]; }
+async function run(sql, ...params) { return getPool().query(toPg(sql), params); }
 
-CREATE TABLE IF NOT EXISTS messages (
-  id         INTEGER PRIMARY KEY AUTOINCREMENT,
-  name       TEXT NOT NULL,
-  phone      TEXT NOT NULL,
-  topic      TEXT,
-  message    TEXT NOT NULL,
-  status     TEXT NOT NULL DEFAULT 'new' CHECK (status IN ('new','read','closed')),
-  created_at TEXT NOT NULL DEFAULT (datetime('now'))
-);
-
-CREATE TABLE IF NOT EXISTS announcements (
-  id         INTEGER PRIMARY KEY AUTOINCREMENT,
-  title      TEXT NOT NULL,
-  body       TEXT NOT NULL,
-  audience   TEXT NOT NULL DEFAULT 'all' CHECK (audience IN ('all','staff')),
-  author_id  INTEGER REFERENCES users(id) ON DELETE SET NULL,
-  created_at TEXT NOT NULL DEFAULT (datetime('now'))
-);
-
-CREATE TABLE IF NOT EXISTS activity (
-  id         INTEGER PRIMARY KEY AUTOINCREMENT,
-  user_id    INTEGER REFERENCES users(id) ON DELETE SET NULL,
-  action     TEXT NOT NULL,
-  detail     TEXT,
-  created_at TEXT NOT NULL DEFAULT (datetime('now'))
-);
-`);
-
-const one = (sql, ...p) => db.prepare(sql).get(...p);
-const all = (sql, ...p) => db.prepare(sql).all(...p);
-const run = (sql, ...p) => db.prepare(sql).run(...p);
-
-function log(userId, action, detail) {
-  run("INSERT INTO activity (user_id, action, detail) VALUES (?, ?, ?)", userId ?? null, action, detail ?? null);
+async function log(userId, action, detail) {
+  await run("INSERT INTO activity (user_id, action, detail) VALUES (?, ?, ?)", userId ?? null, action, detail ?? null);
 }
 
 /* Create the first admin if there is none yet */
-function seedAdmin() {
-  if (one("SELECT id FROM users WHERE role = 'admin' LIMIT 1")) return;
+async function seedAdmin() {
+  if (await one("SELECT id FROM users WHERE role = 'admin' LIMIT 1")) return;
   const email = (process.env.ADMIN_EMAIL || "admin@jaabm.com").trim().toLowerCase();
-  const name = process.env.ADMIN_NAME || "Administrator";
-  let password = process.env.ADMIN_PASSWORD;
-  const generated = !password;
-  if (generated) password = crypto.randomBytes(9).toString("base64url");
-
-  const existing = one("SELECT id FROM users WHERE email = ?", email);
-  if (existing) {
-    run("UPDATE users SET role = 'admin', status = 'active' WHERE id = ?", existing.id);
-  } else {
-    run("INSERT INTO users (name, email, password_hash, role) VALUES (?, ?, ?, 'admin')", name, email, hashPassword(password));
+  const password = process.env.ADMIN_PASSWORD;
+  if (!password) {
+    console.warn("No admin account yet. Set ADMIN_EMAIL and ADMIN_PASSWORD to create one.");
+    return;
   }
-  log(null, "seed.admin", email);
-  console.log("\n  First admin account ready");
-  console.log("  Email:    " + email);
-  if (!existing) console.log("  Password: " + password + (generated ? "   (generated, change it after signing in)" : ""));
-  console.log("");
+  const existing = await one("SELECT id FROM users WHERE email = ?", email);
+  if (existing) await run("UPDATE users SET role = 'admin', status = 'active' WHERE id = ?", existing.id);
+  else await run("INSERT INTO users (name, email, password_hash, role) VALUES (?, ?, ?, 'admin')",
+    process.env.ADMIN_NAME || "Administrator", email, hashPassword(password));
+  await log(null, "seed.admin", email);
+  console.log("First admin account ready: " + email);
 }
 
-module.exports = { db, one, all, run, log, seedAdmin };
+/* Runs once per server instance: create tables (safe to repeat), then seed */
+let readyPromise = null;
+function ready() {
+  if (!readyPromise) {
+    const schema = fs.readFileSync(path.join(__dirname, "..", "supabase", "schema.sql"), "utf8");
+    readyPromise = getPool().query(schema).then(seedAdmin).catch((err) => {
+      readyPromise = null; // try again on the next request
+      throw err;
+    });
+  }
+  return readyPromise;
+}
+
+module.exports = { one, all, run, log, ready };

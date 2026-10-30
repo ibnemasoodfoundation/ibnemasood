@@ -12,14 +12,14 @@ router.get("/me", (req, res) => {
 });
 
 /* Contact form: saved for staff, then the page still opens WhatsApp */
-router.post("/contact", (req, res) => {
+router.post("/contact", async (req, res) => {
   const b = req.body || {};
   const name = String(b.name || "").trim().slice(0, 80);
   const phone = String(b.phone || "").trim().slice(0, 30);
   const topic = String(b.topic || "").trim().slice(0, 80);
   const message = String(b.message || "").trim().slice(0, 4000);
   if (!name || !phone || !message) return res.status(400).json({ ok: false });
-  run("INSERT INTO messages (name, phone, topic, message) VALUES (?, ?, ?, ?)", name, phone, topic, message);
+  await run("INSERT INTO messages (name, phone, topic, message) VALUES (?, ?, ?, ?)", name, phone, topic, message);
   res.json({ ok: true });
 });
 
