@@ -25,6 +25,15 @@ Built with Node.js, Express and EJS. Data is stored in **Supabase** (Postgres). 
 The app uses the `pg` package to connect directly to Supabase Postgres; it does not use Supabase's browser API key.
 Keep the database password only in local `.env` or Vercel's encrypted environment variables, never in client code.
 
+If a deployed request shows a database error, check the Vercel function runtime logs for a
+`database_error` event. It contains only the operation and PostgreSQL/network error code, not the
+connection string, SQL, or error details. `28P01` indicates database authentication failed;
+`ENOTFOUND` indicates the configured host could not be resolved; `ECONNREFUSED` or `ETIMEDOUT`
+indicates the connection could not be established in time. Confirm `DATABASE_URL` is the exact
+Transaction pooler URI from Supabase, including its generated username and URL-encoded password.
+`SESSION_SECRET` signs portal cookies; `NEXT_PUBLIC_SUPABASE_URL` and
+`NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` do not configure this server-side Postgres connection.
+
 On the first request the app creates its tables in Supabase (see [supabase/schema.sql](supabase/schema.sql)) and
 the admin account. Sign in at `/login` and change the password from **My profile**.
 

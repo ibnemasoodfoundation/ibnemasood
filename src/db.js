@@ -12,6 +12,13 @@ types.setTypeParser(1082, (v) => v);
 
 let pool = null;
 
+function logDatabaseError(operation, err) {
+  const code = typeof err?.code === "string" && /^[A-Z0-9_]{2,32}$/.test(err.code)
+    ? err.code
+    : "UNKNOWN";
+  console.error(JSON.stringify({ event: "database_error", operation, code }));
+}
+
 function getPool() {
   if (pool) return pool;
   const raw = process.env.DATABASE_URL || process.env.POSTGRES_URL;
@@ -27,7 +34,7 @@ function getPool() {
     idleTimeoutMillis: 10000,
     connectionTimeoutMillis: 10000,
   });
-  pool.on("error", (err) => console.error("Postgres pool error:", err.message));
+  pool.on("error", (err) => logDatabaseError("pool", err));
   return pool;
 }
 
@@ -37,9 +44,18 @@ function toPg(sql) {
   return sql.replace(/\?/g, () => "$" + ++i);
 }
 
-async function all(sql, ...params) { return (await getPool().query(toPg(sql), params)).rows; }
+async function query(operation, sql, params) {
+  try {
+    return await getPool().query(sql, params);
+  } catch (err) {
+    logDatabaseError(operation, err);
+    throw err;
+  }
+}
+
+async function all(sql, ...params) { return (await query("query", toPg(sql), params)).rows; }
 async function one(sql, ...params) { return (await all(sql, ...params))[0]; }
-async function run(sql, ...params) { return getPool().query(toPg(sql), params); }
+async function run(sql, ...params) { return query("query", toPg(sql), params); }
 
 async function log(userId, action, detail) {
   await run("INSERT INTO activity (user_id, action, detail) VALUES (?, ?, ?)", userId ?? null, action, detail ?? null);
@@ -66,13 +82,19 @@ async function seedAdmin() {
 let readyPromise = null;
 function ready() {
   if (!readyPromise) {
-    const schema = fs.readFileSync(path.join(__dirname, "..", "supabase", "schema.sql"), "utf8");
-    readyPromise = getPool().query(schema).then(seedAdmin).catch((err) => {
-      readyPromise = null; // try again on the next request
-      throw err;
-    });
+    readyPromise = Promise.resolve()
+      .then(() => {
+        const schema = fs.readFileSync(path.join(__dirname, "..", "supabase", "schema.sql"), "utf8");
+        return getPool().query(schema);
+      })
+      .then(seedAdmin)
+      .catch((err) => {
+        logDatabaseError("schema_init", err);
+        readyPromise = null; // try again on the next request
+        throw err;
+      });
   }
   return readyPromise;
 }
 
-module.exports = { one, all, run, log, ready };
+module.exports = { one, all, run, log, ready, logDatabaseError };

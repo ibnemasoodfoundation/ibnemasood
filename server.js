@@ -83,7 +83,10 @@ app.use(express.static(path.join(__dirname, "public"), { extensions: ["html"], m
 
 app.use((req, res) => res.status(404).render("error", { title: "Page not found", message: "We could not find that page." }));
 app.use((err, req, res, next) => {
-  console.error(err);
+  const errorName = typeof err?.name === "string" && /^[A-Za-z][A-Za-z0-9]{0,40}$/.test(err.name)
+    ? err.name
+    : "Error";
+  console.error(JSON.stringify({ event: "request_error", name: errorName }));
   const message = err.setup || /ECONNREFUSED|ENOTFOUND|password authentication|timeout/i.test(err.message)
     ? "The portal cannot reach its database right now. Please try again shortly."
     : "Please try again in a moment.";
