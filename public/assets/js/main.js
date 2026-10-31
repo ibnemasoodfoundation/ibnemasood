@@ -1,7 +1,7 @@
 /* Jamia Arabia Abdullah Bin Masood — site scripts */
 (function () {
   "use strict";
-  var WA_NUMBER = "14244416410";
+  var WA_NUMBER = "923003948748";
 
   /* Sticky header shadow */
   var header = document.querySelector(".site-header");
