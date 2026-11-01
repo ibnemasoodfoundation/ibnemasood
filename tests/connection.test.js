@@ -13,7 +13,9 @@ test("DATABASE_PASSWORD replaces the placeholder and survives special characters
 });
 
 test("placeholder password without DATABASE_PASSWORD is a setup error", () => {
-  assert.throws(() => connectionConfig({ DATABASE_URL: POOLER }), (e) => e.setup && /YOUR-PASSWORD/.test(e.hint));
+  assert.throws(() => connectionConfig({ DATABASE_URL: POOLER }), (e) => e.setup && /placeholder/.test(e.hint));
+  const underscored = POOLER.replace("[YOUR-PASSWORD]", "YOUR_DATABASE_PASSWORD");
+  assert.throws(() => connectionConfig({ DATABASE_URL: underscored }), (e) => e.setup && /placeholder/.test(e.hint));
 });
 
 test("direct Supabase host is rejected on Vercel", () => {

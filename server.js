@@ -27,6 +27,10 @@ app.set("views", path.join(__dirname, "views"));
 app.set("trust proxy", 1);
 app.disable("x-powered-by");
 
+// Website pages, CSS and images never need the database, so serve them first.
+// On Vercel the public/ folder is served by the CDN; this covers local runs.
+app.use(express.static(path.join(__dirname, "public"), { extensions: ["html"], maxAge: isProd ? "1d" : 0 }));
+
 /* Missing settings on the host: say exactly what to add instead of crashing */
 const missing = [];
 if (!secret) missing.push("SESSION_SECRET");
@@ -87,8 +91,6 @@ app.use("/", require("./src/routes/auth"));
 app.use("/api", require("./src/routes/api"));
 app.use("/app", require("./src/routes/app"));
 
-// On Vercel the public/ folder is served by the CDN; this covers local runs
-app.use(express.static(path.join(__dirname, "public"), { extensions: ["html"], maxAge: isProd ? "1d" : 0 }));
 
 app.use((req, res) => res.status(404).render("error", { title: "Page not found", message: "We could not find that page." }));
 app.use((err, req, res, next) => {

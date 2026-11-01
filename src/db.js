@@ -38,8 +38,8 @@ function connectionConfig(env = process.env) {
 
   // A separate password avoids URL-encoding problems; pg decodes it again
   if (env.DATABASE_PASSWORD) url.password = encodeURIComponent(env.DATABASE_PASSWORD);
-  else if (/YOUR-PASSWORD/i.test(decodeURIComponent(url.password))) {
-    throw setupError("DATABASE_URL still contains [YOUR-PASSWORD]. Put the real database password in the URL or in DATABASE_PASSWORD.");
+  else if (/YOUR.*PASSWORD/i.test(decodeURIComponent(url.password))) {
+    throw setupError("DATABASE_URL still contains a placeholder (" + decodeURIComponent(url.password) + ") instead of the real password. Put the real database password in DATABASE_PASSWORD.");
   }
 
   // Supabase's direct host (db.<ref>.supabase.co) is IPv6-only; Vercel cannot reach it
