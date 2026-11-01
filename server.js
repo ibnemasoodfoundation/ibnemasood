@@ -5,7 +5,8 @@ const fs = require("node:fs");
 const path = require("node:path");
 const crypto = require("node:crypto");
 
-if (fs.existsSync(path.join(__dirname, ".env"))) process.loadEnvFile(path.join(__dirname, ".env"));
+// .env is for local runs only; on Vercel the dashboard's Environment Variables are the source of truth
+if (!process.env.VERCEL && fs.existsSync(path.join(__dirname, ".env"))) process.loadEnvFile(path.join(__dirname, ".env"));
 
 const express = require("express");
 const cookieSession = require("cookie-session");
