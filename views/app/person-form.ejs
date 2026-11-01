@@ -1,80 +1,153 @@
 <%- include('../partials/app-top') %>
-<% const editing = !!values.editId; const f = (k) => errors[k] ? 'invalid' : ''; const isT = type === 'teacher';
-   const base = '/app/' + cfg.plural; %>
-<p class="crumb"><a href="<%= base %>">← All <%= cfg.plural %></a></p>
+<%
+  const editing = !!values.editId, isT = type === 'teacher', base = '/app/' + cfg.plural;
+  const f = (k) => errors[k] ? 'invalid' : '';
+  const val = (k) => values[k] ?? '';
+%>
+<%
+  // Renders one labelled input; kept inline so every field shares the same markup
+  function field(name, labelText, o = {}) {
+    const id = 'f-' + name;
+    let control;
+    if (o.select) {
+      control = `<select id="${id}" name="${name}"${o.required ? ' required' : ''}><option value="">${o.placeholder || 'Choose'}</option>` +
+        Object.entries(o.select).map(([k, l]) => `<option value="${k}"${String(val(name)) === String(k) ? ' selected' : ''}>${l}</option>`).join('') + '</select>';
+    } else if (o.textarea) {
+      control = `<textarea id="${id}" name="${name}">${String(val(name)).replace(/&/g,'&amp;').replace(/</g,'&lt;')}</textarea>`;
+    } else {
+      control = `<input id="${id}" name="${name}" type="${o.type || 'text'}" value="${String(val(name)).replace(/&/g,'&amp;').replace(/"/g,'&quot;')}"` +
+        (o.list ? ` list="${o.list}" autocomplete="off"` : '') + (o.placeholder ? ` placeholder="${o.placeholder}"` : '') +
+        (o.ur ? ' class="ur-input" dir="rtl" lang="ur"' : '') + (o.required ? ' required' : '') + (o.extra || '') + '>';
+    }
+    return `<div class="field ${f(name)}"><label for="${id}">${labelText}${o.required ? '' : ' <span class="opt">optional</span>'}</label>${control}<span class="err">${errors[name] || ''}</span></div>`;
+  }
+%>
+<p class="crumb"><a href="<%= editing ? base + '/' + values.editId : base %>">← <%= editing ? 'Back to profile' : 'All ' + cfg.plural %></a></p>
 <section class="card card--form card--wide">
   <form method="post" action="<%= editing ? base + '/' + values.editId : base %>" novalidate>
     <input type="hidden" name="_csrf" value="<%= csrf %>">
-    <% if (values.admission_id) { %><input type="hidden" name="admission_id" value="<%= values.admission_id %>"><p class="hint">Linked to admission application #<%= values.admission_id %>.</p><% } %>
+    <% if (values.admission_id) { %><input type="hidden" name="admission_id" value="<%= values.admission_id %>"><p class="hint">Linked to admission application #<%= values.admission_id %>; details were copied from it.</p><% } %>
 
     <fieldset class="form-section">
-      <legend>Personal details</legend>
+      <legend>Personal information <span class="legend-ur" lang="ur">ذاتی معلومات</span></legend>
       <div class="field-row field-row--3">
-        <div class="field <%= f('full_name') %>"><label for="full_name">Full name (English)</label><input id="full_name" name="full_name" value="<%= values.full_name || '' %>" required><span class="err"><%= errors.full_name %></span></div>
-        <div class="field"><label for="name_ur">Name (Urdu) <span class="opt">optional</span></label><input id="name_ur" name="name_ur" class="ur-input" dir="rtl" lang="ur" value="<%= values.name_ur || '' %>"></div>
-        <div class="field <%= f('code') %>"><label for="code"><%= isT ? 'Teacher code' : 'Admission / GR number' %></label><input id="code" name="code" value="<%= values.code || '' %>" required autocapitalize="characters" spellcheck="false"><span class="err"><%= errors.code %></span></div>
+        <%- field('full_name', isT ? 'Full name (English)' : 'Student full name', { required: true }) %>
+        <%- field('name_ur', isT ? 'Full name (Urdu)' : 'Student name (Urdu)', { ur: true }) %>
+        <%- field('father_name', 'Father’s name') %>
       </div>
       <div class="field-row field-row--3">
-        <div class="field"><label for="father_name">Father’s name <span class="opt">optional</span></label><input id="father_name" name="father_name" value="<%= values.father_name || '' %>"></div>
-        <div class="field <%= f('gender') %>">
-          <label for="gender">Gender</label>
-          <select id="gender" name="gender" required>
-            <option value="">Choose</option>
-            <% Object.keys(GENDERS).forEach(function (g) { %><option value="<%= g %>" <%= values.gender === g ? 'selected' : '' %>><%= GENDERS[g] %></option><% }) %>
-          </select>
-          <span class="err"><%= errors.gender %></span>
-        </div>
-        <div class="field <%= f('phone') %>"><label for="phone">Phone <span class="opt">optional</span></label><input id="phone" name="phone" type="tel" placeholder="03XX XXXXXXX" value="<%= values.phone || '' %>"><span class="err"><%= errors.phone %></span></div>
+        <% if (!isT) { %><%- field('mother_name', 'Mother’s name') %><% } %>
+        <%- field('gender', 'Gender', { select: GENDERS, required: true }) %>
+        <%- field('dob', 'Date of birth', { type: 'date', extra: ` max="${new Date().toISOString().slice(0, 10)}"` }) %>
+        <% if (isT) { %><%- field('cnic', 'CNIC number', { placeholder: '45101-1234567-1', extra: ' inputmode="numeric"' }) %><% } %>
       </div>
-      <% if (isT) { %>
-        <div class="field-row field-row--3">
-          <div class="field <%= f('cnic') %>"><label for="cnic">CNIC <span class="opt">optional</span></label><input id="cnic" name="cnic" placeholder="45101-1234567-1" inputmode="numeric" value="<%= values.cnic || '' %>"><span class="err"><%= errors.cnic %></span></div>
-          <div class="field"><label for="qualification">Qualification <span class="opt">optional</span></label><input id="qualification" name="qualification" placeholder="e.g. Hafiz, Alim, Matric" value="<%= values.qualification || '' %>"></div>
-          <div class="field <%= f('joined_on') %>"><label for="joined_on">Joined on <span class="opt">optional</span></label><input id="joined_on" name="joined_on" type="date" value="<%= values.joined_on || '' %>"><span class="err"><%= errors.joined_on %></span></div>
-        </div>
-      <% } else { %>
-        <div class="field-row field-row--3">
-          <div class="field <%= f('dob') %>"><label for="dob">Date of birth <span class="opt">optional</span></label><input id="dob" name="dob" type="date" value="<%= values.dob || '' %>"><span class="err"><%= errors.dob %></span></div>
-          <div class="field"><label for="programme">Programme <span class="opt">optional</span></label>
-            <input id="programme" name="programme" list="dl-programmes" value="<%= values.programme || '' %>" autocomplete="off">
-            <datalist id="dl-programmes"><% [...new Set(Object.values(PROGRAMMES).flat())].forEach(function (p) { %><option value="<%= p %>"><% }) %></datalist>
-          </div>
-          <div class="field <%= f('enrolled_on') %>"><label for="enrolled_on">Enrolled on <span class="opt">optional</span></label><input id="enrolled_on" name="enrolled_on" type="date" value="<%= values.enrolled_on || '' %>"><span class="err"><%= errors.enrolled_on %></span></div>
-        </div>
-      <% } %>
+      <div class="field-row field-row--3">
+        <% if (!isT) { %><%- field('cnic_bform', 'CNIC or B-Form number', { placeholder: '45101-1234567-1', extra: ' inputmode="numeric"' }) %><% } %>
+        <%- field('phone', 'Contact number', { type: 'tel', placeholder: '03XX XXXXXXX' }) %>
+        <% if (isT) { %>
+          <%- field('whatsapp', 'WhatsApp number', { type: 'tel', placeholder: '03XX XXXXXXX' }) %>
+          <%- field('email', 'Email address', { type: 'email' }) %>
+        <% } else { %>
+          <%- field('guardian_phone', 'Guardian contact number', { type: 'tel', placeholder: '03XX XXXXXXX' }) %>
+        <% } %>
+      </div>
+      <div class="<%= isT ? 'field-row' : '' %>">
+        <%- field('address', 'Residential address') %>
+        <% if (isT) { %><%- field('district', 'District') %><% } %>
+      </div>
+      <p class="hint"><%- include('../partials/icon', { name: 'upload' }) %> The photograph<%= isT ? ' and documents (CNIC, certificates, appointment letter)' : '' %> are added on the profile page<%= editing ? '' : ' straight after saving' %>.</p>
     </fieldset>
 
+    <% if (isT) { %>
+      <fieldset class="form-section">
+        <legend>Educational qualifications <span class="legend-ur" lang="ur">تعلیمی قابلیت</span></legend>
+        <div class="field-row">
+          <%- field('qualification', 'Religious education qualification', { placeholder: 'e.g. Alim (Dars-e-Nizami), Wifaq ul Madaris' }) %>
+          <%- field('contemporary_qualification', 'Contemporary education qualification', { placeholder: 'e.g. Matric, Intermediate, BA' }) %>
+        </div>
+        <div class="field-row field-row--3">
+          <%- field('hifz_status', 'Hifz qualification', { select: HIFZ_STATUSES }) %>
+          <%- field('tajweed_status', 'Tajweed qualification', { select: TAJWEED_STATUSES }) %>
+          <%- field('experience_years', 'Teaching experience (years)', { type: 'number', extra: ' min="0" max="70" inputmode="numeric"' }) %>
+        </div>
+        <%- field('additional_qualifications', 'Additional qualifications', { textarea: true }) %>
+      </fieldset>
+    <% } else { %>
+      <fieldset class="form-section">
+        <legend>Educational information <span class="legend-ur" lang="ur">تعلیمی معلومات</span></legend>
+        <div class="field-row field-row--3">
+          <%- field('education_level', 'Current education level', { list: 'dl-edu' }) %>
+          <%- field('quran_level', 'Quran learning level', { list: 'dl-quran' }) %>
+          <%- field('previous_institution', 'Previous educational institution') %>
+        </div>
+        <div class="field-row field-row--3">
+          <%- field('hifz_status', 'Hifz status', { select: HIFZ_STATUSES }) %>
+          <%- field('tajweed_status', 'Tajweed status', { select: TAJWEED_STATUSES }) %>
+          <%- field('enrolled_on', 'Admission date', { type: 'date' }) %>
+        </div>
+        <datalist id="dl-edu"><% EDUCATION_LEVELS.forEach(function (x) { %><option value="<%= x %>"><% }) %></datalist>
+        <datalist id="dl-quran"><% QURAN_LEVELS.forEach(function (x) { %><option value="<%= x %>"><% }) %></datalist>
+      </fieldset>
+    <% } %>
+
     <fieldset class="form-section">
-      <legend>Placement</legend>
-      <div class="field-row">
+      <legend><%= isT ? 'Employment information' : 'Institution information' %> <span class="legend-ur" lang="ur"><%= isT ? 'ملازمت کی معلومات' : 'ادارہ جاتی معلومات' %></span></legend>
+      <div class="field-row field-row--3">
+        <%- field('code', isT ? 'Teacher ID' : 'Student ID', { required: true, extra: ' autocapitalize="characters" spellcheck="false"' }) %>
         <div class="field <%= f('maktab_id') %>">
-          <label for="maktab_id">Maktab <span class="opt">optional</span></label>
-          <select id="maktab_id" name="maktab_id">
+          <label for="f-maktab_id">Assigned Maktab <span class="opt">optional</span></label>
+          <select id="f-maktab_id" name="maktab_id">
             <option value="">Not assigned</option>
             <% makatib.forEach(function (m) { %><option value="<%= m.id %>" <%= Number(values.maktab_id) === m.id ? 'selected' : '' %>><%= m.name_en %> (<%= m.code %>)<%= m.branch ? ' · ' + m.branch : '' %></option><% }) %>
           </select>
           <span class="err"><%= errors.maktab_id %></span>
         </div>
         <div class="field <%= f('branch_id') %>">
-          <label for="branch_id">Branch <span class="opt">set by the Maktab</span></label>
-          <select id="branch_id" name="branch_id">
+          <label for="f-branch_id">Assigned branch <span class="opt">set by the Maktab</span></label>
+          <select id="f-branch_id" name="branch_id">
             <option value="">No branch</option>
             <% branches.forEach(function (b) { %><option value="<%= b.id %>" <%= Number(values.branch_id) === b.id ? 'selected' : '' %>><%= b.name_en %></option><% }) %>
           </select>
           <span class="err"><%= errors.branch_id %></span>
         </div>
       </div>
-      <% if (editing) { %><p class="hint">Changing the Maktab records a transfer in the history.</p><% } %>
+      <% if (isT) { %>
+        <div class="field-row field-row--3">
+          <%- field('designation', 'Designation', { list: 'dl-designation' }) %>
+          <%- field('joined_on', 'Appointment date', { type: 'date' }) %>
+          <%- field('employment_type', 'Employment type', { select: EMPLOYMENT_TYPES }) %>
+        </div>
+        <div class="field-row field-row--3">
+          <%- field('salary', 'Monthly salary (Rs), if applicable', { type: 'number', extra: ' min="0" step="1" inputmode="numeric"' }) %>
+        </div>
+        <datalist id="dl-designation"><% DESIGNATIONS.forEach(function (x) { %><option value="<%= x %>"><% }) %></datalist>
+      <% } else { %>
+        <div class="field-row field-row--3">
+          <div class="field <%= f('teacher_id') %>">
+            <label for="f-teacher_id">Assigned teacher <span class="opt">optional</span></label>
+            <select id="f-teacher_id" name="teacher_id">
+              <option value="">Not assigned</option>
+              <% teachers.forEach(function (t) { %><option value="<%= t.id %>" <%= Number(values.teacher_id) === t.id ? 'selected' : '' %>><%= t.full_name %><%= t.maktab ? ' · ' + t.maktab : '' %></option><% }) %>
+            </select>
+            <span class="err"><%= errors.teacher_id %></span>
+          </div>
+          <%- field('class_name', 'Class or department', { list: 'dl-class', placeholder: 'e.g. Hifz A, Nazra 2' }) %>
+          <%- field('programme', 'Programme', { list: 'dl-programmes' }) %>
+        </div>
+        <datalist id="dl-class"><% classes.forEach(function (c) { %><option value="<%= c %>"><% }) %></datalist>
+        <datalist id="dl-programmes"><% [...new Set(Object.values(PROGRAMMES).flat())].forEach(function (p) { %><option value="<%= p %>"><% }) %></datalist>
+      <% } %>
+      <% if (editing) { %><p class="hint">Changing the Maktab or branch records a transfer in the history.</p><% } %>
       <fieldset class="choice">
-        <legend>Status</legend>
-        <% cfg.statuses.forEach(function (s) { %><label><input type="radio" name="status" value="<%= s %>" <%= (values.status || 'active') === s ? 'checked' : '' %>> <%= cap(s) %></label><% }) %>
+        <legend><%= isT ? 'Employment status' : 'Enrollment status' %></legend>
+        <% cfg.statuses.forEach(function (s) { %><label><input type="radio" name="status" value="<%= s %>" <%= (values.status || 'active') === s ? 'checked' : '' %>> <%= label(s) %></label><% }) %>
       </fieldset>
-      <div class="field"><label for="notes">Notes <span class="opt">optional</span></label><textarea id="notes" name="notes"><%= values.notes || '' %></textarea></div>
+      <%- field('notes', 'Notes', { textarea: true }) %>
     </fieldset>
 
     <div class="btn-row">
-      <button class="btn btn--gold" type="submit"><%= editing ? 'Save' : 'Register ' + cfg.label.toLowerCase() %></button>
-      <a class="btn btn--line" href="<%= base %>">Cancel</a>
+      <button class="btn btn--gold" type="submit"><%= editing ? 'Save changes' : 'Register ' + cfg.label.toLowerCase() %></button>
+      <a class="btn btn--line" href="<%= editing ? base + '/' + values.editId : base %>">Cancel</a>
     </div>
   </form>
 </section>

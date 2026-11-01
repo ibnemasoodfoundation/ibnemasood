@@ -34,7 +34,7 @@
         <thead><tr><th>Name</th><th>Gender</th><th>Phone</th><th>Status</th><th>Transfer to another Maktab</th></tr></thead>
         <tbody><% list.forEach(function (x) { %>
           <tr class="<%= x.status !== 'active' ? 'row-muted' : '' %>">
-            <td><a class="row-link" href="/app/<%= type %>s/<%= x.id %>/edit"><strong><%= x.full_name %></strong></a><small><%= x.code %><%= x.father_name ? ' · s/o, d/o ' + x.father_name : '' %></small></td>
+            <td><a class="row-link" href="/app/<%= type %>s/<%= x.id %>"><strong><%= x.full_name %></strong></a><small><%= x.code %><%= x.father_name ? ' · s/o, d/o ' + x.father_name : '' %></small></td>
             <td><%= GENDERS[x.gender] %></td>
             <td><%= x.phone || '—' %></td>
             <td><%- include('../partials/badge', { s: x.status }) %></td>
@@ -79,8 +79,15 @@
     <% } %>
   </section>
   <section class="card" id="attendance">
-    <div class="card-head"><h2>Attendance</h2></div>
-    <p class="empty">Attendance registers are not set up yet. Daily student and teacher attendance will appear here once the attendance module is added.</p>
+    <div class="card-head"><h2>Attendance</h2><a href="/app/attendance?maktab=<%= m.id %>">Mark today</a></div>
+    <% const attPct = (att.attended + att.absent) ? Math.round(att.attended / (att.attended + att.absent) * 100) : null; %>
+    <div class="stats stats--two">
+      <div class="stat"><small>Last 30 days</small><strong><%= attPct === null ? '—' : attPct + '%' %></strong><span><%= att.days %> days marked · <%= att.absent %> absences</span></div>
+    </div>
+    <div class="btn-row">
+      <a class="btn btn--line btn--sm" href="/app/attendance/monthly?maktab=<%= m.id %>" target="_blank">Monthly sheet</a>
+      <a class="btn btn--line btn--sm" href="/app/teacher-attendance?maktab=<%= m.id %>">Teacher attendance</a>
+    </div>
   </section>
 </div>
 

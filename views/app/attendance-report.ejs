@@ -1,0 +1,22 @@
+<%- include('../partials/print-top', { pdfName: 'Attendance-report ' + month }) %>
+<form class="print-filters" method="get" data-no-print>
+  <input type="month" name="month" value="<%= month %>" max="<%= printedOn.slice(0, 7) %>" aria-label="Month">
+  <select name="by" aria-label="Group by"><% [['maktab', 'By Maktab'], ['branch', 'By branch'], ['teacher', 'By teacher'], ['class', 'By class']].forEach(function (o) { %><option value="<%= o[0] %>" <%= by === o[0] ? 'selected' : '' %>><%= o[1] %></option><% }) %></select>
+  <button type="submit" class="pt-btn">Show</button>
+  <span class="print-links"><a href="/app/attendance/monthly?month=<%= month %>">Monthly sheet</a> · <a href="/app/teacher-attendance/monthly?month=<%= month %>">Teacher attendance</a> · <a href="/app/reports/teachers">Teacher report</a></span>
+</form>
+<%- include('../partials/print-letterhead', { docTitle: 'Student Attendance Report' }) %>
+<p class="report-meta"><%= new Date(month + '-01T00:00:00Z').toLocaleDateString('en-GB', { month: 'long', year: 'numeric', timeZone: 'UTC' }) %> · by <%= groupLabel.toLowerCase() %> · overall <strong><%= totalPct === null ? '—' : totalPct + '%' %></strong></p>
+<table class="report-table">
+  <thead><tr><th><%= groupLabel %></th><th>Students</th><th>Present</th><th>Late</th><th>Absent</th><th>Leave</th><th>Attendance %</th></tr></thead>
+  <tbody>
+    <% if (!rows.length) { %><tr><td colspan="7" class="report-empty">No attendance marked in this month yet.</td></tr><% } %>
+    <% rows.forEach(function (r) { %>
+      <tr><td><%= r.name %></td><td><%= r.students %></td><td><%= r.present %></td><td><%= r.late %></td><td><%= r.absent %></td><td><%= r.leave %></td>
+        <td><span class="pct-bar"><span style="width:<%= r.pct || 0 %>%"></span></span><strong><%= r.pct === null ? '—' : r.pct + '%' %></strong></td></tr>
+    <% }) %>
+  </tbody>
+  <% if (rows.length) { %><tfoot><tr><th>Total</th><th></th><th><%= total.present %></th><th><%= total.late %></th><th><%= total.absent %></th><th><%= total.leave %></th><th><%= totalPct === null ? '—' : totalPct + '%' %></th></tr></tfoot><% } %>
+</table>
+<p class="sheet-key">Attendance % = (present + late) ÷ (present + late + absent). Leave is not counted against the student.</p>
+<%- include('../partials/print-bottom') %>

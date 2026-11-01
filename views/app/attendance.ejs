@@ -1,0 +1,72 @@
+<%- include('../partials/app-top') %>
+<% const manage = access.canManage; const qs = (o) => new URLSearchParams(Object.assign({ date: f.date, session: f.session, maktab: f.maktab || '', class: f.cls, teacher: f.teacher || '' }, o)).toString(); %>
+<form class="filters" method="get">
+  <label class="filter-label">Date <input type="date" name="date" value="<%= f.date %>" max="<%= today %>"></label>
+  <select name="session" aria-label="Session"><% Object.keys(SESSIONS).forEach(function (s) { %><option value="<%= s %>" <%= f.session === s ? 'selected' : '' %>><%= SESSIONS[s] %> session</option><% }) %></select>
+  <% if (manage || makatib.length > 1) { %>
+    <select name="maktab" aria-label="Maktab">
+      <option value=""><%= manage ? 'All my Makatib (overview)' : 'My students' %></option>
+      <% makatib.forEach(function (m) { %><option value="<%= m.id %>" <%= f.maktab === m.id ? 'selected' : '' %>><%= m.name_en %></option><% }) %>
+    </select>
+  <% } %>
+  <% if (classes.length) { %><select name="class" aria-label="Class"><option value="">All classes</option><% classes.forEach(function (c) { %><option <%= f.cls === c ? 'selected' : '' %>><%= c %></option><% }) %></select><% } %>
+  <% if (manage && teachers.length) { %><select name="teacher" aria-label="Teacher"><option value="">Any teacher</option><% teachers.forEach(function (t) { %><option value="<%= t.id %>" <%= f.teacher === t.id ? 'selected' : '' %>><%= t.full_name %></option><% }) %></select><% } %>
+  <button class="btn btn--line btn--sm" type="submit">Show</button>
+  <a class="btn btn--line btn--sm" href="/app/attendance/monthly?<%= new URLSearchParams({ maktab: f.maktab || '', class: f.cls, teacher: f.teacher || '', session: f.session, month: f.date.slice(0, 7) }) %>"><%- include('../partials/icon', { name: 'file' }) %>Monthly sheet</a>
+</form>
+
+<% if (overview) { %>
+  <section class="card card--flush">
+    <div class="card-head card-head--pad"><h2>Today at a glance · <%= fmtDate(f.date) %>, <%= SESSIONS[f.session].toLowerCase() %></h2></div>
+    <% if (!overview.length) { %><p class="empty">No Makatib in your area yet.</p><% } else { %>
+      <div class="table-wrap"><table class="table">
+        <thead><tr><th>Maktab</th><th>Branch</th><th class="t-right">Students</th><th class="t-right">Marked</th><th class="t-right">Absent</th><th></th></tr></thead>
+        <tbody><% overview.forEach(function (o) { const done = o.students && o.marked >= o.students; %>
+          <tr><td><strong><%= o.name_en %></strong></td><td><%= o.branch || '—' %></td><td class="t-right num"><%= o.students %></td>
+            <td class="t-right num"><span class="badge <%= done ? 'badge--present' : o.marked ? 'badge--pending' : 'badge--absent' %>"><%= o.marked %> / <%= o.students %></span></td>
+            <td class="t-right num"><%= o.absent %></td>
+            <td class="t-right"><a class="btn-sm" href="/app/attendance?<%= qs({ maktab: o.id }) %>"><%= done ? 'Review' : 'Mark' %></a></td></tr>
+        <% }) %></tbody>
+      </table></div>
+    <% } %>
+  </section>
+<% } else { %>
+  <section class="card">
+    <div class="card-head">
+      <h2><%= (makatib.find(m => m.id === f.maktab) || {}).name_en || 'My students' %> · <%= fmtDate(f.date) %></h2>
+      <span class="att-counts"><% Object.keys(ATTENDANCE).forEach(function (k) { %><span class="att-dot att-dot--<%= k %>"><%= ATTENDANCE[k] %> <strong><%= counts[k] %></strong></span><% }) %></span>
+    </div>
+    <% if (locked) { %><p class="flash flash--err">This date is more than <%= editDays %> days ago, so it is read-only for teachers. Ask your branch manager to correct it.</p><% } %>
+    <% if (!students.length) { %>
+      <p class="empty">No active students here<%= f.cls ? ' in this class' : '' %>.<% if (manage) { %> Register students or assign them to this Maktab first.<% } %></p>
+    <% } else { %>
+      <form method="post" action="/app/attendance" class="register" data-register>
+        <input type="hidden" name="_csrf" value="<%= csrf %>">
+        <input type="hidden" name="date" value="<%= f.date %>"><input type="hidden" name="session" value="<%= f.session %>">
+        <input type="hidden" name="maktab" value="<%= f.maktab || '' %>"><input type="hidden" name="class" value="<%= f.cls %>"><input type="hidden" name="teacher" value="<%= f.teacher || '' %>">
+        <% if (!locked) { %>
+          <div class="register-tools">
+            <button class="btn-sm" type="button" data-mark-all="present">Mark all present</button>
+            <span class="muted small-inline">Unmarked students are left blank. Saving again updates the marks; it never creates duplicates.</span>
+          </div>
+        <% } %>
+        <div class="table-wrap"><table class="table register-table">
+          <thead><tr><th>#</th><th>Student</th><th>Class</th><% Object.keys(ATTENDANCE).forEach(function (k) { %><th class="t-center"><%= ATTENDANCE[k] %></th><% }) %><th>Note</th></tr></thead>
+          <tbody><% students.forEach(function (s, i) { const cur = (byStudent[s.id] || {}).status; %>
+            <tr>
+              <td class="muted"><%= i + 1 %></td>
+              <td><strong><%= s.full_name %></strong><small><%= s.code %><%= s.father_name ? ' · s/o, d/o ' + s.father_name : '' %><%= !f.maktab && s.maktab ? ' · ' + s.maktab : '' %></small></td>
+              <td><%= s.class_name || '—' %></td>
+              <% Object.keys(ATTENDANCE).forEach(function (k) { %>
+                <td class="t-center"><label class="att-radio att-radio--<%= k %>"><input type="radio" name="status_<%= s.id %>" value="<%= k %>" <%= cur === k ? 'checked' : '' %> <%= locked ? 'disabled' : '' %> aria-label="<%= ATTENDANCE[k] %>: <%= s.full_name %>"><span><%= ATTENDANCE[k][0] %></span></label></td>
+              <% }) %>
+              <td><input class="note-input" name="note_<%= s.id %>" value="<%= (byStudent[s.id] || {}).note || '' %>" maxlength="200" aria-label="Note for <%= s.full_name %>" <%= locked ? 'disabled' : '' %>></td>
+            </tr>
+          <% }) %></tbody>
+        </table></div>
+        <% if (!locked) { %><div class="btn-row register-save"><button class="btn btn--gold" type="submit">Save attendance</button></div><% } %>
+      </form>
+    <% } %>
+  </section>
+<% } %>
+<%- include('../partials/app-bottom') %>

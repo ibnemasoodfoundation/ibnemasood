@@ -11,7 +11,7 @@
     <p class="unit-place"><%- include('../partials/icon', { name: 'pin' }) %><span><%= [u.town, u.tehsil, u.district].filter(Boolean).join(', ') %><%= u.address ? ' · ' + u.address : '' %></span></p>
   </div>
   <div class="unit-actions">
-    <a class="btn btn--line btn--sm" href="/app/<%= route %>/<%= u.id %>/edit"><%- include('../partials/icon', { name: 'edit' }) %>Edit</a>
+    <% if (typeof canEdit === 'undefined' || canEdit) { %><a class="btn btn--line btn--sm" href="/app/<%= route %>/<%= u.id %>/edit"><%- include('../partials/icon', { name: 'edit' }) %>Edit</a><% } %>
     <% if (user.role === 'admin') { %>
       <form method="post" action="/app/<%= route %>/<%= u.id %>/archive" <% if (u.status !== 'archived') { %>data-confirm="Archive <%= u.name_en %>? It will be hidden from lists but nothing is deleted."<% } %>>
         <input type="hidden" name="_csrf" value="<%= csrf %>">

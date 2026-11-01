@@ -407,5 +407,88 @@ section[id] { scroll-margin-top: 130px; }
   .transfer-form select { max-width: none; flex: 1; }
 }
 
+/* ---------- Part 2: people, photos, attendance ---------- */
+.legend-ur { font-family: var(--f-urdu); font-size: .95rem; color: var(--gold); font-weight: 500; margin-left: .6rem; direction: rtl; line-height: 2; }
+.form-section > legend { display: flex; align-items: baseline; justify-content: space-between; }
+.hint svg { width: 15px; height: 15px; vertical-align: -3px; color: var(--gold); }
+.small-inline { font-size: .85rem; }
+.stat-link { font-size: 1.4rem !important; color: var(--lapis) !important; }
+
+.profile-head { display: grid; grid-template-columns: 180px 1fr minmax(220px, 280px); gap: 1.5rem; align-items: start; background: #fff; border: 1px solid var(--line); border-radius: 16px; padding: 1.3rem; margin-bottom: 1.5rem; }
+.profile-title h2 { margin: .2rem 0 0; font-size: clamp(1.8rem, 3vw, 2.4rem); }
+.profile-actions { margin-top: .9rem; gap: .5rem; }
+.profile-actions form { margin: 0; }
+.att-tiles { display: grid; gap: .8rem; }
+.att-tiles .stat strong { font-size: 1.7rem; }
+
+.photo-box { display: flex; flex-direction: column; align-items: center; gap: .55rem; text-align: center; }
+.photo-box form { margin: 0; }
+.photo-frame { width: 160px; height: 190px; border-radius: 999px 999px 14px 14px; overflow: hidden; border: 3px solid var(--gold-soft); background: var(--night) var(--pattern); display: grid; place-items: center; }
+.photo-frame img { width: 100%; height: 100%; object-fit: cover; }
+.photo-initials { font-family: var(--f-display); font-size: 3rem; color: var(--gold-2); }
+.photo-form { display: flex; flex-direction: column; align-items: center; gap: .4rem; }
+.upload-pick--sm { padding: .4rem .8rem; font-size: .84rem; }
+.progress { width: 160px; height: 6px; background: #F2EEE2; border-radius: 999px; overflow: hidden; }
+.progress span { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--gold), var(--gold-2)); transition: width .15s; }
+.photo-msg { font-size: .76rem; color: var(--muted); margin: 0; max-width: 170px; }
+.photo-msg--err { color: var(--bad); font-weight: 500; }
+.avatar--img { object-fit: cover; padding: 0; }
+
+.grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1.5rem; margin-bottom: 1.5rem; align-items: start; }
+.grid-3 > .card { margin: 0; }
+.details--tight > div { grid-template-columns: 130px 1fr; padding: .45rem 0; font-size: .93rem; }
+.assign--flush { margin-top: 0; padding-top: 0; border-top: 0; }
+.rows--cols { columns: 2; column-gap: 2rem; }
+.rows--cols li { break-inside: avoid; }
+.progress-form { display: grid; grid-template-columns: 150px 170px 1fr 1fr auto; gap: .7rem; align-items: end; margin-bottom: 1rem; }
+.progress-form .field { margin: 0; }
+.progress-form .field input { padding: .6rem .8rem; }
+.doc-cats { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 1rem 1.5rem; }
+.doc-cat { border: 1px solid #F0EADB; border-radius: 12px; padding: .8rem 1rem; }
+.doc-cat .sub { margin-top: 0; }
+.doc-cat .docs { margin-bottom: .6rem; }
+
+.filter-label { display: inline-flex; align-items: center; gap: .4rem; font-size: .9rem; color: var(--muted); }
+.card-head--pad { padding: 1rem 1.2rem 0; }
+.att-counts { display: flex; gap: .4rem; flex-wrap: wrap; }
+.att-dot { font-size: .8rem; padding: .2rem .6rem; border-radius: 999px; background: #F2EEE2; }
+.att-dot--present { background: var(--ok-bg); color: var(--ok); }
+.att-dot--absent { background: var(--bad-bg); color: var(--bad); }
+.att-dot--leave { background: #E8ECF8; color: var(--lapis); }
+.att-dot--late { background: var(--warn-bg); color: var(--warn); }
+.register-tools { display: flex; gap: .8rem; align-items: center; flex-wrap: wrap; margin-bottom: .8rem; }
+.register-table td { padding: .55rem .6rem; }
+.t-center { text-align: center; }
+.att-radio { display: inline-grid; place-items: center; cursor: pointer; }
+.att-radio input { position: absolute; opacity: 0; pointer-events: none; }
+.att-radio span { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; border: 1.5px solid var(--line); font-weight: 600; font-size: .85rem; color: var(--muted); background: #fff; transition: all .12s; }
+.att-radio:hover span { border-color: var(--lapis); }
+.att-radio input:focus-visible + span { outline: 3px solid var(--gold-2); outline-offset: 2px; }
+.att-radio--present input:checked + span { background: var(--ok); border-color: var(--ok); color: #fff; }
+.att-radio--absent input:checked + span { background: var(--bad); border-color: var(--bad); color: #fff; }
+.att-radio--leave input:checked + span { background: var(--lapis); border-color: var(--lapis); color: #fff; }
+.att-radio--late input:checked + span { background: var(--gold); border-color: var(--gold); color: var(--night); }
+.att-radio input:disabled + span { opacity: .55; cursor: not-allowed; }
+.note-input { font: inherit; font-size: .85rem; padding: .35rem .5rem; border: 1px solid var(--line); border-radius: 8px; width: 100%; min-width: 120px; }
+.register-save { margin-top: 1rem; position: sticky; bottom: 0; background: linear-gradient(transparent, #fff 35%); padding: .8rem 0 .3rem; }
+.badge--present { background: var(--ok-bg); color: var(--ok); }
+.badge--absent { background: var(--bad-bg); color: var(--bad); }
+.badge--leave { background: #E8ECF8; color: var(--lapis); }
+.badge--late, .badge--on_leave { background: var(--warn-bg); color: var(--warn); }
+
+@media (max-width: 1100px) {
+  .profile-head { grid-template-columns: 170px 1fr; }
+  .att-tiles { grid-column: 1 / -1; grid-template-columns: 1fr 1fr; }
+  .grid-3 { grid-template-columns: 1fr; }
+  .progress-form { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 640px) {
+  .profile-head { grid-template-columns: 1fr; }
+  .att-tiles { grid-template-columns: 1fr; }
+  .rows--cols { columns: 1; }
+  .progress-form { grid-template-columns: 1fr; }
+  .att-radio span { width: 30px; height: 30px; }
+}
+
 /* Public site: account link in the main nav */
 .nav .nav-account { font-weight: 500; }

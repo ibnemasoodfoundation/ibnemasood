@@ -1,27 +1,50 @@
 <%- include('../partials/app-top') %>
-<% const base = '/app/' + cfg.plural; %>
+<% const base = '/app/' + cfg.plural, isT = type === 'teacher', manage = access.canManage; %>
 <div class="page-head">
-  <p><%= type === 'teacher' ? 'Teachers across all Makatib. The full appointment form comes in the next phase.' : 'Enrolled students across all Makatib.' %></p>
-  <a class="btn btn--blue btn--sm" href="<%= base %>/new"><%- include('../partials/icon', { name: 'plus' }) %>Register <%= cfg.label.toLowerCase() %></a>
+  <p><%= isT ? 'Teachers across your branches and Makatib.' : (manage ? 'Students across your branches and Makatib.' : 'Students in your Maktab or assigned to you.') %></p>
+  <div class="btn-row">
+    <% if (isT && manage) { %><a class="btn btn--line btn--sm" href="/app/reports/teachers"><%- include('../partials/icon', { name: 'file' }) %>Teacher report</a><% } %>
+    <% if (manage) { %><a class="btn btn--blue btn--sm" href="<%= base %>/new"><%- include('../partials/icon', { name: 'plus' }) %>Register <%= cfg.label.toLowerCase() %></a><% } %>
+  </div>
 </div>
 
 <form class="filters" method="get">
-  <input type="search" name="q" placeholder="Search name, code, father or phone" value="<%= filters.q %>" aria-label="Search">
-  <select name="branch" aria-label="Branch">
-    <option value="">All branches</option>
-    <% branches.forEach(function (b) { %><option value="<%= b.id %>" <%= filters.branch === b.id ? 'selected' : '' %>><%= b.name_en %></option><% }) %>
-  </select>
-  <select name="maktab" aria-label="Maktab">
-    <option value="">All Makatib</option>
-    <% makatib.forEach(function (m) { %><option value="<%= m.id %>" <%= filters.maktab === m.id ? 'selected' : '' %>><%= m.name_en %></option><% }) %>
-  </select>
+  <input type="search" name="q" placeholder="Search name, ID, father or phone" value="<%= filters.q %>" aria-label="Search">
+  <% if (manage) { %>
+    <select name="branch" aria-label="Branch">
+      <option value="">All branches</option>
+      <% branches.forEach(function (b) { %><option value="<%= b.id %>" <%= filters.branch === b.id ? 'selected' : '' %>><%= b.name_en %></option><% }) %>
+    </select>
+    <select name="maktab" aria-label="Maktab">
+      <option value="">All Makatib</option>
+      <% makatib.forEach(function (m) { %><option value="<%= m.id %>" <%= filters.maktab === m.id ? 'selected' : '' %>><%= m.name_en %></option><% }) %>
+    </select>
+  <% } %>
+  <% if (!isT) { %>
+    <% if (manage) { %>
+      <select name="teacher" aria-label="Teacher">
+        <option value="">Any teacher</option>
+        <% teachers.forEach(function (t) { %><option value="<%= t.id %>" <%= filters.teacher === t.id ? 'selected' : '' %>><%= t.full_name %></option><% }) %>
+      </select>
+    <% } %>
+    <select name="class" aria-label="Class">
+      <option value="">Any class</option>
+      <% classes.forEach(function (c) { %><option <%= filters.cls === c ? 'selected' : '' %>><%= c %></option><% }) %>
+    </select>
+  <% } else { %>
+    <select name="employment" aria-label="Employment type">
+      <option value="">Any employment type</option>
+      <% Object.keys(EMPLOYMENT_TYPES).forEach(function (k) { %><option value="<%= k %>" <%= filters.employment === k ? 'selected' : '' %>><%= EMPLOYMENT_TYPES[k] %></option><% }) %>
+    </select>
+  <% } %>
   <select name="gender" aria-label="Gender">
     <option value="">Any gender</option>
     <% Object.keys(GENDERS).forEach(function (g) { %><option value="<%= g %>" <%= filters.gender === g ? 'selected' : '' %>><%= GENDERS[g] %></option><% }) %>
   </select>
   <select name="status" aria-label="Status">
-    <option value="">Any status</option>
-    <% cfg.statuses.forEach(function (s) { %><option value="<%= s %>" <%= filters.status === s ? 'selected' : '' %>><%= cap(s) %></option><% }) %>
+    <option value=""><%= isT ? 'All except archived' : 'Any status' %></option>
+    <% cfg.statuses.forEach(function (s) { %><option value="<%= s %>" <%= filters.status === s ? 'selected' : '' %>><%= label(s) %></option><% }) %>
+    <% if (isT) { %><option value="all" <%= filters.status === 'all' ? 'selected' : '' %>>Everything</option><% } %>
   </select>
   <button class="btn btn--line btn--sm" type="submit">Filter</button>
 </form>
@@ -29,18 +52,24 @@
 <p class="result-count"><%= rows.length %> <%= rows.length === 1 ? cfg.label.toLowerCase() : cfg.plural %></p>
 <section class="card card--flush">
   <% if (!rows.length) { %>
-    <p class="empty">No <%= cfg.plural %> found. <a href="<%= base %>/new">Register one</a>.</p>
+    <p class="empty">No <%= cfg.plural %> found.<% if (manage) { %> <a href="<%= base %>/new">Register one</a>.<% } %></p>
   <% } else { %>
     <div class="table-wrap"><table class="table">
-      <thead><tr><th>Name</th><th>Gender</th><th>Maktab / branch</th><th>Phone</th><th>Status</th><th></th></tr></thead>
+      <thead><tr><th>Name</th><th>Gender</th><th>Maktab / branch</th><th><%= isT ? 'Designation' : 'Class / teacher' %></th><th>Phone</th><th>Status</th><th></th></tr></thead>
       <tbody><% rows.forEach(function (x) { %>
         <tr class="<%= x.status !== 'active' ? 'row-muted' : '' %>">
-          <td><strong><%= x.full_name %></strong><small><%= x.code %><% if (x.name_ur) { %> · <span class="ur-inline" lang="ur"><%= x.name_ur %></span><% } %></small></td>
+          <td>
+            <a class="person row-link" href="<%= base %>/<%= x.id %>">
+              <% if (x.photo_id) { %><img class="avatar avatar--sm avatar--img" src="/app/files/<%= x.photo_id %>" alt="" loading="lazy"><% } else { %><span class="avatar avatar--sm"><%= initials(x.full_name) %></span><% } %>
+              <span><strong><%= x.full_name %></strong><small><%= x.code %><% if (x.name_ur) { %> · <span class="ur-inline" lang="ur"><%= x.name_ur %></span><% } %></small></span>
+            </a>
+          </td>
           <td><%= GENDERS[x.gender] %></td>
-          <td><% if (x.maktab) { %><a href="/app/makatib/<%= x.maktab_id %>"><%= x.maktab %></a><% } else { %>No Maktab<% } %><small><%= x.branch || 'No branch' %></small></td>
-          <td><%= x.phone || '—' %></td>
+          <td><%= x.maktab || 'No Maktab' %><small><%= x.branch || 'No branch' %></small></td>
+          <td><% if (isT) { %><%= x.designation || '—' %><small><%= EMPLOYMENT_TYPES[x.employment_type] || '' %></small><% } else { %><%= x.class_name || '—' %><small><%= x.teacher || 'No teacher' %></small><% } %></td>
+          <td><%= x.phone || (isT ? '—' : x.guardian_phone || '—') %></td>
           <td><%- include('../partials/badge', { s: x.status }) %></td>
-          <td class="t-right"><a class="btn-sm" href="<%= base %>/<%= x.id %>/edit">Edit</a></td>
+          <td class="t-right nowrap"><a class="btn-sm" href="<%= base %>/<%= x.id %>">Open</a><% if (manage) { %> <a class="btn-sm" href="<%= base %>/<%= x.id %>/edit">Edit</a><% } %></td>
         </tr>
       <% }) %></tbody>
     </table></div>

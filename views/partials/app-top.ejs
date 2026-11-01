@@ -1,8 +1,9 @@
 <%- include('head') %>
 <%
 const staffRole = user.role === 'admin' || user.role === 'manager';
+const teacherRole = user.role === 'teacher';
 const nav = [
-  { href: '/app', label: user.role === 'user' ? 'My dashboard' : 'Overview', icon: 'home' },
+  { href: '/app', label: user.role === 'user' || teacherRole ? 'My dashboard' : 'Overview', icon: 'home' },
 ];
 if (staffRole) nav.push(
   { section: 'Institution' },
@@ -10,9 +11,18 @@ if (staffRole) nav.push(
   { href: '/app/makatib', label: 'Makatib', icon: 'maktab' },
   { href: '/app/teachers', label: 'Teachers', icon: 'teacher' },
   { href: '/app/students', label: 'Students', icon: 'student' },
+  { section: 'Attendance' },
+  { href: '/app/attendance', label: 'Student attendance', icon: 'list', exact: true },
+  { href: '/app/teacher-attendance', label: 'Teacher attendance', icon: 'teacher', exact: true },
+  { href: '/app/attendance/report', label: 'Reports', icon: 'file', also: ['/app/reports', '/app/attendance/monthly', '/app/teacher-attendance/monthly'] },
   { section: 'Office' }
 );
-nav.push(
+if (teacherRole) nav.push(
+  { href: '/app/students', label: 'My students', icon: 'student' },
+  { href: '/app/attendance', label: 'Mark attendance', icon: 'list', exact: true },
+  { href: '/app/attendance/monthly', label: 'Monthly sheet', icon: 'file' }
+);
+if (!teacherRole) nav.push(
   { href: '/app/admissions', label: staffRole ? 'Admissions' : 'My applications', icon: 'file' },
   { href: '/app/donations', label: staffRole ? 'Donations' : 'My donations', icon: 'heart' }
 );
@@ -23,7 +33,11 @@ if (user.role === 'admin') {
   nav.push({ href: '/app/activity', label: 'Activity log', icon: 'list' });
 }
 nav.push({ href: '/app/profile', label: 'My profile', icon: 'user' });
-const isOn = (href) => href === '/app' ? (path === '/app' || path === '/app/') : path.startsWith(href);
+const isOn = (href, n) => {
+  if (href === '/app') return path === '/app' || path === '/app/';
+  if (n && n.exact) return path === href;
+  return path.startsWith(href) || (n && n.also || []).some((a) => path.startsWith(a));
+};
 %>
 <body class="app-body">
 <a class="skip" href="#app-main">Skip to content</a>
@@ -37,7 +51,7 @@ const isOn = (href) => href === '/app' ? (path === '/app' || path === '/app/') :
     <nav class="side-nav" aria-label="Dashboard">
       <% nav.forEach(function (n) { %>
         <% if (n.section) { %><span class="side-section"><%= n.section %></span><% return; } %>
-        <a href="<%= n.href %>" <% if (isOn(n.href)) { %>aria-current="page"<% } %>><%- include('icon', { name: n.icon }) %><span><%= n.label %></span></a>
+        <a href="<%= n.href %>" <% if (isOn(n.href, n)) { %>aria-current="page"<% } %>><%- include('icon', { name: n.icon }) %><span><%= n.label %></span></a>
       <% }) %>
     </nav>
     <div class="side-foot">

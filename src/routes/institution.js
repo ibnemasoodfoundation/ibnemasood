@@ -1,34 +1,29 @@
-/* Institution structure for staff: branches, Makatib, teachers, students,
-   transfers between Makatib, and photo/document uploads. */
+/* Branches, Makatib, and photo/document files for every record type.
+   Every route checks the signed-in user's scope (src/scope.js) on the server. */
 "use strict";
 const express = require("express");
 const { one, all, run, log } = require("../db");
 const { checkCsrf, requireRole } = require("../auth");
 const { acceptUpload, filePath, removeFile } = require("../uploads");
-const {
-  REPORTED_TOWNS, UNIT_STATUSES, TEACHER_STATUSES, STUDENT_STATUSES, GENDERS, PROGRAMMES,
-} = require("../helpers");
+const { withScope, branchSql, maktabSql, personSql, inMaktab, inBranch, canSeePerson, canSeeBranch } = require("../scope");
+const { movePerson } = require("../transfers");
+const { REPORTED_TOWNS, UNIT_STATUSES, DOC_CATEGORIES } = require("../helpers");
 
 const router = express.Router();
 
 // Guards are applied per route: this router is mounted on /app ahead of the member routes,
-// so a router-wide staff guard would lock members out of their own dashboard.
-const staff = [requireRole("admin", "manager"), checkCsrf];
-const admin = [requireRole("admin"), checkCsrf];
+// so a router-wide guard would lock members out of their own dashboard.
+const staff = [requireRole("admin", "manager"), withScope, checkCsrf];
+const admin = [requireRole("admin"), withScope, checkCsrf];
 
 const str = (v, max = 200) => String(v ?? "").trim().slice(0, max);
 const int = (v) => (/^\d{1,9}$/.test(String(v ?? "").trim()) ? Number(v) : null);
 const PHONE_RE = /^[+\d][\d\s-]{6,19}$/;
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const CODE_RE = /^[A-Z0-9][A-Z0-9-]{1,19}$/;
-const CNIC_RE = /^\d{5}-?\d{7}-?\d$/;
-const back = (req, fallback) => {
-  const ref = req.get("referer");
-  try { if (ref && new URL(ref).host === req.get("host")) return ref; } catch { /* ignore */ }
-  return fallback;
-};
 const like = (q) => `%${q.replace(/[\\%_]/g, (c) => "\\" + c)}%`;
 const isUnique = (err) => err && err.code === "23505";
+const forbidden = (res) => res.status(403).render("error", { title: "Not allowed", message: "This record is outside the branches you manage." });
 
 /* ---------- Shared lookups ---------- */
 async function nextCode(table, prefix) {
@@ -45,9 +40,9 @@ async function locationOptions() {
 }
 
 const staffUsers = () => all("SELECT id, name, role FROM users WHERE role IN ('admin','manager') AND status = 'active' ORDER BY name");
-const branchList = () => all("SELECT id, code, name_en FROM branches WHERE status <> 'archived' ORDER BY name_en");
-const maktabList = () => all(`SELECT m.id, m.code, m.name_en, m.branch_id, b.name_en AS branch FROM makatib m
-                              LEFT JOIN branches b ON b.id = m.branch_id WHERE m.status <> 'archived' ORDER BY m.name_en`);
+const branchList = (scope) => all(`SELECT b.id, b.code, b.name_en FROM branches b WHERE b.status <> 'archived' AND ${branchSql(scope, "b")} ORDER BY b.name_en`);
+const maktabList = (scope) => all(`SELECT m.id, m.code, m.name_en, m.branch_id, b.name_en AS branch FROM makatib m
+  LEFT JOIN branches b ON b.id = m.branch_id WHERE m.status <> 'archived' AND ${maktabSql(scope, "m")} ORDER BY m.name_en`);
 
 async function filesFor(type, id) {
   return all(`SELECT a.*, u.name AS uploader FROM attachments a LEFT JOIN users u ON u.id = a.uploaded_by
@@ -83,30 +78,11 @@ async function unitFields(body, extra = {}) {
   return [v, e];
 }
 
-/* Moves a teacher or student to a Maktab (or out of one) and records the transfer */
-async function movePerson(type, personId, toMaktabId, note, userId) {
-  const table = type === "teacher" ? "teachers" : "students";
-  const person = await one(`SELECT id, maktab_id, full_name FROM ${table} WHERE id = ?`, personId);
-  if (!person) return { error: "Record not found." };
-  let target = null;
-  if (toMaktabId) {
-    target = await one("SELECT id, branch_id, name_en, status FROM makatib WHERE id = ?", toMaktabId);
-    if (!target || target.status === "archived") return { error: "Choose an active Maktab." };
-  }
-  if ((person.maktab_id || null) === (target ? target.id : null)) return { error: `${person.full_name} is already there.` };
-  await run(`UPDATE ${table} SET maktab_id = ?, branch_id = COALESCE(?, branch_id) WHERE id = ?`,
-    target ? target.id : null, target ? target.branch_id : null, person.id);
-  await run(`INSERT INTO transfers (person_type, person_id, from_maktab_id, to_maktab_id, note, transferred_by)
-             VALUES (?, ?, ?, ?, ?, ?)`, type, person.id, person.maktab_id, target ? target.id : null, note || null, userId);
-  await log(userId, type + ".transfer", `${person.full_name} → ${target ? target.name_en : "no Maktab"}`);
-  return { ok: `${person.full_name} moved to ${target ? target.name_en : "no Maktab"}.` };
-}
-
 /* ================= Branches ================= */
 router.get("/branches", staff, async (req, res) => {
   const q = str(req.query.q, 80), district = str(req.query.district, 80);
   const status = [...UNIT_STATUSES, "all"].includes(req.query.status) ? req.query.status : "";
-  const where = [], p = [];
+  const where = [branchSql(req.scope, "b")], p = [];
   if (status && status !== "all") { where.push("b.status = ?"); p.push(status); }
   else if (!status) where.push("b.status <> 'archived'");
   if (district) { where.push("b.district = ?"); p.push(district); }
@@ -117,8 +93,8 @@ router.get("/branches", staff, async (req, res) => {
       (SELECT COUNT(*) FROM teachers t WHERE t.branch_id = b.id AND t.status = 'active') AS teachers,
       (SELECT COUNT(*) FROM students s WHERE s.branch_id = b.id AND s.status = 'active') AS students
     FROM branches b LEFT JOIN users u ON u.id = b.manager_id
-    ${where.length ? "WHERE " + where.join(" AND ") : ""} ORDER BY b.name_en LIMIT 500`, ...p);
-  const districts = (await all("SELECT DISTINCT district FROM branches ORDER BY district")).map((r) => r.district);
+    WHERE ${where.join(" AND ")} ORDER BY b.name_en LIMIT 500`, ...p);
+  const districts = (await all(`SELECT DISTINCT b.district FROM branches b WHERE ${branchSql(req.scope, "b")} ORDER BY 1`)).map((r) => r.district);
   res.render("app/branches", { title: "Branches", rows, districts, filters: { q, district, status } });
 });
 
@@ -128,11 +104,20 @@ async function branchForm(res, title, values, errors, status = 200) {
   });
 }
 
-router.get("/branches/new", staff, async (req, res) => {
+async function loadBranch(req) {
+  const id = int(req.params.id);
+  const b = id && await one(`SELECT b.*, u.name AS manager FROM branches b LEFT JOIN users u ON u.id = b.manager_id WHERE b.id = ?`, id);
+  if (!b) return { missing: true };
+  if (!(await canSeeBranch(req.scope, b.id))) return { denied: true };
+  // Managers edit only branches they manage; a Maktab manager can view the branch but not change it
+  return { b, canEdit: req.scope.all || inBranch(req.scope, b.id) };
+}
+
+router.get("/branches/new", admin, async (req, res) => {
   await branchForm(res, "Add branch", { code: await nextCode("branches", "BR"), status: "active" }, {});
 });
 
-router.post("/branches", staff, async (req, res) => {
+router.post("/branches", admin, async (req, res) => {
   const [v, e] = await unitFields(req.body);
   if (Object.keys(e).length) return branchForm(res, "Add branch", v, e, 400);
   try {
@@ -150,8 +135,9 @@ router.post("/branches", staff, async (req, res) => {
 });
 
 router.get("/branches/:id", staff, async (req, res, next) => {
-  const b = int(req.params.id) && await one(`SELECT b.*, u.name AS manager FROM branches b LEFT JOIN users u ON u.id = b.manager_id WHERE b.id = ?`, int(req.params.id));
-  if (!b) return next();
+  const { b, canEdit, missing, denied } = await loadBranch(req);
+  if (missing) return next();
+  if (denied) return forbidden(res);
   const [makatib, teachers, students, files, stats, unassigned] = await Promise.all([
     all(`SELECT m.*, (SELECT COUNT(*) FROM students s WHERE s.maktab_id = m.id AND s.status = 'active') AS students,
          (SELECT COUNT(*) FROM teachers t WHERE t.maktab_id = m.id AND t.status = 'active') AS teachers
@@ -165,21 +151,25 @@ router.get("/branches/:id", staff, async (req, res, next) => {
       (SELECT COUNT(*) FROM students WHERE branch_id = ? AND status = 'active') AS students,
       (SELECT COUNT(*) FROM students WHERE branch_id = ? AND status = 'active' AND gender = 'male') AS male,
       (SELECT COUNT(*) FROM students WHERE branch_id = ? AND status = 'active' AND gender = 'female') AS female`, b.id, b.id, b.id, b.id, b.id),
+    // Managers may only pull in Makatib they already manage or that have no branch yet
     all(`SELECT m.id, m.code, m.name_en, b2.name_en AS branch FROM makatib m LEFT JOIN branches b2 ON b2.id = m.branch_id
-         WHERE (m.branch_id IS NULL OR m.branch_id <> ?) AND m.status <> 'archived' ORDER BY m.name_en`, b.id),
+         WHERE (m.branch_id IS NULL OR m.branch_id <> ?) AND m.status <> 'archived'
+           AND (${maktabSql(req.scope, "m")} OR m.branch_id IS NULL) ORDER BY m.name_en`, b.id),
   ]);
-  res.render("app/branch", { title: b.name_en, b, makatib, teachers, students, files, stats, unassigned });
+  res.render("app/branch", { title: b.name_en, b, makatib, teachers, students, files, stats, unassigned: canEdit ? unassigned : [], canEdit });
 });
 
 router.get("/branches/:id/edit", staff, async (req, res, next) => {
-  const b = int(req.params.id) && await one("SELECT * FROM branches WHERE id = ?", int(req.params.id));
-  if (!b) return next();
+  const { b, canEdit, missing, denied } = await loadBranch(req);
+  if (missing) return next();
+  if (denied || !canEdit) return forbidden(res);
   await branchForm(res, "Edit " + b.name_en, { ...b, editId: b.id }, {});
 });
 
 router.post("/branches/:id", staff, async (req, res, next) => {
-  const b = int(req.params.id) && await one("SELECT * FROM branches WHERE id = ?", int(req.params.id));
-  if (!b) return next();
+  const { b, canEdit, missing, denied } = await loadBranch(req);
+  if (missing) return next();
+  if (denied || !canEdit) return forbidden(res);
   const [v, e] = await unitFields(req.body);
   if (b.status === "archived") v.status = "archived"; // restore happens through the archive button
   if (Object.keys(e).length) return branchForm(res, "Edit " + b.name_en, { ...v, editId: b.id }, e, 400);
@@ -209,10 +199,12 @@ router.post("/branches/:id/archive", admin, async (req, res, next) => {
 
 /* Assign an existing Maktab (and everyone in it) to this branch */
 router.post("/branches/:id/makatib", staff, async (req, res, next) => {
-  const b = int(req.params.id) && await one("SELECT * FROM branches WHERE id = ?", int(req.params.id));
-  if (!b) return next();
+  const { b, canEdit, missing, denied } = await loadBranch(req);
+  if (missing) return next();
+  if (denied || !canEdit) return forbidden(res);
   const m = int(req.body.maktab_id) && await one("SELECT * FROM makatib WHERE id = ?", int(req.body.maktab_id));
   if (!m) { req.flash("err", "Choose a Maktab to assign."); return res.redirect("/app/branches/" + b.id); }
+  if (m.branch_id && !inMaktab(req.scope, m.id)) return forbidden(res);
   await run("UPDATE makatib SET branch_id = ? WHERE id = ?", b.id, m.id);
   await run("UPDATE teachers SET branch_id = ? WHERE maktab_id = ?", b.id, m.id);
   await run("UPDATE students SET branch_id = ? WHERE maktab_id = ?", b.id, m.id);
@@ -225,7 +217,7 @@ router.post("/branches/:id/makatib", staff, async (req, res, next) => {
 router.get("/makatib", staff, async (req, res) => {
   const q = str(req.query.q, 80), district = str(req.query.district, 80), branch = int(req.query.branch);
   const status = [...UNIT_STATUSES, "all"].includes(req.query.status) ? req.query.status : "";
-  const where = [], p = [];
+  const where = [maktabSql(req.scope, "m")], p = [];
   if (status && status !== "all") { where.push("m.status = ?"); p.push(status); }
   else if (!status) where.push("m.status <> 'archived'");
   if (district) { where.push("m.district = ?"); p.push(district); }
@@ -236,20 +228,24 @@ router.get("/makatib", staff, async (req, res) => {
       (SELECT COUNT(*) FROM teachers x WHERE x.maktab_id = m.id AND x.status = 'active') AS teachers,
       (SELECT COUNT(*) FROM students s WHERE s.maktab_id = m.id AND s.status = 'active') AS students
     FROM makatib m LEFT JOIN branches b ON b.id = m.branch_id LEFT JOIN teachers t ON t.id = m.primary_teacher_id
-    ${where.length ? "WHERE " + where.join(" AND ") : ""} ORDER BY m.name_en LIMIT 500`, ...p);
-  const districts = (await all("SELECT DISTINCT district FROM makatib ORDER BY district")).map((r) => r.district);
-  res.render("app/makatib", { title: "Makatib", rows, districts, branches: await branchList(), filters: { q, district, branch, status } });
+    WHERE ${where.join(" AND ")} ORDER BY m.name_en LIMIT 500`, ...p);
+  const districts = (await all(`SELECT DISTINCT m.district FROM makatib m WHERE ${maktabSql(req.scope, "m")} ORDER BY 1`)).map((r) => r.district);
+  res.render("app/makatib", { title: "Makatib", rows, districts, branches: await branchList(req.scope), filters: { q, district, branch, status } });
 });
 
-async function maktabForm(res, title, values, errors, status = 200) {
+async function maktabForm(req, res, title, values, errors, status = 200) {
   res.status(status).render("app/maktab-form", {
-    title, values, errors, managers: await staffUsers(), branches: await branchList(), locations: await locationOptions(),
+    title, values, errors, managers: await staffUsers(), locations: await locationOptions(),
+    // Managers can only place a Maktab in a branch they manage
+    branches: req.scope.all ? await branchList(req.scope)
+      : await all(`SELECT id, code, name_en FROM branches WHERE status <> 'archived' AND id IN (${req.scope.branchIds.join(",") || "NULL"}) ORDER BY name_en`),
     teachers: await all(`SELECT t.id, t.code, t.full_name, m.name_en AS maktab FROM teachers t LEFT JOIN makatib m ON m.id = t.maktab_id
-                         WHERE t.status = 'active' ORDER BY t.full_name`),
+                         WHERE t.status = 'active' AND ${personSql(req.scope, "t", "teacher")} ORDER BY t.full_name`),
   });
 }
 
-async function maktabFields(body) {
+async function maktabFields(req) {
+  const body = req.body;
   const [v, e] = await unitFields(body, {
     branch_id: int(body.branch_id),
     primary_teacher_id: int(body.primary_teacher_id),
@@ -257,17 +253,33 @@ async function maktabFields(body) {
   });
   if (str(body.classrooms, 4) !== "" && (v.classrooms === null || v.classrooms > 200)) e.classrooms = "Enter a number from 0 to 200.";
   if (v.branch_id && !(await one("SELECT id FROM branches WHERE id = ?", v.branch_id))) e.branch_id = "Choose a branch.";
-  if (v.primary_teacher_id && !(await one("SELECT id FROM teachers WHERE id = ?", v.primary_teacher_id))) e.primary_teacher_id = "Choose a teacher.";
+  if (!req.scope.all && !inBranch(req.scope, v.branch_id)) e.branch_id = "Choose one of the branches you manage.";
+  if (v.primary_teacher_id) {
+    const t = await one("SELECT id, maktab_id, branch_id FROM teachers WHERE id = ?", v.primary_teacher_id);
+    if (!t || !canSeePerson(req.scope, t, "teacher")) e.primary_teacher_id = "Choose a teacher.";
+  }
   return [v, e];
 }
 
+async function loadMaktab(req) {
+  const id = int(req.params.id);
+  const m = id && await one(`SELECT m.*, b.name_en AS branch, u.name AS manager, t.full_name AS primary_teacher
+    FROM makatib m LEFT JOIN branches b ON b.id = m.branch_id LEFT JOIN users u ON u.id = m.manager_id
+    LEFT JOIN teachers t ON t.id = m.primary_teacher_id WHERE m.id = ?`, id);
+  if (!m) return { missing: true };
+  if (!inMaktab(req.scope, m.id)) return { denied: true };
+  return { m };
+}
+
 router.get("/makatib/new", staff, async (req, res) => {
-  await maktabForm(res, "Register Maktab", { code: await nextCode("makatib", "MK"), status: "active", branch_id: int(req.query.branch) }, {});
+  if (!req.scope.all && !req.scope.branchIds.length) return forbidden(res);
+  await maktabForm(req, res, "Register Maktab", { code: await nextCode("makatib", "MK"), status: "active", branch_id: int(req.query.branch) }, {});
 });
 
 router.post("/makatib", staff, async (req, res) => {
-  const [v, e] = await maktabFields(req.body);
-  if (Object.keys(e).length) return maktabForm(res, "Register Maktab", v, e, 400);
+  if (!req.scope.all && !req.scope.branchIds.length) return forbidden(res);
+  const [v, e] = await maktabFields(req);
+  if (Object.keys(e).length) return maktabForm(req, res, "Register Maktab", v, e, 400);
   let r;
   try {
     r = await one(`INSERT INTO makatib (code, name_en, name_ur, district, tehsil, town, address, branch_id, manager_id, primary_teacher_id,
@@ -275,7 +287,7 @@ router.post("/makatib", staff, async (req, res) => {
       v.code, v.name_en, v.name_ur || null, v.district, v.tehsil || null, v.town || null, v.address || null, v.branch_id,
       v.manager_id, v.primary_teacher_id, v.phone || null, v.established_on || null, v.classrooms, v.status, v.notes || null);
   } catch (err) {
-    if (isUnique(err)) return maktabForm(res, "Register Maktab", v, { code: "This Maktab code is already used." }, 400);
+    if (isUnique(err)) return maktabForm(req, res, "Register Maktab", v, { code: "This Maktab code is already used." }, 400);
     throw err;
   }
   await log(req.user.id, "maktab.create", `${v.code} ${v.name_en}`);
@@ -286,12 +298,10 @@ router.post("/makatib", staff, async (req, res) => {
 });
 
 router.get("/makatib/:id", staff, async (req, res, next) => {
-  const id = int(req.params.id);
-  const m = id && await one(`SELECT m.*, b.name_en AS branch, u.name AS manager, t.full_name AS primary_teacher
-    FROM makatib m LEFT JOIN branches b ON b.id = m.branch_id LEFT JOIN users u ON u.id = m.manager_id
-    LEFT JOIN teachers t ON t.id = m.primary_teacher_id WHERE m.id = ?`, id);
-  if (!m) return next();
-  const [teachers, students, admissions, files, transfers, otherTeachers, otherStudents, makatib] = await Promise.all([
+  const { m, missing, denied } = await loadMaktab(req);
+  if (missing) return next();
+  if (denied) return forbidden(res);
+  const [teachers, students, admissions, files, transfers, otherTeachers, otherStudents, makatib, att] = await Promise.all([
     all("SELECT * FROM teachers WHERE maktab_id = ? ORDER BY status <> 'active', full_name", m.id),
     all("SELECT * FROM students WHERE maktab_id = ? ORDER BY status <> 'active', full_name LIMIT 500", m.id),
     all("SELECT * FROM admissions WHERE maktab_id = ? ORDER BY id DESC LIMIT 100", m.id),
@@ -304,36 +314,45 @@ router.get("/makatib/:id", staff, async (req, res, next) => {
          LEFT JOIN users u ON u.id = tr.transferred_by
          WHERE tr.from_maktab_id = ? OR tr.to_maktab_id = ? ORDER BY tr.id DESC LIMIT 30`, m.id, m.id),
     all(`SELECT t.id, t.code, t.full_name, x.name_en AS maktab FROM teachers t LEFT JOIN makatib x ON x.id = t.maktab_id
-         WHERE (t.maktab_id IS NULL OR t.maktab_id <> ?) AND t.status = 'active' ORDER BY t.full_name`, m.id),
+         WHERE (t.maktab_id IS NULL OR t.maktab_id <> ?) AND t.status = 'active' AND ${personSql(req.scope, "t", "teacher")} ORDER BY t.full_name`, m.id),
     all(`SELECT s.id, s.code, s.full_name, x.name_en AS maktab FROM students s LEFT JOIN makatib x ON x.id = s.maktab_id
-         WHERE (s.maktab_id IS NULL OR s.maktab_id <> ?) AND s.status = 'active' ORDER BY s.full_name LIMIT 1000`, m.id),
-    maktabList(),
+         WHERE (s.maktab_id IS NULL OR s.maktab_id <> ?) AND s.status = 'active' AND ${personSql(req.scope, "s", "student")} ORDER BY s.full_name LIMIT 1000`, m.id),
+    maktabList(req.scope),
+    // Attendance in the last 30 days
+    one(`SELECT COUNT(*) FILTER (WHERE status IN ('present','late')) AS attended,
+                COUNT(*) FILTER (WHERE status = 'absent') AS absent,
+                COUNT(DISTINCT att_date) AS days
+         FROM student_attendance WHERE maktab_id = ? AND att_date >= CURRENT_DATE - 30`, m.id),
   ]);
   res.render("app/maktab", {
-    title: m.name_en, m, teachers, students, admissions, files, transfers, otherTeachers, otherStudents,
+    title: m.name_en, m, teachers, students, admissions, files, transfers, otherTeachers, otherStudents, att,
     makatib: makatib.filter((x) => x.id !== m.id),
   });
 });
 
 router.get("/makatib/:id/edit", staff, async (req, res, next) => {
-  const m = int(req.params.id) && await one("SELECT * FROM makatib WHERE id = ?", int(req.params.id));
-  if (!m) return next();
-  await maktabForm(res, "Edit " + m.name_en, { ...m, editId: m.id }, {});
+  const { m, missing, denied } = await loadMaktab(req);
+  if (missing) return next();
+  if (denied) return forbidden(res);
+  await maktabForm(req, res, "Edit " + m.name_en, { ...m, editId: m.id }, {});
 });
 
 router.post("/makatib/:id", staff, async (req, res, next) => {
-  const m = int(req.params.id) && await one("SELECT * FROM makatib WHERE id = ?", int(req.params.id));
-  if (!m) return next();
-  const [v, e] = await maktabFields(req.body);
+  const { m, missing, denied } = await loadMaktab(req);
+  if (missing) return next();
+  if (denied) return forbidden(res);
+  const [v, e] = await maktabFields(req);
   if (m.status === "archived") v.status = "archived";
-  if (Object.keys(e).length) return maktabForm(res, "Edit " + m.name_en, { ...v, editId: m.id }, e, 400);
+  // A manager who only manages this Maktab (not its branch) keeps its current branch
+  if (!req.scope.all && !inBranch(req.scope, v.branch_id) && v.branch_id === m.branch_id) delete e.branch_id;
+  if (Object.keys(e).length) return maktabForm(req, res, "Edit " + m.name_en, { ...v, editId: m.id }, e, 400);
   try {
     await run(`UPDATE makatib SET code = ?, name_en = ?, name_ur = ?, district = ?, tehsil = ?, town = ?, address = ?, branch_id = ?,
       manager_id = ?, primary_teacher_id = ?, phone = ?, established_on = ?, classrooms = ?, status = ?, notes = ? WHERE id = ?`,
       v.code, v.name_en, v.name_ur || null, v.district, v.tehsil || null, v.town || null, v.address || null, v.branch_id,
       v.manager_id, v.primary_teacher_id, v.phone || null, v.established_on || null, v.classrooms, v.status, v.notes || null, m.id);
   } catch (err) {
-    if (isUnique(err)) return maktabForm(res, "Edit " + m.name_en, { ...v, editId: m.id }, { code: "This Maktab code is already used." }, 400);
+    if (isUnique(err)) return maktabForm(req, res, "Edit " + m.name_en, { ...v, editId: m.id }, { code: "This Maktab code is already used." }, 400);
     throw err;
   }
   // Keep everyone in this Maktab under its (possibly new) branch
@@ -363,191 +382,73 @@ router.post("/makatib/:id/archive", admin, async (req, res, next) => {
 /* Assign a teacher or student to this Maktab (a transfer if they were elsewhere) */
 for (const type of ["teacher", "student"]) {
   router.post(`/makatib/:id/${type}s`, staff, async (req, res, next) => {
-    const m = int(req.params.id) && await one("SELECT id FROM makatib WHERE id = ?", int(req.params.id));
-    if (!m) return next();
-    const r = await movePerson(type, int(req.body.person_id), m.id, str(req.body.note, 300), req.user.id);
+    const { m, missing, denied } = await loadMaktab(req);
+    if (missing) return next();
+    if (denied) return forbidden(res);
+    const table = type === "teacher" ? "teachers" : "students";
+    const person = int(req.body.person_id) && await one(`SELECT id, maktab_id, branch_id, teacher_id FROM ${table} WHERE id = ?`, int(req.body.person_id));
+    if (!person || !canSeePerson(req.scope, person, type)) return forbidden(res);
+    const r = await movePerson(type, person.id, m.id, str(req.body.note, 300), req.user.id);
     req.flash(r.error ? "err" : "ok", r.error || r.ok);
     res.redirect(`/app/makatib/${m.id}#${type}s`);
   });
-
-  /* Transfer from a person's row to another Maktab */
-  router.post(`/${type}s/:id/transfer`, staff, async (req, res) => {
-    const r = await movePerson(type, int(req.params.id), int(req.body.maktab_id), str(req.body.note, 300), req.user.id);
-    req.flash(r.error ? "err" : "ok", r.error || r.ok);
-    res.redirect(back(req, `/app/${type}s`));
-  });
 }
 
-/* ================= Teachers & students ================= */
-const PEOPLE = {
-  teacher: { table: "teachers", plural: "teachers", prefix: "TC", statuses: TEACHER_STATUSES, label: "Teacher", labelPlural: "Teachers" },
-  student: { table: "students", plural: "students", prefix: "ST", statuses: STUDENT_STATUSES, label: "Student", labelPlural: "Students" },
+/* ================= Photos & documents (branches, Makatib, teachers, students) ================= */
+const ENTITIES = {
+  branches: { type: "branch", table: "branches" },
+  makatib: { type: "maktab", table: "makatib" },
+  teachers: { type: "teacher", table: "teachers" },
+  students: { type: "student", table: "students" },
 };
 
-async function personFields(type, body) {
-  const v = {
-    code: str(body.code, 20).toUpperCase(),
-    full_name: str(body.full_name, 120),
-    name_ur: str(body.name_ur, 120),
-    father_name: str(body.father_name, 120),
-    gender: GENDERS[body.gender] ? body.gender : "",
-    phone: str(body.phone, 30),
-    maktab_id: int(body.maktab_id),
-    branch_id: int(body.branch_id),
-    status: PEOPLE[type].statuses.includes(body.status) ? body.status : "active",
-    notes: str(body.notes, 2000),
-  };
-  const e = {};
-  if (type === "teacher") {
-    v.cnic = str(body.cnic, 15);
-    v.qualification = str(body.qualification, 120);
-    v.joined_on = str(body.joined_on, 10);
-    if (v.cnic && !CNIC_RE.test(v.cnic)) e.cnic = "Enter the 13-digit CNIC, e.g. 45101-1234567-1.";
-    if (v.joined_on && (!DATE_RE.test(v.joined_on) || isNaN(Date.parse(v.joined_on)))) e.joined_on = "Enter a valid date.";
-  } else {
-    v.dob = str(body.dob, 10);
-    v.programme = str(body.programme, 60);
-    v.enrolled_on = str(body.enrolled_on, 10);
-    v.admission_id = int(body.admission_id);
-    if (v.dob && (!DATE_RE.test(v.dob) || isNaN(Date.parse(v.dob)))) e.dob = "Enter a valid date.";
-    if (v.enrolled_on && (!DATE_RE.test(v.enrolled_on) || isNaN(Date.parse(v.enrolled_on)))) e.enrolled_on = "Enter a valid date.";
-  }
-  if (!CODE_RE.test(v.code)) e.code = "Use 2–20 capital letters, numbers or dashes.";
-  if (v.full_name.length < 2) e.full_name = "Enter the full name.";
-  if (!v.gender) e.gender = "Choose male or female.";
-  if (v.phone && !PHONE_RE.test(v.phone)) e.phone = "Enter a valid phone number.";
-  if (v.maktab_id) {
-    const m = await one("SELECT branch_id, status FROM makatib WHERE id = ?", v.maktab_id);
-    if (!m || m.status === "archived") e.maktab_id = "Choose an active Maktab.";
-    else v.branch_id = m.branch_id; // a Maktab's branch always wins
-  }
-  if (v.branch_id && !(await one("SELECT id FROM branches WHERE id = ?", v.branch_id))) e.branch_id = "Choose a branch.";
-  return [v, e];
+/* Can this user see (or, with manage = true, change) the record a file belongs to? */
+async function canAccessEntity(req, type, id, manage) {
+  if (manage && !req.scope.canManage) return false;
+  if (type === "branch") return canSeeBranch(req.scope, id);
+  if (type === "maktab") return inMaktab(req.scope, id);
+  const rec = await one(`SELECT id, maktab_id, branch_id${type === "student" ? ", teacher_id" : ""} FROM ${type}s WHERE id = ?`, id);
+  return canSeePerson(req.scope, rec, type);
 }
 
-for (const [type, cfg] of Object.entries(PEOPLE)) {
-  const formView = "app/person-form";
-  const renderForm = async (res, title, values, errors, status = 200) => res.status(status).render(formView, {
-    title, values, errors, type, cfg, branches: await branchList(), makatib: await maktabList(), PROGRAMMES,
-  });
-
-  router.get(`/${cfg.plural}`, staff, async (req, res) => {
-    const q = str(req.query.q, 80), branch = int(req.query.branch), maktab = int(req.query.maktab);
-    const gender = GENDERS[req.query.gender] ? req.query.gender : "";
-    const status = [...cfg.statuses, "all"].includes(req.query.status) ? req.query.status : "";
-    const where = [], p = [];
-    if (status && status !== "all") { where.push("x.status = ?"); p.push(status); }
-    if (branch) { where.push("x.branch_id = ?"); p.push(branch); }
-    if (maktab) { where.push("x.maktab_id = ?"); p.push(maktab); }
-    if (gender) { where.push("x.gender = ?"); p.push(gender); }
-    if (q) { where.push("(x.full_name ILIKE ? OR x.name_ur ILIKE ? OR x.code ILIKE ? OR x.father_name ILIKE ? OR x.phone ILIKE ?)"); p.push(like(q), like(q), like(q), like(q), like(q)); }
-    const rows = await all(`SELECT x.*, b.name_en AS branch, m.name_en AS maktab FROM ${cfg.table} x
-      LEFT JOIN branches b ON b.id = x.branch_id LEFT JOIN makatib m ON m.id = x.maktab_id
-      ${where.length ? "WHERE " + where.join(" AND ") : ""} ORDER BY x.id DESC LIMIT 500`, ...p);
-    res.render("app/people", {
-      title: cfg.labelPlural, rows, type, cfg, branches: await branchList(), makatib: await maktabList(),
-      filters: { q, branch, maktab, gender, status },
-    });
-  });
-
-  router.get(`/${cfg.plural}/new`, staff, async (req, res) => {
-    const values = { code: await nextCode(cfg.table, cfg.prefix), status: "active", maktab_id: int(req.query.maktab) };
-    // Registering an approved applicant: start from their admission details
-    const adm = type === "student" && int(req.query.admission) && await one("SELECT * FROM admissions WHERE id = ?", int(req.query.admission));
-    if (adm) Object.assign(values, {
-      admission_id: adm.id, full_name: adm.student_name, father_name: adm.father_name, dob: adm.dob,
-      phone: adm.phone, programme: adm.programme, maktab_id: adm.maktab_id || values.maktab_id,
-      gender: adm.branch === "girls" ? "female" : adm.branch === "boys" ? "male" : "",
-    });
-    await renderForm(res, `Register ${cfg.label.toLowerCase()}`, values, {});
-  });
-
-  router.post(`/${cfg.plural}`, staff, async (req, res) => {
-    const [v, e] = await personFields(type, req.body);
-    if (Object.keys(e).length) return renderForm(res, `Register ${cfg.label.toLowerCase()}`, v, e, 400);
-    let r;
-    try {
-      r = type === "teacher"
-        ? await one(`INSERT INTO teachers (code, full_name, name_ur, father_name, gender, cnic, phone, qualification, branch_id, maktab_id, joined_on, status, notes)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`,
-            v.code, v.full_name, v.name_ur || null, v.father_name || null, v.gender, v.cnic || null, v.phone || null, v.qualification || null,
-            v.branch_id, v.maktab_id, v.joined_on || null, v.status, v.notes || null)
-        : await one(`INSERT INTO students (code, full_name, name_ur, father_name, gender, dob, phone, programme, branch_id, maktab_id, admission_id, enrolled_on, status, notes)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`,
-            v.code, v.full_name, v.name_ur || null, v.father_name || null, v.gender, v.dob || null, v.phone || null, v.programme || null,
-            v.branch_id, v.maktab_id, v.admission_id, v.enrolled_on || null, v.status, v.notes || null);
-    } catch (err) {
-      if (isUnique(err)) {
-        const field = /cnic/.test(err.constraint || err.message || "") ? "cnic" : "code";
-        return renderForm(res, `Register ${cfg.label.toLowerCase()}`, v, { [field]: `This ${field === "cnic" ? "CNIC" : "code"} is already registered.` }, 400);
-      }
-      throw err;
-    }
-    await log(req.user.id, type + ".create", `${v.code} ${v.full_name}`);
-    req.flash("ok", `${cfg.label} ${v.full_name} registered.`);
-    res.redirect(v.maktab_id ? `/app/makatib/${v.maktab_id}#${cfg.plural}` : `/app/${cfg.plural}`);
-  });
-
-  router.get(`/${cfg.plural}/:id/edit`, staff, async (req, res, next) => {
-    const x = int(req.params.id) && await one(`SELECT * FROM ${cfg.table} WHERE id = ?`, int(req.params.id));
-    if (!x) return next();
-    await renderForm(res, `Edit ${x.full_name}`, { ...x, editId: x.id }, {});
-  });
-
-  router.post(`/${cfg.plural}/:id`, staff, async (req, res, next) => {
-    const x = int(req.params.id) && await one(`SELECT * FROM ${cfg.table} WHERE id = ?`, int(req.params.id));
-    if (!x) return next();
-    const [v, e] = await personFields(type, req.body);
-    if (Object.keys(e).length) return renderForm(res, `Edit ${x.full_name}`, { ...v, editId: x.id }, e, 400);
-    try {
-      if (type === "teacher") {
-        await run(`UPDATE teachers SET code = ?, full_name = ?, name_ur = ?, father_name = ?, gender = ?, cnic = ?, phone = ?, qualification = ?,
-          joined_on = ?, status = ?, notes = ?, branch_id = ? WHERE id = ?`,
-          v.code, v.full_name, v.name_ur || null, v.father_name || null, v.gender, v.cnic || null, v.phone || null, v.qualification || null,
-          v.joined_on || null, v.status, v.notes || null, v.branch_id, x.id);
-      } else {
-        await run(`UPDATE students SET code = ?, full_name = ?, name_ur = ?, father_name = ?, gender = ?, dob = ?, phone = ?, programme = ?,
-          enrolled_on = ?, status = ?, notes = ?, branch_id = ? WHERE id = ?`,
-          v.code, v.full_name, v.name_ur || null, v.father_name || null, v.gender, v.dob || null, v.phone || null, v.programme || null,
-          v.enrolled_on || null, v.status, v.notes || null, v.branch_id, x.id);
-      }
-    } catch (err) {
-      if (isUnique(err)) {
-        const field = /cnic/.test(err.constraint || err.message || "") ? "cnic" : "code";
-        return renderForm(res, `Edit ${x.full_name}`, { ...v, editId: x.id }, { [field]: `This ${field === "cnic" ? "CNIC" : "code"} is already registered.` }, 400);
-      }
-      throw err;
-    }
-    // A changed Maktab is a transfer, so it goes through the transfer history
-    if ((v.maktab_id || null) !== (x.maktab_id || null)) await movePerson(type, x.id, v.maktab_id, "Changed on edit form", req.user.id);
-    await log(req.user.id, type + ".update", `${v.code} ${v.full_name}`);
-    req.flash("ok", `${v.full_name} saved.`);
-    res.redirect(`/app/${cfg.plural}`);
-  });
-}
-
-/* ================= Photos & documents ================= */
-for (const [route, type] of [["branches", "branch"], ["makatib", "maktab"]]) {
+for (const [route, cfg] of Object.entries(ENTITIES)) {
   // multer must parse the multipart body before the CSRF token in it can be checked
-  router.post(`/${route}/:id/files`, requireRole("admin", "manager"), acceptUpload, checkCsrf, async (req, res, next) => {
+  router.post(`/${route}/:id/files`, requireRole("admin", "manager"), withScope, acceptUpload, checkCsrf, async (req, res, next) => {
     const id = int(req.params.id);
-    const unit = id && await one(`SELECT id FROM ${route} WHERE id = ?`, id);
-    if (!unit) { if (req.file) removeFile(req.file.filename); return next(); }
-    const dest = `/app/${route}/${id}#files`;
-    if (req.uploadError) { req.flash("err", req.uploadError); return res.redirect(dest); }
-    await run(`INSERT INTO attachments (entity_type, entity_id, kind, file_name, stored_name, mime, size_bytes, uploaded_by)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      type, id, req.uploadKind, str(req.file.originalname, 200), req.file.filename, req.file.mimetype, req.file.size, req.user.id);
-    await log(req.user.id, `${type}.upload_${req.uploadKind}`, `#${id} ${req.file.originalname}`);
+    const exists = id && await one(`SELECT id FROM ${cfg.table} WHERE id = ?`, id);
+    const fail = (status, msg) => {
+      if (req.file) removeFile(req.file.filename);
+      if (req.get("x-requested-with") === "fetch") return res.status(status).json({ ok: false, error: msg });
+      if (status === 404) return next();
+      if (status === 403) return forbidden(res);
+      req.flash("err", msg);
+      return res.redirect(`/app/${route}/${id}#files`);
+    };
+    if (!exists) return fail(404, "Not found.");
+    if (!(await canAccessEntity(req, cfg.type, id, true))) return fail(403, "Not allowed.");
+    if (req.uploadError) return fail(400, req.uploadError);
+    const categories = DOC_CATEGORIES[cfg.type] || {};
+    const category = req.uploadKind === "document" && categories[req.body.category] ? req.body.category : null;
+    const r = await one(`INSERT INTO attachments (entity_type, entity_id, kind, category, file_name, stored_name, mime, size_bytes, uploaded_by)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`,
+      cfg.type, id, req.uploadKind, category, str(req.file.originalname, 200), req.file.filename, req.file.mimetype, req.file.size, req.user.id);
+    // A teacher or student has one profile photo: a new upload replaces the old one
+    if (req.uploadKind === "photo" && (cfg.type === "teacher" || cfg.type === "student")) {
+      const old = await all("SELECT id, stored_name FROM attachments WHERE entity_type = ? AND entity_id = ? AND kind = 'photo' AND id <> ?", cfg.type, id, r.id);
+      for (const o of old) { await run("DELETE FROM attachments WHERE id = ?", o.id); removeFile(o.stored_name); }
+    }
+    await log(req.user.id, `${cfg.type}.upload_${req.uploadKind}`, `#${id} ${req.file.originalname}`);
+    if (req.get("x-requested-with") === "fetch") return res.json({ ok: true, id: r.id, url: `/app/files/${r.id}` });
     req.flash("ok", req.uploadKind === "photo" ? "Photo uploaded." : "Document uploaded.");
-    res.redirect(dest);
+    res.redirect(`/app/${route}/${id}#files`);
   });
 }
 
-router.get("/files/:id", requireRole("admin", "manager"), async (req, res, next) => {
+router.get("/files/:id", requireRole("admin", "manager", "teacher"), withScope, async (req, res, next) => {
   const f = int(req.params.id) && await one("SELECT * FROM attachments WHERE id = ?", int(req.params.id));
   const p = f && filePath(f.stored_name);
   if (!p) return next();
+  if (!(await canAccessEntity(req, f.entity_type, f.entity_id, false))) return forbidden(res);
   const inline = /^image\/|^application\/pdf$/.test(f.mime) && req.query.download !== "1";
   res.set("Cache-Control", "private, max-age=3600");
   res.set("Content-Disposition", `${inline ? "inline" : "attachment"}; filename*=UTF-8''${encodeURIComponent(f.file_name)}`);
@@ -557,11 +458,14 @@ router.get("/files/:id", requireRole("admin", "manager"), async (req, res, next)
 router.post("/files/:id/delete", staff, async (req, res, next) => {
   const f = int(req.params.id) && await one("SELECT * FROM attachments WHERE id = ?", int(req.params.id));
   if (!f) return next();
+  if (!(await canAccessEntity(req, f.entity_type, f.entity_id, true))) return forbidden(res);
   await run("DELETE FROM attachments WHERE id = ?", f.id);
   removeFile(f.stored_name);
   await log(req.user.id, `${f.entity_type}.delete_file`, f.file_name);
-  req.flash("ok", "File removed.");
-  res.redirect(back(req, "/app"));
+  req.flash("ok", f.kind === "photo" ? "Photo removed." : "File removed.");
+  const back = req.get("referer");
+  res.redirect(back && new URL(back).host === req.get("host") ? back : "/app");
 });
 
 module.exports = router;
+module.exports.helpers = { nextCode, branchList, maktabList, filesFor, forbidden, str, int, like, isUnique, PHONE_RE, DATE_RE, CODE_RE };

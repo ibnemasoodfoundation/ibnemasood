@@ -1,0 +1,23 @@
+<%- include('../partials/print-top', { pdfName: 'Teacher-report ' + printedOn, pageClass: 'print-page--wide' }) %>
+<form class="print-filters" method="get" data-no-print>
+  <select name="branch" aria-label="Branch"><option value="">All branches</option><% branches.forEach(function (b) { %><option value="<%= b.id %>" <%= filters.branch === b.id ? 'selected' : '' %>><%= b.name_en %></option><% }) %></select>
+  <select name="status" aria-label="Status"><option value="">All except archived</option><% TEACHER_STATUSES.forEach(function (s) { %><option value="<%= s %>" <%= filters.status === s ? 'selected' : '' %>><%= label(s) %></option><% }) %></select>
+  <button type="submit" class="pt-btn">Apply</button>
+</form>
+<%- include('../partials/print-letterhead', { docTitle: 'Teacher Report' }) %>
+<p class="report-meta"><%= rows.length %> teachers<%= filters.branch ? ' · ' + (branches.find(b => b.id === filters.branch) || {}).name_en : '' %><%= filters.status ? ' · ' + label(filters.status) : '' %> · printed <%= fmtDate(printedOn) %></p>
+<div class="report-summary">
+  <% [['By branch', byBranch], ['By status', byStatus.map(r => [label(r[0]), r[1]])], ['By employment type', byType.map(r => [EMPLOYMENT_TYPES[r[0]] || 'Not set', r[1]])], ['By gender', byGender.map(r => [GENDERS[r[0]] || r[0], r[1]])]].forEach(function (g) { %>
+    <table class="pp-table pp-table--sum"><caption><%= g[0] %></caption><tbody><% g[1].forEach(function (r) { %><tr><th><%= r[0] %></th><td><%= r[1] %></td></tr><% }) %></tbody></table>
+  <% }) %>
+</div>
+<table class="report-table">
+  <thead><tr><th>#</th><th>Teacher ID</th><th>Name</th><th>Designation</th><th>Branch</th><th>Maktab</th><th>Phone</th><th>Employment</th><th>Students</th><th>Attendance (month)</th><th>Status</th></tr></thead>
+  <tbody>
+    <% if (!rows.length) { %><tr><td colspan="11" class="report-empty">No teachers match.</td></tr><% } %>
+    <% rows.forEach(function (t, i) { %>
+      <tr><td><%= i + 1 %></td><td><%= t.code %></td><td><%= t.full_name %><% if (t.name_ur) { %><br><span lang="ur" class="pp-ur-val"><%= t.name_ur %></span><% } %></td><td><%= t.designation || '' %></td><td><%= t.branch || '' %></td><td><%= t.maktab || '' %></td><td><%= t.phone || '' %></td><td><%= EMPLOYMENT_TYPES[t.employment_type] || '' %></td><td><%= t.students %></td><td><%= t.att_pct === null ? '—' : t.att_pct + '%' %></td><td><%= label(t.status) %></td></tr>
+    <% }) %>
+  </tbody>
+</table>
+<%- include('../partials/print-bottom') %>

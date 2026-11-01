@@ -120,7 +120,7 @@
     <div class="card-head"><h2>Teachers</h2><a href="/app/teachers">View all</a></div>
     <% if (!recent.teachers.length) { %><p class="empty">No teachers registered yet. <a href="/app/teachers/new">Register a teacher</a>.</p><% } else { %>
       <ul class="rows"><% recent.teachers.forEach(function (t) { %>
-        <li><a href="/app/teachers/<%= t.id %>/edit"><span><strong><%= t.full_name %></strong><small><%= t.code %> · <%= t.maktab || 'No Maktab yet' %></small></span><%- include('../partials/badge', { s: t.status }) %></a></li>
+        <li><a href="/app/teachers/<%= t.id %>"><span><strong><%= t.full_name %></strong><small><%= t.code %> · <%= t.maktab || 'No Maktab yet' %></small></span><%- include('../partials/badge', { s: t.status }) %></a></li>
       <% }) %></ul>
     <% } %>
   </section>
@@ -128,7 +128,7 @@
     <div class="card-head"><h2>Students</h2><a href="/app/students">View all</a></div>
     <% if (!recent.students.length) { %><p class="empty">No students registered yet. <a href="/app/students/new">Register a student</a>.</p><% } else { %>
       <ul class="rows"><% recent.students.forEach(function (st) { %>
-        <li><a href="/app/students/<%= st.id %>/edit"><span><strong><%= st.full_name %></strong><small><%= st.code %> · <%= GENDERS[st.gender] %> · <%= st.maktab || 'No Maktab yet' %></small></span><%- include('../partials/badge', { s: st.status }) %></a></li>
+        <li><a href="/app/students/<%= st.id %>"><span><strong><%= st.full_name %></strong><small><%= st.code %> · <%= GENDERS[st.gender] %> · <%= st.maktab || 'No Maktab yet' %></small></span><%- include('../partials/badge', { s: st.status }) %></a></li>
       <% }) %></ul>
     <% } %>
   </section>

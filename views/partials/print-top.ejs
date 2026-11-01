@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title><%= title %> | Jamia Arabia Abdullah Bin Masood</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="/assets/images/logo-sm.jpg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Cormorant+Garamond:wght@600;700&family=Jost:wght@400;500;600&family=Noto+Nastaliq+Urdu:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/css/print.css">
+</head>
+<body class="print-body">
+<div class="print-toolbar" data-no-print>
+  <a href="javascript:history.back()">← Back</a>
+  <span class="print-toolbar-title"><%= title %></span>
+  <button type="button" class="pt-btn" data-print>Print</button>
+  <button type="button" class="pt-btn pt-btn--gold" data-pdf="<%= (typeof pdfName !== 'undefined' ? pdfName : title).replace(/[^\w\s-]/g, '').trim().replace(/\s+/g, '-') %>">Download PDF</button>
+</div>
+<main class="print-page<%= typeof pageClass !== 'undefined' ? ' ' + pageClass : '' %>" id="print-area">

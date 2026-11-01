@@ -2,7 +2,7 @@
 "use strict";
 const crypto = require("node:crypto");
 
-const ROLES = ["admin", "manager", "user"];
+const ROLES = ["admin", "manager", "teacher", "user"];
 
 function hashPassword(password) {
   const salt = crypto.randomBytes(16);

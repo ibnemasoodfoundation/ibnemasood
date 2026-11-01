@@ -1,0 +1,197 @@
+<%- include('../partials/app-top') %>
+<%
+  const isT = type === 'teacher', base = '/app/' + cfg.plural;
+  const row = (labelText, value) => ({ labelText, value });
+  const show = (v) => (v === null || v === undefined || v === '') ? '—' : v;
+  const personal = isT ? [
+    row('Full name', x.full_name), row('Urdu name', x.name_ur), row('Father’s name', x.father_name), row('Gender', GENDERS[x.gender]),
+    row('Date of birth', x.dob ? fmtDate(x.dob) : ''), row('CNIC', x.cnic), row('Contact', x.phone), row('WhatsApp', x.whatsapp),
+    row('Email', x.email), row('Address', x.address), row('District', x.district),
+  ] : [
+    row('Full name', x.full_name), row('Urdu name', x.name_ur), row('Father’s name', x.father_name), row('Mother’s name', x.mother_name),
+    row('Gender', GENDERS[x.gender]), row('Date of birth', x.dob ? fmtDate(x.dob) : ''), row('CNIC / B-Form', x.cnic_bform),
+    row('Contact', x.phone), row('Guardian contact', x.guardian_phone), row('Address', x.address),
+  ];
+  const education = isT ? [
+    row('Religious education', x.qualification), row('Contemporary education', x.contemporary_qualification),
+    row('Hifz', HIFZ_STATUSES[x.hifz_status]), row('Tajweed', TAJWEED_STATUSES[x.tajweed_status]),
+    row('Teaching experience', x.experience_years != null ? x.experience_years + ' years' : ''), row('Additional', x.additional_qualifications),
+  ] : [
+    row('Education level', x.education_level), row('Quran level', x.quran_level), row('Previous institution', x.previous_institution),
+    row('Hifz', HIFZ_STATUSES[x.hifz_status]), row('Tajweed', TAJWEED_STATUSES[x.tajweed_status]), row('Admission date', x.enrolled_on ? fmtDate(x.enrolled_on) : ''),
+  ];
+  const institution = isT ? [
+    row('Teacher ID', x.code), row('Branch', x.branch), row('Maktab', x.maktab), row('Designation', x.designation),
+    row('Appointment date', x.joined_on ? fmtDate(x.joined_on) : ''), row('Employment type', EMPLOYMENT_TYPES[x.employment_type]),
+    row('Monthly salary', canManage && x.salary != null ? money(x.salary) : (x.salary != null ? 'Recorded' : '')),
+  ] : [
+    row('Student ID', x.code), row('Branch', x.branch), row('Maktab', x.maktab), row('Teacher', x.teacher),
+    row('Class / department', x.class_name), row('Programme', x.programme),
+  ];
+  const docsByCat = Object.keys(categories).map((k) => ({ key: k, label: categories[k], files: files.filter((d) => d.kind === 'document' && (d.category || 'other') === k) }));
+  const a = att;
+%>
+<p class="crumb"><a href="<%= user.role === 'teacher' ? (isT ? '/app' : '/app/students') : base %>">← <%= user.role === 'teacher' ? (isT ? 'My dashboard' : 'My students') : 'All ' + cfg.plural %></a></p>
+
+<section class="profile-head">
+  <%- include('_photo', { uploadUrl: base + '/' + x.id + '/files', name: x.full_name }) %>
+  <div class="profile-title">
+    <div class="unit-meta"><span class="code-chip"><%= x.code %></span><%- include('../partials/badge', { s: x.status }) %><% if (isT && x.designation) { %><span class="muted small-inline"><%= x.designation %></span><% } %></div>
+    <h2><%= x.full_name %></h2>
+    <% if (x.name_ur) { %><p class="unit-ur" lang="ur" dir="rtl"><%= x.name_ur %></p><% } %>
+    <p class="unit-place"><%- include('../partials/icon', { name: 'maktab' }) %><span><%= x.maktab || 'No Maktab' %><%= x.branch ? ' · ' + x.branch : '' %></span></p>
+    <div class="btn-row profile-actions">
+      <% if (canManage) { %><a class="btn btn--blue btn--sm" href="<%= base %>/<%= x.id %>/edit"><%- include('../partials/icon', { name: 'edit' }) %>Edit</a><% } %>
+      <a class="btn btn--line btn--sm" href="<%= base %>/<%= x.id %>/print" target="_blank"><%- include('../partials/icon', { name: 'file' }) %>Print profile</a>
+      <% if (!isT && canManage) { %><a class="btn btn--gold btn--sm" href="<%= base %>/<%= x.id %>/card" target="_blank"><%- include('../partials/icon', { name: 'user' }) %>ID card</a><% } %>
+      <% if (isT && canManage) { %>
+        <form method="post" action="/app/teachers/<%= x.id %>/archive" <% if (x.status !== 'archived') { %>data-confirm="Archive <%= x.full_name %>?<%= x.user_id ? ' Their login will be suspended.' : '' %>"<% } %>>
+          <input type="hidden" name="_csrf" value="<%= csrf %>">
+          <% if (x.status === 'archived') { %><input type="hidden" name="restore" value="1"><button class="btn btn--line btn--sm" type="submit">Restore</button>
+          <% } else { %><button class="btn btn--line btn--sm btn--danger-line" type="submit"><%- include('../partials/icon', { name: 'archive' }) %>Archive</button><% } %>
+        </form>
+      <% } %>
+    </div>
+  </div>
+  <div class="att-tiles">
+    <div class="stat"><small>Attendance this month</small><strong><%= a.month.pct === null ? '—' : a.month.pct + '%' %></strong><span><%= a.month.present %> present · <%= a.month.late %> late · <%= a.month.absent %> absent · <%= a.month.leave %> leave</span></div>
+    <div class="stat"><small>All time</small><strong><%= a.total.pct === null ? '—' : a.total.pct + '%' %></strong><span><%= a.total.present + a.total.late + a.total.absent + a.total.leave %> days marked</span></div>
+  </div>
+</section>
+
+<div class="grid-3">
+  <% [['Personal information', 'ذاتی معلومات', personal], [isT ? 'Educational qualifications' : 'Educational information', isT ? 'تعلیمی قابلیت' : 'تعلیمی معلومات', education], [isT ? 'Employment information' : 'Institution information', isT ? 'ملازمت کی معلومات' : 'ادارہ جاتی معلومات', institution]].forEach(function (sec) { %>
+    <section class="card">
+      <div class="card-head"><h2><%= sec[0] %></h2><span class="legend-ur" lang="ur"><%= sec[1] %></span></div>
+      <dl class="details details--tight">
+        <% sec[2].forEach(function (r) { %><div><dt><%= r.labelText %></dt><dd><%= show(r.value) %></dd></div><% }) %>
+      </dl>
+    </section>
+  <% }) %>
+</div>
+<% if (x.notes) { %><section class="card"><div class="card-head"><h2>Notes</h2></div><p class="pre"><%= x.notes %></p></section><% } %>
+
+<% if (isSelf) { %>
+  <section class="card card--form" id="contact">
+    <div class="card-head"><h2>Update my contact details</h2></div>
+    <form method="post" action="/app/teachers/<%= x.id %>/contact">
+      <input type="hidden" name="_csrf" value="<%= csrf %>">
+      <div class="field-row">
+        <div class="field"><label for="c-phone">Contact number</label><input id="c-phone" name="phone" type="tel" value="<%= x.phone || '' %>"></div>
+        <div class="field"><label for="c-wa">WhatsApp number</label><input id="c-wa" name="whatsapp" type="tel" value="<%= x.whatsapp || '' %>"></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label for="c-email">Email</label><input id="c-email" name="email" type="email" value="<%= x.email || '' %>"></div>
+        <div class="field"><label for="c-addr">Address</label><input id="c-addr" name="address" value="<%= x.address || '' %>"></div>
+      </div>
+      <p class="hint">Other details are kept by the office. Ask your branch manager to change them.</p>
+      <button class="btn btn--blue btn--sm" type="submit">Save contact details</button>
+    </form>
+  </section>
+<% } %>
+
+<% if (canManage) { %>
+  <section class="card" id="transfer">
+    <div class="card-head"><h2>Assign or transfer</h2></div>
+    <form class="assign assign--flush" method="post" action="<%= base %>/<%= x.id %>/transfer">
+      <input type="hidden" name="_csrf" value="<%= csrf %>">
+      <div class="assign-row">
+        <select name="maktab_id" aria-label="Move to Maktab">
+          <option value="">Choose a Maktab…</option>
+          <% makatib.forEach(function (m) { %><option value="<%= m.id %>"><%= m.name_en %><%= m.branch ? ' · ' + m.branch : '' %></option><% }) %>
+        </select>
+        <select name="branch_id" aria-label="Or a branch only">
+          <option value="">…or a branch only</option>
+          <% branches.forEach(function (b) { %><option value="<%= b.id %>"><%= b.name_en %></option><% }) %>
+        </select>
+        <input name="note" placeholder="Reason (optional)" maxlength="300" aria-label="Reason">
+        <button class="btn btn--blue btn--sm" type="submit"><%- include('../partials/icon', { name: 'swap' }) %>Move</button>
+      </div>
+      <p class="hint">Choosing a Maktab also sets its branch. Choose only a branch to place someone in a branch without a Maktab.</p>
+    </form>
+    <% if (transfers.length) { %>
+      <h3 class="sub">Transfer history</h3>
+      <ul class="log"><% transfers.forEach(function (t) { %>
+        <li><span class="log-time"><%= fmtDateTime(t.created_at) %></span><span><%= t.from_name || 'unassigned' %> → <%= t.to_name || 'no Maktab' %><%= t.note ? ' · ' + t.note : '' %><%= t.by_name ? ' · by ' + t.by_name : '' %></span></li>
+      <% }) %></ul>
+    <% } %>
+  </section>
+
+  <% if (isT && user.role === 'admin') { %>
+    <section class="card" id="login">
+      <div class="card-head"><h2>Portal login</h2></div>
+      <% if (x.user_id) { %>
+        <p>Signs in as <strong><%= x.login_email %></strong>. Teachers see their Maktab, their students and attendance only. Reset the password under <a href="/app/users">Users &amp; roles</a>.</p>
+      <% } else { %>
+        <form class="assign assign--flush" method="post" action="/app/teachers/<%= x.id %>/login">
+          <input type="hidden" name="_csrf" value="<%= csrf %>">
+          <label for="login-email">Give this teacher a login to mark attendance</label>
+          <div class="assign-row">
+            <input id="login-email" name="email" type="email" value="<%= x.email || '' %>" placeholder="teacher@example.com" required>
+            <button class="btn btn--blue btn--sm" type="submit">Create login</button>
+          </div>
+          <p class="hint">A temporary password is shown once. The teacher can change it under My profile.</p>
+        </form>
+      <% } %>
+    </section>
+  <% } %>
+<% } %>
+
+<% if (isT) { %>
+  <section class="card">
+    <div class="card-head"><h2>Assigned students (<%= students.length %>)</h2><% if (x.maktab_id) { %><a href="/app/attendance?maktab=<%= x.maktab_id %>&teacher=<%= x.id %>">Mark attendance</a><% } %></div>
+    <% if (!students.length) { %><p class="empty">No students are assigned to this teacher yet. Assign a teacher on a student’s form.</p><% } else { %>
+      <ul class="rows rows--cols"><% students.forEach(function (s) { %>
+        <li><a href="/app/students/<%= s.id %>"><span><strong><%= s.full_name %></strong><small><%= s.code %><%= s.class_name ? ' · ' + s.class_name : '' %></small></span><%- include('../partials/badge', { s: s.status }) %></a></li>
+      <% }) %></ul>
+    <% } %>
+  </section>
+<% } else { %>
+  <section class="card" id="progress">
+    <div class="card-head"><h2>Educational progress</h2></div>
+    <form class="progress-form" method="post" action="/app/students/<%= x.id %>/progress">
+      <input type="hidden" name="_csrf" value="<%= csrf %>">
+      <div class="field"><label for="p-date">Date</label><input id="p-date" name="recorded_on" type="date" value="<%= today %>" max="<%= today %>"></div>
+      <div class="field"><label for="p-level">Quran level</label><input id="p-level" name="quran_level" list="dl-quran-p" value="<%= x.quran_level || '' %>"><datalist id="dl-quran-p"><% QURAN_LEVELS.forEach(function (q) { %><option value="<%= q %>"><% }) %></datalist></div>
+      <div class="field"><label for="p-lesson">Lesson / sabaq</label><input id="p-lesson" name="lesson" placeholder="e.g. Para 3, Surah Al-Baqarah 1–20"></div>
+      <div class="field"><label for="p-remarks">Remarks</label><input id="p-remarks" name="remarks"></div>
+      <button class="btn btn--blue btn--sm" type="submit">Add entry</button>
+    </form>
+    <% if (!progress.length) { %><p class="empty">No progress recorded yet.</p><% } else { %>
+      <div class="table-wrap"><table class="table">
+        <thead><tr><th>Date</th><th>Quran level</th><th>Lesson</th><th>Remarks</th><th>By</th></tr></thead>
+        <tbody><% progress.forEach(function (p) { %>
+          <tr><td class="nowrap"><%= fmtDate(p.recorded_on) %></td><td><%= p.quran_level || '—' %></td><td><%= p.lesson || '—' %></td><td><%= p.remarks || '' %></td><td><%= p.by_name || '' %></td></tr>
+        <% }) %></tbody>
+      </table></div>
+    <% } %>
+  </section>
+<% } %>
+
+<section class="card" id="files">
+  <div class="card-head"><h2>Documents <span class="legend-ur" lang="ur">ضروری دستاویزات</span></h2></div>
+  <div class="doc-cats">
+    <% docsByCat.forEach(function (c) { %>
+      <div class="doc-cat">
+        <h3 class="sub"><%= c.label %></h3>
+        <% if (!c.files.length) { %><p class="muted small-inline">Not uploaded</p><% } else { %>
+          <ul class="docs"><% c.files.forEach(function (d) { %>
+            <li>
+              <%- include('../partials/icon', { name: 'file' }) %>
+              <span><a href="/app/files/<%= d.id %>" target="_blank" rel="noopener"><%= d.file_name %></a><small><%= fileSize(d.size_bytes) %> · <%= fmtDate(d.created_at) %></small></span>
+              <% if (canManage) { %><form method="post" action="/app/files/<%= d.id %>/delete" data-confirm="Remove <%= d.file_name %>?"><input type="hidden" name="_csrf" value="<%= csrf %>"><button class="link-danger" type="submit">Remove</button></form><% } %>
+            </li>
+          <% }) %></ul>
+        <% } %>
+        <% if (canManage) { %>
+          <form class="upload" method="post" action="<%= base %>/<%= x.id %>/files?kind=document" enctype="multipart/form-data">
+            <input type="hidden" name="_csrf" value="<%= csrf %>"><input type="hidden" name="category" value="<%= c.key %>">
+            <label class="upload-pick upload-pick--sm"><%- include('../partials/icon', { name: 'upload' }) %><span>Upload</span><input type="file" name="file" accept=".pdf,.doc,.docx,image/jpeg,image/png,image/webp" required data-autosubmit></label>
+          </form>
+        <% } %>
+      </div>
+    <% }) %>
+  </div>
+  <% if (canManage) { %><p class="hint">PDF, Word or image, up to 10 MB each.</p><% } %>
+</section>
+<%- include('../partials/app-bottom') %>

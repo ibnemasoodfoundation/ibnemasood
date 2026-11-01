@@ -1,0 +1,30 @@
+<%- include('../partials/print-top', { pdfName: 'Teacher-attendance ' + f.month, pageClass: 'print-page--landscape' }) %>
+<% const code = { present: 'P', absent: 'A', leave: 'L', late: 'Lt' }; %>
+<form class="print-filters" method="get" data-no-print>
+  <input type="month" name="month" value="<%= f.month %>" max="<%= printedOn.slice(0, 7) %>" aria-label="Month">
+  <select name="branch" aria-label="Branch"><option value="">All branches</option><% branches.forEach(function (b) { %><option value="<%= b.id %>" <%= f.branch === b.id ? 'selected' : '' %>><%= b.name_en %></option><% }) %></select>
+  <select name="maktab" aria-label="Maktab"><option value="">All Makatib</option><% makatib.forEach(function (m) { %><option value="<%= m.id %>" <%= f.maktab === m.id ? 'selected' : '' %>><%= m.name_en %></option><% }) %></select>
+  <button type="submit" class="pt-btn">Show</button>
+</form>
+<%- include('../partials/print-letterhead', { docTitle: 'Teacher Attendance Report' }) %>
+<p class="report-meta"><%= new Date(f.month + '-01T00:00:00Z').toLocaleDateString('en-GB', { month: 'long', year: 'numeric', timeZone: 'UTC' }) %> · <%= rows.length %> teachers</p>
+<% if (!rows.length) { %><p class="report-empty">No teachers for this selection.</p><% } else { %>
+  <table class="report-table sheet">
+    <thead><tr><th class="sheet-name">Teacher</th><% days.forEach(function (d) { %><th class="sheet-day"><%= Number(d.slice(8)) %></th><% }) %><th>P</th><th>Lt</th><th>A</th><th>L</th><th>%</th></tr></thead>
+    <tbody><% rows.forEach(function (r) { %>
+      <tr><td class="sheet-name"><%= r.full_name %><small><%= r.maktab || r.branch || '' %></small></td>
+        <% days.forEach(function (d) { const s = r.marks[d]; %><td class="sheet-day<%= s ? ' m-' + s : '' %>"><%= s ? code[s] : '' %></td><% }) %>
+        <td><%= r.counts.present %></td><td><%= r.counts.late %></td><td><%= r.counts.absent %></td><td><%= r.counts.leave %></td><td><strong><%= r.pct === null ? '—' : r.pct + '%' %></strong></td></tr>
+    <% }) %></tbody>
+  </table>
+  <div class="report-summary">
+    <% [['Branch-wise', byBranch], ['Maktab-wise', byMaktab]].forEach(function (g) { %>
+      <table class="pp-table pp-table--sum"><caption><%= g[0] %></caption>
+        <thead><tr><th></th><th>P</th><th>Lt</th><th>A</th><th>L</th><th>%</th></tr></thead>
+        <tbody><% g[1].forEach(function (r) { %><tr><th><%= r.name %></th><td><%= r.present %></td><td><%= r.late %></td><td><%= r.absent %></td><td><%= r.leave %></td><td><%= r.pct === null ? '—' : r.pct + '%' %></td></tr><% }) %></tbody>
+      </table>
+    <% }) %>
+  </div>
+  <p class="sheet-key">P = present · Lt = late · A = absent · L = leave. Percentage = (present + late) ÷ (present + late + absent).</p>
+<% } %>
+<%- include('../partials/print-bottom') %>

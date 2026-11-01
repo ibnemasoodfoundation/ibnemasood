@@ -55,7 +55,7 @@
     <div class="card-head"><h2>Teachers (<%= teachers.length %>)</h2><a href="/app/teachers?branch=<%= b.id %>">Open list</a></div>
     <% if (!teachers.length) { %><p class="empty">No teachers in this branch yet.</p><% } else { %>
       <ul class="rows"><% teachers.slice(0, 12).forEach(function (t) { %>
-        <li><a href="/app/teachers/<%= t.id %>/edit"><span><strong><%= t.full_name %></strong><small><%= t.code %> · <%= t.maktab || 'No Maktab' %></small></span><%- include('../partials/badge', { s: t.status }) %></a></li>
+        <li><a href="/app/teachers/<%= t.id %>"><span><strong><%= t.full_name %></strong><small><%= t.code %> · <%= t.maktab || 'No Maktab' %></small></span><%- include('../partials/badge', { s: t.status }) %></a></li>
       <% }) %></ul>
     <% } %>
   </section>
@@ -63,7 +63,7 @@
     <div class="card-head"><h2>Students (<%= students.length %>)</h2><a href="/app/students?branch=<%= b.id %>">Open list</a></div>
     <% if (!students.length) { %><p class="empty">No students in this branch yet.</p><% } else { %>
       <ul class="rows"><% students.slice(0, 12).forEach(function (s) { %>
-        <li><a href="/app/students/<%= s.id %>/edit"><span><strong><%= s.full_name %></strong><small><%= s.code %> · <%= GENDERS[s.gender] %> · <%= s.maktab || 'No Maktab' %></small></span><%- include('../partials/badge', { s: s.status }) %></a></li>
+        <li><a href="/app/students/<%= s.id %>"><span><strong><%= s.full_name %></strong><small><%= s.code %> · <%= GENDERS[s.gender] %> · <%= s.maktab || 'No Maktab' %></small></span><%- include('../partials/badge', { s: s.status }) %></a></li>
       <% }) %></ul>
     <% } %>
   </section>

@@ -90,6 +90,8 @@ app.use(async (req, res, next) => {
 app.use("/", require("./src/routes/auth"));
 app.use("/api", require("./src/routes/api"));
 app.use("/app", require("./src/routes/institution"));
+app.use("/app", require("./src/routes/people"));
+app.use("/app", require("./src/routes/attendance"));
 app.use("/app", require("./src/routes/app"));
 
 

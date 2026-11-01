@@ -1,0 +1,24 @@
+<%# Profile photo with preview, upload progress, replace and remove. Expects: photo, uploadUrl, canManage, name %>
+<div class="photo-box" data-photo-box>
+  <div class="photo-frame <%= photo ? '' : 'photo-frame--empty' %>">
+    <% if (photo) { %><img src="/app/files/<%= photo.id %>" alt="Photograph of <%= name %>" data-photo-img>
+    <% } else { %><img alt="" hidden data-photo-img><span class="photo-initials"><%= initials(name) %></span><% } %>
+  </div>
+  <% if (canManage) { %>
+    <form class="photo-form" method="post" action="<%= uploadUrl %>?kind=photo" enctype="multipart/form-data" data-photo-upload>
+      <input type="hidden" name="_csrf" value="<%= csrf %>">
+      <label class="upload-pick upload-pick--sm">
+        <%- include('../partials/icon', { name: 'upload' }) %><span><%= photo ? 'Replace photo' : 'Upload photo' %></span>
+        <input type="file" name="file" accept="image/jpeg,image/png,image/webp" required>
+      </label>
+      <div class="progress" hidden data-progress><span data-progress-bar></span></div>
+      <p class="photo-msg" role="status" data-photo-msg>JPG, PNG or WebP, up to 5 MB</p>
+    </form>
+    <% if (photo) { %>
+      <form method="post" action="/app/files/<%= photo.id %>/delete" data-confirm="Remove this photograph?">
+        <input type="hidden" name="_csrf" value="<%= csrf %>">
+        <button class="link-danger" type="submit">Remove photo</button>
+      </form>
+    <% } %>
+  <% } %>
+</div>

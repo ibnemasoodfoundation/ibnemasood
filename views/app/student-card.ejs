@@ -1,0 +1,37 @@
+<%- include('../partials/print-top', { pdfName: 'ID-card ' + x.code, pageClass: 'print-page--cards' }) %>
+<div class="id-cards">
+  <article class="id-card">
+    <header class="id-head">
+      <img src="/assets/images/logo-sm.jpg" alt="">
+      <div><p class="id-ur" lang="ur" dir="rtl">جامعہ عربیہ عبداللہ بن مسعود</p><p class="id-en">Jamia Arabia Abdullah Bin Masood</p></div>
+    </header>
+    <div class="id-body">
+      <div class="id-photo"><% if (photo) { %><img src="/app/files/<%= photo.id %>" alt=""><% } else { %><span><%= initials(x.full_name) %></span><% } %></div>
+      <dl class="id-fields">
+        <div><dt>Name</dt><dd><%= x.full_name %></dd></div>
+        <% if (x.name_ur) { %><div><dt>نام</dt><dd lang="ur" dir="rtl" class="id-ur-val"><%= x.name_ur %></dd></div><% } %>
+        <div><dt>Father</dt><dd><%= x.father_name || '—' %></dd></div>
+        <div><dt>Student ID</dt><dd class="id-code"><%= x.code %></dd></div>
+        <div><dt>Maktab</dt><dd><%= x.maktab || '—' %></dd></div>
+        <div><dt>Class</dt><dd><%= x.class_name || x.programme || '—' %></dd></div>
+      </dl>
+    </div>
+    <footer class="id-foot">STUDENT IDENTITY CARD</footer>
+  </article>
+
+  <article class="id-card id-card--back">
+    <div class="id-back">
+      <p class="id-ayah" lang="ar" dir="rtl">رَّبِّ زِدْنِي عِلْمًا</p>
+      <dl class="id-fields id-fields--back">
+        <div><dt>Date of birth</dt><dd><%= x.dob ? fmtDate(x.dob) : '—' %></dd></div>
+        <div><dt>Guardian</dt><dd><%= x.guardian_phone || x.phone || '—' %></dd></div>
+        <div><dt>Branch</dt><dd><%= x.branch || '—' %></dd></div>
+        <div><dt>Issued</dt><dd><%= fmtDate(issuedOn) %></dd></div>
+      </dl>
+      <p class="id-note">If found, please return to Jamia Arabia Abdullah Bin Masood, Fateh Pur Bhiria Road, Naushahro Feroze · 0300 394 8748</p>
+      <div class="id-sign"><span></span>Nazim</div>
+    </div>
+  </article>
+</div>
+<p class="print-hint" data-no-print>Standard card size (85.6 × 54 mm). Print on card stock at 100% scale, then cut along the edges.</p>
+<%- include('../partials/print-bottom') %>

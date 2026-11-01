@@ -1,0 +1,36 @@
+<%- include('../partials/app-top') %>
+<% const marked = students.filter(s => s.mark).length, absent = students.filter(s => s.mark === 'absent').length; %>
+<div class="welcome">
+  <div>
+    <span class="ar" lang="ar">السلام علیکم</span>
+    <h2><%= teacher ? teacher.full_name : user.name %></h2>
+    <p><% if (teacher) { %><%= teacher.designation || 'Teacher' %> · <%= teacher.maktab || 'No Maktab assigned yet' %><%= teacher.branch ? ', ' + teacher.branch : '' %><% } else { %>Your login is not linked to a teacher record yet. Please contact the Jamia office.<% } %></p>
+  </div>
+  <% if (teacher) { %><a class="btn btn--gold" href="/app/attendance"><%- include('../partials/icon', { name: 'list' }) %>Mark today’s attendance</a><% } %>
+</div>
+
+<% if (teacher) { %>
+  <div class="stats">
+    <a class="stat" href="/app/students"><small>My students</small><strong><%= students.length %></strong></a>
+    <a class="stat <%= marked < students.length ? 'stat--gold' : '' %>" href="/app/attendance"><small>Marked today (morning)</small><strong><%= marked %> / <%= students.length %></strong><span><%= marked < students.length ? 'Attendance still to mark' : 'All marked' %></span></a>
+    <div class="stat"><small>Absent today</small><strong><%= absent %></strong></div>
+    <a class="stat" href="/app/teachers/<%= teacher.id %>"><small>My profile</small><strong class="stat-link">Open</strong><span>Contact details and documents</span></a>
+  </div>
+
+  <div class="grid-2">
+    <section class="card">
+      <div class="card-head"><h2>My students</h2><a href="/app/attendance/monthly">Monthly sheet</a></div>
+      <% if (!students.length) { %><p class="empty">No students in your Maktab yet.</p><% } else { %>
+        <ul class="rows"><% students.slice(0, 15).forEach(function (s) { %>
+          <li><a href="/app/students/<%= s.id %>"><span><strong><%= s.full_name %></strong><small><%= s.code %><%= s.class_name ? ' · ' + s.class_name : '' %><%= s.quran_level ? ' · ' + s.quran_level : '' %></small></span><% if (s.mark) { %><%- include('../partials/badge', { s: s.mark }) %><% } else { %><span class="badge">Not marked</span><% } %></a></li>
+        <% }) %></ul>
+        <% if (students.length > 15) { %><p class="small"><a href="/app/students">All <%= students.length %> students</a></p><% } %>
+      <% } %>
+    </section>
+    <section class="card">
+      <div class="card-head"><h2>Announcements</h2><a href="/app/announcements">All</a></div>
+      <%- include('_announcement-list', { list: announcements }) %>
+    </section>
+  </div>
+<% } %>
+<%- include('../partials/app-bottom') %>

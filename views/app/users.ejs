@@ -13,7 +13,7 @@
       <div class="field <%= errors.email ? 'invalid' : '' %>"><label for="nu-email">Email</label><input id="nu-email" name="email" type="email" value="<%= values.email || '' %>" required><span class="err"><%= errors.email %></span></div>
       <div class="field"><label for="nu-phone">Phone <span class="opt">optional</span></label><input id="nu-phone" name="phone" type="tel" value="<%= values.phone || '' %>"></div>
       <div class="field"><label for="nu-role">Role</label>
-        <select id="nu-role" name="role"><% ['user','manager','admin'].forEach(function (r) { %><option value="<%= r %>" <%= values.role === r ? 'selected' : '' %>><%= ROLE_LABELS[r] %></option><% }) %></select>
+        <select id="nu-role" name="role"><% ['user','teacher','manager','admin'].forEach(function (r) { %><option value="<%= r %>" <%= values.role === r ? 'selected' : '' %>><%= ROLE_LABELS[r] %></option><% }) %></select>
       </div>
     </div>
     <p class="hint">A temporary password is generated and shown once. Share it with the person and ask them to change it from My profile.</p>
@@ -46,7 +46,7 @@
           <% } else { %>
             <form class="role-form" method="post" action="/app/users/<%= p.id %>">
               <input type="hidden" name="_csrf" value="<%= csrf %>">
-              <select name="role" aria-label="Role for <%= p.name %>"><% ['user','manager','admin'].forEach(function (r) { %><option value="<%= r %>" <%= p.role === r ? 'selected' : '' %>><%= ROLE_LABELS[r] %></option><% }) %></select>
+              <select name="role" aria-label="Role for <%= p.name %>"><% ['user','teacher','manager','admin'].forEach(function (r) { %><option value="<%= r %>" <%= p.role === r ? 'selected' : '' %>><%= ROLE_LABELS[r] %></option><% }) %></select>
               <select name="status" aria-label="Status for <%= p.name %>"><option value="active" <%= p.status === 'active' ? 'selected' : '' %>>Active</option><option value="suspended" <%= p.status === 'suspended' ? 'selected' : '' %>>Suspended</option></select>
               <button class="btn-sm" type="submit">Save</button>
             </form>

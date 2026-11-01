@@ -1,0 +1,52 @@
+<%- include('../partials/print-top', { pdfName: x.code + ' ' + x.full_name }) %>
+<%
+  const isT = type === 'teacher';
+  const show = (v) => (v === null || v === undefined || v === '') ? '—' : v;
+  const rows = (list) => list.filter(r => r);
+  const sections = isT ? [
+    ['Personal information', 'ذاتی معلومات', [['Full name', x.full_name], ['Name (Urdu)', x.name_ur, true], ['Father’s name', x.father_name], ['Gender', GENDERS[x.gender]], ['Date of birth', x.dob && fmtDate(x.dob)], ['CNIC', x.cnic], ['Contact', x.phone], ['WhatsApp', x.whatsapp], ['Email', x.email], ['Address', x.address], ['District', x.district]]],
+    ['Educational qualifications', 'تعلیمی قابلیت', [['Religious education', x.qualification], ['Contemporary education', x.contemporary_qualification], ['Hifz', HIFZ_STATUSES[x.hifz_status]], ['Tajweed', TAJWEED_STATUSES[x.tajweed_status]], ['Teaching experience', x.experience_years != null ? x.experience_years + ' years' : ''], ['Additional', x.additional_qualifications]]],
+    ['Employment information', 'ملازمت کی معلومات', [['Teacher ID', x.code], ['Branch', x.branch], ['Maktab', x.maktab], ['Designation', x.designation], ['Appointment date', x.joined_on && fmtDate(x.joined_on)], ['Employment type', EMPLOYMENT_TYPES[x.employment_type]], ['Monthly salary', x.salary != null ? money(x.salary) : ''], ['Status', label(x.status)]]],
+  ] : [
+    ['Personal information', 'ذاتی معلومات', [['Full name', x.full_name], ['Name (Urdu)', x.name_ur, true], ['Father’s name', x.father_name], ['Mother’s name', x.mother_name], ['Gender', GENDERS[x.gender]], ['Date of birth', x.dob && fmtDate(x.dob)], ['CNIC / B-Form', x.cnic_bform], ['Contact', x.phone], ['Guardian contact', x.guardian_phone], ['Address', x.address]]],
+    ['Educational information', 'تعلیمی معلومات', [['Education level', x.education_level], ['Quran level', x.quran_level], ['Previous institution', x.previous_institution], ['Hifz', HIFZ_STATUSES[x.hifz_status]], ['Tajweed', TAJWEED_STATUSES[x.tajweed_status]], ['Admission date', x.enrolled_on && fmtDate(x.enrolled_on)]]],
+    ['Institution information', 'ادارہ جاتی معلومات', [['Student ID', x.code], ['Branch', x.branch], ['Maktab', x.maktab], ['Teacher', x.teacher], ['Class / department', x.class_name], ['Programme', x.programme], ['Enrollment status', label(x.status)]]],
+  ];
+  const docs = files.filter(d => d.kind === 'document');
+%>
+<%- include('../partials/print-letterhead', { docTitle: isT ? 'Teacher Profile' : 'Student Profile' }) %>
+<div class="pp-top">
+  <div class="pp-photo"><% if (photo) { %><img src="/app/files/<%= photo.id %>" alt=""><% } else { %><span>Photo</span><% } %></div>
+  <div class="pp-id">
+    <p class="pp-name"><%= x.full_name %></p>
+    <% if (x.name_ur) { %><p class="pp-name-ur" lang="ur" dir="rtl"><%= x.name_ur %></p><% } %>
+    <p><strong><%= isT ? 'Teacher ID' : 'Student ID' %>:</strong> <%= x.code %> &nbsp; <strong>Maktab:</strong> <%= show(x.maktab) %> &nbsp; <strong>Branch:</strong> <%= show(x.branch) %></p>
+    <p><strong>Attendance this month:</strong> <%= att.month.pct === null ? 'not marked' : att.month.pct + '%' %> &nbsp; <strong>Overall:</strong> <%= att.total.pct === null ? 'not marked' : att.total.pct + '%' %></p>
+  </div>
+</div>
+<% sections.forEach(function (s) { %>
+  <section class="pp-section">
+    <h2><span><%= s[0] %></span><span lang="ur" dir="rtl" class="pp-ur"><%= s[1] %></span></h2>
+    <table class="pp-table"><tbody>
+      <% for (let i = 0; i < s[2].length; i += 2) { %>
+        <tr>
+          <% [s[2][i], s[2][i + 1]].forEach(function (r) { if (!r) { %><th></th><td></td><% return; } %>
+            <th><%= r[0] %></th><td<% if (r[2]) { %> lang="ur" dir="rtl" class="pp-ur-val"<% } %>><%= show(r[1]) %></td>
+          <% }) %>
+        </tr>
+      <% } %>
+    </tbody></table>
+  </section>
+<% }) %>
+<% if (x.notes) { %><section class="pp-section"><h2><span>Notes</span></h2><p><%= x.notes %></p></section><% } %>
+<section class="pp-section">
+  <h2><span>Documents on file</span><span lang="ur" dir="rtl" class="pp-ur">ضروری دستاویزات</span></h2>
+  <p><%= Object.keys(categories).map(k => categories[k] + ': ' + (docs.some(d => (d.category || 'other') === k) ? '✓' : '—')).join('   ·   ') %></p>
+</section>
+<div class="pp-sign">
+  <div><span></span><%= isT ? 'Teacher’s signature' : 'Guardian’s signature' %></div>
+  <div><span></span>Branch manager</div>
+  <div><span></span>Nazim / Principal, with stamp</div>
+</div>
+<p class="pp-foot">Printed <%= fmtDate(printedOn) %> from the Jamia portal.</p>
+<%- include('../partials/print-bottom') %>

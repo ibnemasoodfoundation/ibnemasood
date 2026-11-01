@@ -1,0 +1,31 @@
+<%- include('../partials/print-top', { pdfName: 'Attendance ' + f.month, pageClass: 'print-page--landscape' }) %>
+<% const code = { present: 'P', absent: 'A', leave: 'L', late: 'Lt' }; %>
+<form class="print-filters" method="get" data-no-print>
+  <input type="month" name="month" value="<%= f.month %>" max="<%= printedOn.slice(0, 7) %>" aria-label="Month">
+  <select name="session" aria-label="Session"><% Object.keys(SESSIONS).forEach(function (s) { %><option value="<%= s %>" <%= f.session === s ? 'selected' : '' %>><%= SESSIONS[s] %></option><% }) %></select>
+  <% if (makatib.length > 1 || access.canManage) { %><select name="maktab" aria-label="Maktab"><option value=""><%= access.canManage ? 'Choose a Maktab' : 'My students' %></option><% makatib.forEach(function (m) { %><option value="<%= m.id %>" <%= f.maktab === m.id ? 'selected' : '' %>><%= m.name_en %></option><% }) %></select><% } %>
+  <% if (classes.length) { %><select name="class" aria-label="Class"><option value="">All classes</option><% classes.forEach(function (c) { %><option <%= f.cls === c ? 'selected' : '' %>><%= c %></option><% }) %></select><% } %>
+  <% if (teachers.length) { %><select name="teacher" aria-label="Teacher"><option value="">Any teacher</option><% teachers.forEach(function (t) { %><option value="<%= t.id %>" <%= f.teacher === t.id ? 'selected' : '' %>><%= t.full_name %></option><% }) %></select><% } %>
+  <button type="submit" class="pt-btn">Show</button>
+</form>
+<%- include('../partials/print-letterhead', { docTitle: 'Monthly Attendance Sheet' }) %>
+<p class="report-meta">
+  <%= new Date(f.month + '-01T00:00:00Z').toLocaleDateString('en-GB', { month: 'long', year: 'numeric', timeZone: 'UTC' }) %> ·
+  <%= maktab ? maktab.name_en : (access.canManage ? 'Choose a Maktab, class or teacher above' : 'My students') %><%= f.cls ? ' · ' + f.cls : '' %> · <%= SESSIONS[f.session] %> session
+  <% if (rows.length) { %> · <%= rows.length %> students · overall <strong><%= totalPct === null ? '—' : totalPct + '%' %></strong><% } %>
+</p>
+<% if (!rows.length) { %>
+  <p class="report-empty">No students to show for this selection.</p>
+<% } else { %>
+  <table class="report-table sheet">
+    <thead><tr><th>#</th><th class="sheet-name">Student</th><% days.forEach(function (d) { %><th class="sheet-day"><%= Number(d.slice(8)) %></th><% }) %><th>P</th><th>Lt</th><th>A</th><th>L</th><th>%</th></tr></thead>
+    <tbody><% rows.forEach(function (r, i) { %>
+      <tr><td><%= i + 1 %></td><td class="sheet-name"><%= r.full_name %><small><%= r.code %><%= r.class_name ? ' · ' + r.class_name : '' %></small></td>
+        <% days.forEach(function (d) { const s = r.marks[d]; %><td class="sheet-day<%= s ? ' m-' + s : '' %>"><%= s ? code[s] : '' %></td><% }) %>
+        <td><%= r.counts.present %></td><td><%= r.counts.late %></td><td><%= r.counts.absent %></td><td><%= r.counts.leave %></td><td><strong><%= r.pct === null ? '—' : r.pct + '%' %></strong></td></tr>
+    <% }) %></tbody>
+  </table>
+  <p class="sheet-key">P = present · Lt = late · A = absent · L = leave. Percentage = (present + late) ÷ (present + late + absent); leave days are not counted against the student.</p>
+  <div class="pp-sign"><div><span></span>Teacher</div><div><span></span>Branch manager</div></div>
+<% } %>
+<%- include('../partials/print-bottom') %>

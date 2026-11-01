@@ -4,7 +4,7 @@ const crypto = require("node:crypto");
 const express = require("express");
 const { one, all, run, log } = require("../db");
 const { ROLES, hashPassword, verifyPassword, checkCsrf, requireLogin, requireRole } = require("../auth");
-const { BRANCHES, PROGRAMMES, DONATION_KINDS, DONATION_METHODS } = require("../helpers");
+const { BRANCHES, PROGRAMMES, DONATION_KINDS, DONATION_METHODS, todayPk } = require("../helpers");
 const { dashboardData } = require("../dashboard");
 
 const router = express.Router();
@@ -39,6 +39,20 @@ router.get("/", async (req, res) => {
       admissions: await all("SELECT * FROM admissions WHERE user_id = ? ORDER BY id DESC LIMIT 5", u.id),
       donations: await all("SELECT * FROM donations WHERE user_id = ? ORDER BY id DESC LIMIT 5", u.id),
       given: await count("SELECT COALESCE(SUM(amount),0) AS n FROM donations WHERE user_id = ? AND status = 'verified'", u.id),
+      announcements: await announcementsFor(u, 4),
+    });
+  }
+
+  if (u.role === "teacher") {
+    const teacher = await one(`SELECT t.*, m.name_en AS maktab, m.name_ur AS maktab_ur, b.name_en AS branch FROM teachers t
+      LEFT JOIN makatib m ON m.id = t.maktab_id LEFT JOIN branches b ON b.id = t.branch_id WHERE t.user_id = ?`, u.id);
+    const today = todayPk();
+    const where = teacher ? `s.status = 'active' AND (s.maktab_id = ${Number(teacher.maktab_id) || 0} OR s.teacher_id = ${teacher.id})` : "FALSE";
+    return res.render("app/home-teacher", {
+      title: "Teacher dashboard", teacher, today,
+      students: await all(`SELECT s.id, s.code, s.full_name, s.class_name, s.quran_level, a.status AS mark FROM students s
+        LEFT JOIN student_attendance a ON a.student_id = s.id AND a.att_date = ? AND a.session = 'morning'
+        WHERE ${where} ORDER BY s.class_name NULLS LAST, s.full_name`, today),
       announcements: await announcementsFor(u, 4),
     });
   }

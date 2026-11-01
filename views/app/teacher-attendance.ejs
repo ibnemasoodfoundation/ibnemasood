@@ -1,0 +1,36 @@
+<%- include('../partials/app-top') %>
+<form class="filters" method="get">
+  <label class="filter-label">Date <input type="date" name="date" value="<%= f.date %>" max="<%= today %>"></label>
+  <select name="branch" aria-label="Branch"><option value="">All branches</option><% branches.forEach(function (b) { %><option value="<%= b.id %>" <%= f.branch === b.id ? 'selected' : '' %>><%= b.name_en %></option><% }) %></select>
+  <select name="maktab" aria-label="Maktab"><option value="">All Makatib</option><% makatib.forEach(function (m) { %><option value="<%= m.id %>" <%= f.maktab === m.id ? 'selected' : '' %>><%= m.name_en %></option><% }) %></select>
+  <button class="btn btn--line btn--sm" type="submit">Show</button>
+  <a class="btn btn--line btn--sm" href="/app/teacher-attendance/monthly?<%= new URLSearchParams({ month: f.date.slice(0, 7), branch: f.branch || '', maktab: f.maktab || '' }) %>"><%- include('../partials/icon', { name: 'file' }) %>Monthly report</a>
+</form>
+<section class="card">
+  <div class="card-head">
+    <h2>Teachers · <%= fmtDate(f.date) %></h2>
+    <span class="att-counts"><% Object.keys(ATTENDANCE).forEach(function (k) { %><span class="att-dot att-dot--<%= k %>"><%= ATTENDANCE[k] %> <strong><%= counts[k] %></strong></span><% }) %></span>
+  </div>
+  <% if (!teachers.length) { %><p class="empty">No active teachers for this selection.</p><% } else { %>
+    <form method="post" action="/app/teacher-attendance" data-register>
+      <input type="hidden" name="_csrf" value="<%= csrf %>">
+      <input type="hidden" name="date" value="<%= f.date %>"><input type="hidden" name="branch" value="<%= f.branch || '' %>"><input type="hidden" name="maktab" value="<%= f.maktab || '' %>">
+      <div class="register-tools"><button class="btn-sm" type="button" data-mark-all="present">Mark all present</button></div>
+      <div class="table-wrap"><table class="table register-table">
+        <thead><tr><th>Teacher</th><th>Maktab / branch</th><% Object.keys(ATTENDANCE).forEach(function (k) { %><th class="t-center"><%= ATTENDANCE[k] %></th><% }) %><th>Note</th></tr></thead>
+        <tbody><% teachers.forEach(function (t) { %>
+          <tr>
+            <td><strong><%= t.full_name %></strong><small><%= t.code %><%= t.designation ? ' · ' + t.designation : '' %><%= t.status === 'on_leave' ? ' · on leave' : '' %></small></td>
+            <td><%= t.maktab || 'No Maktab' %><small><%= t.branch || '' %></small></td>
+            <% Object.keys(ATTENDANCE).forEach(function (k) { %>
+              <td class="t-center"><label class="att-radio att-radio--<%= k %>"><input type="radio" name="status_<%= t.id %>" value="<%= k %>" <%= t.mark === k ? 'checked' : '' %> aria-label="<%= ATTENDANCE[k] %>: <%= t.full_name %>"><span><%= ATTENDANCE[k][0] %></span></label></td>
+            <% }) %>
+            <td><input class="note-input" name="note_<%= t.id %>" value="<%= t.note || '' %>" maxlength="200" aria-label="Note for <%= t.full_name %>"></td>
+          </tr>
+        <% }) %></tbody>
+      </table></div>
+      <div class="btn-row register-save"><button class="btn btn--gold" type="submit">Save teacher attendance</button></div>
+    </form>
+  <% } %>
+</section>
+<%- include('../partials/app-bottom') %>

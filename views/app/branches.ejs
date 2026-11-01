@@ -1,7 +1,7 @@
 <%- include('../partials/app-top') %>
 <div class="page-head">
   <p>Branches group the Makatib by area. Open a branch to see its Makatib, teachers, students and files.</p>
-  <a class="btn btn--blue btn--sm" href="/app/branches/new"><%- include('../partials/icon', { name: 'plus' }) %>Add branch</a>
+  <% if (user.role === 'admin') { %><a class="btn btn--blue btn--sm" href="/app/branches/new"><%- include('../partials/icon', { name: 'plus' }) %>Add branch</a><% } %>
 </div>
 
 <form class="filters" method="get">
@@ -19,7 +19,7 @@
 
 <section class="card card--flush">
   <% if (!rows.length) { %>
-    <p class="empty"><%= filters.q || filters.district || filters.status ? 'No branches match these filters.' : 'No branches yet.' %> <a href="/app/branches/new">Add the first branch</a>.</p>
+    <p class="empty"><%= filters.q || filters.district || filters.status ? 'No branches match these filters.' : 'No branches yet.' %><% if (user.role === 'admin') { %> <a href="/app/branches/new">Add the first branch</a>.<% } %></p>
   <% } else { %>
     <div class="table-wrap"><table class="table">
       <thead><tr><th>Branch</th><th>Location</th><th>Manager</th><th class="t-right">Makatib</th><th class="t-right">Teachers</th><th class="t-right">Students</th><th>Status</th><th></th></tr></thead>
