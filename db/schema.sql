@@ -1,6 +1,6 @@
--- Jamia Arabia Abdullah Bin Masood portal schema (Supabase / Postgres).
--- The app runs this automatically on start; it is safe to run more than once.
--- You can also paste it into Supabase > SQL Editor and run it yourself.
+-- Jamia Arabia Abdullah Bin Masood portal schema (PostgreSQL).
+-- The app runs this on start. It only creates tables and indexes that are missing;
+-- it never drops tables or changes existing data.
 
 CREATE TABLE IF NOT EXISTS users (
   id            SERIAL PRIMARY KEY,
@@ -77,12 +77,3 @@ CREATE INDEX IF NOT EXISTS admissions_status_idx ON admissions (status);
 CREATE INDEX IF NOT EXISTS donations_user_idx ON donations (user_id);
 CREATE INDEX IF NOT EXISTS donations_status_idx ON donations (status);
 
--- The app connects directly as the database owner, which bypasses RLS.
--- Turning RLS on with no policies keeps these tables (and password hashes)
--- closed to Supabase's public REST API and anon key.
-ALTER TABLE users         ENABLE ROW LEVEL SECURITY;
-ALTER TABLE admissions    ENABLE ROW LEVEL SECURITY;
-ALTER TABLE donations     ENABLE ROW LEVEL SECURITY;
-ALTER TABLE messages      ENABLE ROW LEVEL SECURITY;
-ALTER TABLE announcements ENABLE ROW LEVEL SECURITY;
-ALTER TABLE activity      ENABLE ROW LEVEL SECURITY;

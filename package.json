@@ -10,9 +10,10 @@
     "test": "node --test"
   },
   "engines": {
-    "node": "22.x"
+    "node": ">=22"
   },
   "dependencies": {
+    "@electric-sql/pglite": "^0.5.14",
     "cookie-session": "^2.1.0",
     "ejs": "^3.1.10",
     "express": "^5.3.0",

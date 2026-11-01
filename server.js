@@ -35,7 +35,6 @@ app.use(express.static(path.join(__dirname, "public"), { extensions: ["html"], m
 /* Missing settings on the host: say exactly what to add instead of crashing */
 const missing = [];
 if (!secret) missing.push("SESSION_SECRET");
-if (!process.env.DATABASE_URL && !process.env.POSTGRES_URL) missing.push("DATABASE_URL");
 if (missing.length) console.error("Missing environment variables: " + missing.join(", "));
 
 /* Setup check for the site owner: open /api/health after each deploy */
@@ -99,7 +98,7 @@ app.use((err, req, res, next) => {
     ? err.name
     : "Error";
   console.error(JSON.stringify({ event: "request_error", name: errorName }));
-  const message = err.setup || /ECONNREFUSED|ENOTFOUND|password authentication|timeout/i.test(err.message)
+  const message = /ECONNREFUSED|ENOTFOUND|password authentication|timeout/i.test(err.message)
     ? "The portal cannot reach its database right now. Please try again shortly. (Site admin: open /api/health for the reason.)"
     : "Please try again in a moment.";
   res.status(500).render("error", { title: "Something went wrong", message });

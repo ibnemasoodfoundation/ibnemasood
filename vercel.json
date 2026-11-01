@@ -5,7 +5,7 @@
   "outputDirectory": "public",
   "functions": {
     "api/index.js": {
-      "includeFiles": "{views,supabase}/**",
+      "includeFiles": "{views,db}/**",
       "maxDuration": 15
     }
   },
