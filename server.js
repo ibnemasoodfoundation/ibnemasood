@@ -9,7 +9,7 @@ if (fs.existsSync(path.join(__dirname, ".env"))) process.loadEnvFile(path.join(_
 
 const express = require("express");
 const cookieSession = require("cookie-session");
-const { one, ready } = require("./src/db");
+const { one, ready, health } = require("./src/db");
 const { csrfToken } = require("./src/auth");
 const helpers = require("./src/helpers");
 
@@ -32,6 +32,15 @@ const missing = [];
 if (!secret) missing.push("SESSION_SECRET");
 if (!process.env.DATABASE_URL && !process.env.POSTGRES_URL) missing.push("DATABASE_URL");
 if (missing.length) console.error("Missing environment variables: " + missing.join(", "));
+
+/* Setup check for the site owner: open /api/health after each deploy */
+app.get("/api/health", async (req, res) => {
+  res.set("Cache-Control", "no-store");
+  if (missing.length) return res.status(500).json({ ok: false, missing, hint: "Add these in Vercel > Settings > Environment Variables, then redeploy." });
+  const db = await health();
+  res.status(db.ok ? 200 : 500).json({ ok: db.ok, database: db });
+});
+
 app.use((req, res, next) => {
   if (!missing.length) return next();
   res.status(500).type("text").send(
@@ -88,7 +97,7 @@ app.use((err, req, res, next) => {
     : "Error";
   console.error(JSON.stringify({ event: "request_error", name: errorName }));
   const message = err.setup || /ECONNREFUSED|ENOTFOUND|password authentication|timeout/i.test(err.message)
-    ? "The portal cannot reach its database right now. Please try again shortly."
+    ? "The portal cannot reach its database right now. Please try again shortly. (Site admin: open /api/health for the reason.)"
     : "Please try again in a moment.";
   res.status(500).render("error", { title: "Something went wrong", message });
 });

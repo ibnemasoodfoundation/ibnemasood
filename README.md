@@ -15,12 +15,15 @@ Built with Node.js, Express and EJS. Data is stored in **Supabase** (Postgres). 
 
    | Name | Value |
    |---|---|
-   | `DATABASE_URL` | the Transaction pooler connection string from step 1 |
+   | `DATABASE_URL` | the Transaction pooler connection string from step 1 (`…pooler.supabase.com:6543`, never `db.….supabase.co`) |
+   | `DATABASE_PASSWORD` | optional: the database password on its own, so special characters need no encoding |
    | `SESSION_SECRET` | any long random text (40+ characters) |
    | `ADMIN_EMAIL` | the first admin's email, e.g. `admin@jaabm.com` |
    | `ADMIN_PASSWORD` | the first admin's password |
 
 3. **Redeploy:** Deployments → ⋯ on the latest → **Redeploy**.
+4. **Check:** open `/api/health`. `{"ok":true}` means the database is connected; otherwise it shows an error
+   code and a plain-language hint (it never shows passwords).
 
 The app uses the `pg` package to connect directly to Supabase Postgres; it does not use Supabase's browser API key.
 Keep the database password only in local `.env` or Vercel's encrypted environment variables, never in client code.
