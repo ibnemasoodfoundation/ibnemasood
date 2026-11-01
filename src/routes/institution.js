@@ -64,6 +64,9 @@ async function unitFields(body, extra = {}) {
     established_on: str(body.established_on, 10),
     status: ["active", "inactive"].includes(body.status) ? body.status : "active",
     notes: str(body.notes, 2000),
+    programmes: str(body.programmes, 300),
+    public_listing: body.public_listing === "1",
+    show_phone: body.show_phone === "1",
     ...extra,
   };
   const e = {};
@@ -114,17 +117,17 @@ async function loadBranch(req) {
 }
 
 router.get("/branches/new", admin, async (req, res) => {
-  await branchForm(res, "Add branch", { code: await nextCode("branches", "BR"), status: "active" }, {});
+  await branchForm(res, "Add branch", { code: await nextCode("branches", "BR"), status: "active", public_listing: true }, {});
 });
 
 router.post("/branches", admin, async (req, res) => {
   const [v, e] = await unitFields(req.body);
   if (Object.keys(e).length) return branchForm(res, "Add branch", v, e, 400);
   try {
-    const r = await one(`INSERT INTO branches (code, name_en, name_ur, district, tehsil, town, address, manager_id, phone, established_on, status, notes)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`,
+    const r = await one(`INSERT INTO branches (code, name_en, name_ur, district, tehsil, town, address, manager_id, phone, established_on, status, notes,
+      programmes, public_listing, show_phone) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`,
       v.code, v.name_en, v.name_ur || null, v.district, v.tehsil || null, v.town || null, v.address || null,
-      v.manager_id, v.phone || null, v.established_on || null, v.status, v.notes || null);
+      v.manager_id, v.phone || null, v.established_on || null, v.status, v.notes || null, v.programmes || null, v.public_listing, v.show_phone);
     await log(req.user.id, "branch.create", `${v.code} ${v.name_en}`);
     req.flash("ok", `Branch ${v.name_en} added.`);
     res.redirect("/app/branches/" + r.id);
@@ -175,9 +178,9 @@ router.post("/branches/:id", staff, async (req, res, next) => {
   if (Object.keys(e).length) return branchForm(res, "Edit " + b.name_en, { ...v, editId: b.id }, e, 400);
   try {
     await run(`UPDATE branches SET code = ?, name_en = ?, name_ur = ?, district = ?, tehsil = ?, town = ?, address = ?,
-      manager_id = ?, phone = ?, established_on = ?, status = ?, notes = ? WHERE id = ?`,
+      manager_id = ?, phone = ?, established_on = ?, status = ?, notes = ?, programmes = ?, public_listing = ?, show_phone = ? WHERE id = ?`,
       v.code, v.name_en, v.name_ur || null, v.district, v.tehsil || null, v.town || null, v.address || null,
-      v.manager_id, v.phone || null, v.established_on || null, v.status, v.notes || null, b.id);
+      v.manager_id, v.phone || null, v.established_on || null, v.status, v.notes || null, v.programmes || null, v.public_listing, v.show_phone, b.id);
   } catch (err) {
     if (isUnique(err)) return branchForm(res, "Edit " + b.name_en, { ...v, editId: b.id }, { code: "This branch code is already used." }, 400);
     throw err;
@@ -273,7 +276,7 @@ async function loadMaktab(req) {
 
 router.get("/makatib/new", staff, async (req, res) => {
   if (!req.scope.all && !req.scope.branchIds.length) return forbidden(res);
-  await maktabForm(req, res, "Register Maktab", { code: await nextCode("makatib", "MK"), status: "active", branch_id: int(req.query.branch) }, {});
+  await maktabForm(req, res, "Register Maktab", { code: await nextCode("makatib", "MK"), status: "active", public_listing: true, branch_id: int(req.query.branch) }, {});
 });
 
 router.post("/makatib", staff, async (req, res) => {
@@ -283,9 +286,11 @@ router.post("/makatib", staff, async (req, res) => {
   let r;
   try {
     r = await one(`INSERT INTO makatib (code, name_en, name_ur, district, tehsil, town, address, branch_id, manager_id, primary_teacher_id,
-      phone, established_on, classrooms, status, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`,
+      phone, established_on, classrooms, status, notes, programmes, public_listing, show_phone)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`,
       v.code, v.name_en, v.name_ur || null, v.district, v.tehsil || null, v.town || null, v.address || null, v.branch_id,
-      v.manager_id, v.primary_teacher_id, v.phone || null, v.established_on || null, v.classrooms, v.status, v.notes || null);
+      v.manager_id, v.primary_teacher_id, v.phone || null, v.established_on || null, v.classrooms, v.status, v.notes || null,
+      v.programmes || null, v.public_listing, v.show_phone);
   } catch (err) {
     if (isUnique(err)) return maktabForm(req, res, "Register Maktab", v, { code: "This Maktab code is already used." }, 400);
     throw err;
@@ -348,9 +353,11 @@ router.post("/makatib/:id", staff, async (req, res, next) => {
   if (Object.keys(e).length) return maktabForm(req, res, "Edit " + m.name_en, { ...v, editId: m.id }, e, 400);
   try {
     await run(`UPDATE makatib SET code = ?, name_en = ?, name_ur = ?, district = ?, tehsil = ?, town = ?, address = ?, branch_id = ?,
-      manager_id = ?, primary_teacher_id = ?, phone = ?, established_on = ?, classrooms = ?, status = ?, notes = ? WHERE id = ?`,
+      manager_id = ?, primary_teacher_id = ?, phone = ?, established_on = ?, classrooms = ?, status = ?, notes = ?,
+      programmes = ?, public_listing = ?, show_phone = ? WHERE id = ?`,
       v.code, v.name_en, v.name_ur || null, v.district, v.tehsil || null, v.town || null, v.address || null, v.branch_id,
-      v.manager_id, v.primary_teacher_id, v.phone || null, v.established_on || null, v.classrooms, v.status, v.notes || null, m.id);
+      v.manager_id, v.primary_teacher_id, v.phone || null, v.established_on || null, v.classrooms, v.status, v.notes || null,
+      v.programmes || null, v.public_listing, v.show_phone, m.id);
   } catch (err) {
     if (isUnique(err)) return maktabForm(req, res, "Edit " + m.name_en, { ...v, editId: m.id }, { code: "This Maktab code is already used." }, 400);
     throw err;
@@ -453,6 +460,23 @@ router.get("/files/:id", requireRole("admin", "manager", "teacher"), withScope, 
   res.set("Cache-Control", "private, max-age=3600");
   res.set("Content-Disposition", `${inline ? "inline" : "attachment"}; filename*=UTF-8''${encodeURIComponent(f.file_name)}`);
   res.type(f.mime).sendFile(p, (err) => { if (err && !res.headersSent) next(); });
+});
+
+/* Approve (or withdraw) a branch / Maktab photo for the public website, with a caption */
+router.post("/files/:id/public", staff, async (req, res, next) => {
+  const f = int(req.params.id) && await one("SELECT * FROM attachments WHERE id = ?", int(req.params.id));
+  if (!f) return next();
+  if (!(await canAccessEntity(req, f.entity_type, f.entity_id, true))) return forbidden(res);
+  const publish = req.body.is_public === "1";
+  if (publish && !(f.kind === "photo" && (f.entity_type === "branch" || f.entity_type === "maktab"))) {
+    req.flash("err", "Only branch and Maktab photographs can appear on the website.");
+  } else {
+    await run("UPDATE attachments SET is_public = ?, caption = ? WHERE id = ?", publish, str(req.body.caption, 160) || null, f.id);
+    await log(req.user.id, publish ? "file.publish" : "file.unpublish", f.file_name);
+    req.flash("ok", publish ? "Photo will show on the public website." : "Photo removed from the public website.");
+  }
+  const back = req.get("referer");
+  res.redirect(back && new URL(back).host === req.get("host") ? back : "/app");
 });
 
 router.post("/files/:id/delete", staff, async (req, res, next) => {

@@ -1,0 +1,38 @@
+<%- include('_head') %>
+<main id="main">
+<section class="page-hero">
+  <div class="wrap">
+    <div>
+      <div class="crumbs"><a href="/">Home</a> / <a href="/branches">Branches</a> / <%= b.name_en %></div>
+      <h1><%= b.name_en %></h1>
+      <p><%= [b.town, b.tehsil, b.district].filter(Boolean).join(', ') %></p>
+    </div>
+    <% if (b.name_ur) { %><div class="ar-big" lang="ur"><%= b.name_ur %></div><% } %>
+  </div>
+</section>
+<section class="sec">
+  <div class="wrap dir-detail">
+    <div>
+      <% if (photos.length) { %>
+        <div class="gallery gallery--compact"><% photos.forEach(function (p, i) { %><figure class="ph <%= i === 0 ? 'g-wide' : '' %>"><img src="/media/<%= p.id %>" alt="<%= p.caption || b.name_en %>" loading="lazy"><% if (p.caption) { %><figcaption><%= p.caption %></figcaption><% } %></figure><% }) %></div>
+      <% } %>
+      <div class="head" style="margin:<%= photos.length ? '2.5rem' : '0' %> 0 1.2rem">
+        <h2>Makatib in this branch</h2>
+      </div>
+      <% if (!makatib.length) { %><p>Makatib for this branch are being added to the directory.</p>
+      <% } else { %><div class="dir-grid dir-grid--2"><% makatib.forEach(function (m) { %><%- include('_maktab-card', { m }) %><% }) %></div><% } %>
+    </div>
+    <aside class="dir-facts">
+      <dl>
+        <div><dt>District</dt><dd><%= b.district %></dd></div>
+        <% if (b.tehsil) { %><div><dt>Tehsil</dt><dd><%= b.tehsil %></dd></div><% } %>
+        <div><dt>Makatib listed</dt><dd><%= makatib.length %></dd></div>
+        <div><dt>Programmes</dt><dd><%= b.programmes || 'Quran education (Qaida, Nazra, Hifz)' %></dd></div>
+        <div><dt>Contact</dt><dd><% if (b.phone) { %><a href="tel:<%= b.phone %>"><%= b.phone %></a><% } else { %>Through the Jamia office: <a href="tel:+923003948748">0300 394 8748</a><% } %></dd></div>
+      </dl>
+      <a class="btn btn--line" href="/makatib?branch=<%= b.code %>">Search this branch</a>
+    </aside>
+  </div>
+</section>
+</main>
+<%- include('_footer') %>

@@ -25,5 +25,13 @@
       <label><input type="radio" name="status" value="inactive" <%= values.status === 'inactive' ? 'checked' : '' %>> Inactive</label>
     </fieldset>
   <% } %>
-  <div class="field"><label for="notes">Additional notes <span class="opt">optional</span></label><textarea id="notes" name="notes"><%= values.notes || '' %></textarea></div>
+  <div class="field"><label for="notes">Additional notes <span class="opt">optional, staff only</span></label><textarea id="notes" name="notes"><%= values.notes || '' %></textarea></div>
+</fieldset>
+
+<fieldset class="form-section">
+  <legend>Public website</legend>
+  <div class="field"><label for="programmes">Educational programmes <span class="opt">shown publicly</span></label><input id="programmes" name="programmes" value="<%= values.programmes || '' %>" placeholder="e.g. Qaida, Nazra, Hifz-ul-Quran"></div>
+  <label class="check"><input type="checkbox" name="public_listing" value="1" <%= values.public_listing ? 'checked' : '' %>> Show this <%= unitLabel.toLowerCase() %> in the public directory (name, area and programmes)</label>
+  <label class="check"><input type="checkbox" name="show_phone" value="1" <%= values.show_phone ? 'checked' : '' %>> Show its contact number publicly</label>
+  <p class="hint">The full address, manager, notes, teachers and students are never shown on the public website. Choose which photos appear publicly on the <%= unitLabel.toLowerCase() %>’s page.</p>
 </fieldset>

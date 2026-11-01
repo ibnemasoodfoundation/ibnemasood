@@ -557,3 +557,120 @@ p { margin: 0 0 1em; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
 }
+
+/* ==========================================================
+   Founder, Quran journey, impact figures, Makatib directory
+   ========================================================== */
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.head .ar-kicker--ur, .ar-kicker--ur { font-family: var(--f-urdu); font-size: 1.15rem; line-height: 2.2; }
+
+/* Impact figures */
+.impact-band { display: grid; grid-template-columns: repeat(4, 1fr); margin: 0 0 2.5rem; border: 1px solid var(--line); border-radius: 18px; background: var(--white); overflow: hidden; }
+.impact-band > div { padding: 1.5rem 1.2rem; text-align: center; border-left: 1px solid var(--line); }
+.impact-band > div:first-child { border-left: 0; }
+.impact-band dt { font-family: var(--f-display); font-size: clamp(1.8rem, 3.4vw, 2.6rem); font-weight: 700; color: var(--lapis); line-height: 1.1; }
+.impact-band dd { margin: .3rem 0 0; color: var(--muted); font-size: .95rem; }
+.impact-band--dark { background: rgba(255,255,255,.04); border-color: rgba(227,190,98,.3); }
+.impact-band--dark > div { border-color: rgba(227,190,98,.3); }
+.impact-band--dark dt { color: var(--gold-2); }
+.impact-band--dark dd { color: #C9D0EA; }
+.impact-ur { font-family: var(--f-urdu); color: var(--white); font-size: clamp(1.1rem, 2vw, 1.35rem); text-align: center; line-height: 2.3; max-width: 46ch; margin: 0 auto; }
+
+/* Founder */
+.founder { display: grid; grid-template-columns: minmax(260px, 340px) 1fr; gap: clamp(2rem, 5vw, 4rem); align-items: start; }
+.founder-card { background: var(--white); border: 1px solid var(--line); border-radius: 20px; padding: 1.8rem; text-align: center; box-shadow: var(--shadow); position: sticky; top: 110px; }
+.founder-card h3 { font-size: 1.6rem; margin: 1.2rem 0 .2rem; }
+.founder-frame { aspect-ratio: 4 / 5; border-radius: var(--arch); background: var(--night) var(--pattern); border: 4px solid var(--gold-soft); display: grid; place-items: center; padding: 1.5rem; box-shadow: inset 0 0 0 2px rgba(227,190,98,.35); }
+.founder-frame span { font-family: var(--f-urdu); color: var(--gold-2); font-size: clamp(1.25rem, 2.2vw, 1.6rem); line-height: 2.3; text-align: center; }
+.founder-frame--sm { max-width: 300px; width: 100%; justify-self: center; }
+.founder-ur { font-family: var(--f-urdu); color: var(--gold); font-size: 1.25rem; line-height: 2.2; margin: 0; }
+.head .founder-ur { text-align: left; }
+.founder-role { color: var(--muted); font-size: .95rem; margin: .2rem 0 1.2rem; }
+.founder-points { list-style: none; margin: 0; padding: 1.2rem 0 0; text-align: left; display: grid; gap: .8rem; border-top: 1px solid var(--line); }
+.founder-points li { font-size: .92rem; color: var(--muted); padding-left: 1.4rem; position: relative; }
+.founder-points li::before { content: ""; position: absolute; left: 0; top: .55em; width: 8px; height: 8px; background: var(--gold); transform: rotate(45deg); }
+.founder-points strong { display: block; color: var(--night); font-weight: 600; }
+.founder-bio { background: var(--white); border: 1px solid var(--line); border-radius: 20px; padding: clamp(1.5rem, 4vw, 2.6rem); font-family: var(--f-urdu); font-size: 1.12rem; line-height: 2.35; text-align: right; }
+.founder-bio h3, .founder-bio h4 { font-family: var(--f-urdu); color: var(--night); font-weight: 600; line-height: 2; }
+.founder-bio h3 { font-size: 1.5rem; border-bottom: 2px solid var(--gold-soft); padding-bottom: .4rem; margin-bottom: 1rem; }
+.founder-bio h4 { font-size: 1.22rem; color: var(--lapis); margin: 1.6rem 0 .6rem; }
+.founder-bio p { margin: 0 0 1rem; }
+.bio-list { list-style: none; margin: 0 0 1rem; padding: 0; display: grid; gap: .9rem; }
+.bio-list li { padding-right: 1.4rem; position: relative; }
+.bio-list li::before { content: ""; position: absolute; right: 0; top: 1.05em; width: 8px; height: 8px; background: var(--gold); transform: rotate(45deg); }
+.bio-list strong { color: var(--night); }
+.bio-dua { background: var(--sand); border-right: 4px solid var(--gold); border-radius: 12px; padding: 1rem 1.3rem; color: var(--night); }
+.founder-intro { display: grid; grid-template-columns: minmax(220px, 300px) 1fr; gap: clamp(2rem, 6vw, 5rem); align-items: center; }
+.founder-intro .pull { font-family: var(--f-urdu); line-height: 2.3; text-align: right; }
+
+/* Quran journey */
+.journey { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.4rem; }
+.journey-step { background: rgba(255,255,255,.04); border: 1px solid rgba(227,190,98,.28); border-radius: 18px; padding: 1.6rem; color: #C9D0EA; }
+.journey-step h3 { color: var(--white); font-size: 1.5rem; }
+.journey-step ul { margin: 0 0 1rem; padding-left: 1.1rem; }
+.journey-no { display: inline-grid; place-items: center; width: 42px; height: 42px; border-radius: 50%; border: 1px solid var(--gold-2); color: var(--gold-2); font-family: var(--f-arabic); font-size: 1.3rem; margin-bottom: .8rem; }
+.journey-ur { font-family: var(--f-urdu); color: var(--gold-2); line-height: 2.3; text-align: right; margin: 0; padding-top: .9rem; border-top: 1px solid rgba(227,190,98,.25); }
+.journey-img { margin-top: 2rem; aspect-ratio: 21 / 7; border-radius: 18px; }
+
+/* Locations, services, quote */
+.locations { display: grid; grid-template-columns: 1fr auto; gap: 2rem; align-items: center; background: var(--sand); border-radius: 18px; padding: clamp(1.4rem, 3vw, 2.2rem); }
+.locations h3 { margin-bottom: .4rem; }
+.locations p { margin: 0 0 .6rem; }
+.locations-ur { font-family: var(--f-urdu); color: var(--gold); line-height: 2.2; text-align: left; }
+.card--link { text-decoration: none; color: inherit; transition: border-color .2s, transform .2s; }
+.card--link:hover { border-color: var(--gold); transform: translateY(-2px); color: inherit; }
+.quote-ar { text-align: center; }
+.quote-ar span { display: block; font-family: var(--f-arabic); font-size: clamp(2rem, 4vw, 2.8rem); color: var(--gold-2); line-height: 1.6; }
+.quote-ar small { color: #C9D0EA; }
+
+/* Directory */
+.dir-search { display: flex; gap: .7rem; flex-wrap: wrap; margin-bottom: .8rem; }
+.dir-search input, .dir-search select { font: inherit; padding: .8rem 1rem; border: 1.5px solid var(--line); border-radius: 10px; background: var(--white); }
+.dir-search input { flex: 1 1 280px; }
+.dir-count { color: var(--muted); font-size: .95rem; margin-bottom: 1.6rem; }
+.dir-empty { text-align: center; background: var(--sand) var(--pattern-light); border-radius: 18px; padding: 3rem 1.5rem; }
+.dir-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.4rem; }
+.dir-card { background: var(--white); border: 1px solid var(--line); border-radius: 18px; overflow: hidden; display: flex; flex-direction: column; transition: border-color .2s, transform .2s; }
+.dir-card:hover { border-color: var(--gold); transform: translateY(-2px); }
+.dir-photo { display: block; aspect-ratio: 16 / 9; background: var(--night) var(--pattern); }
+.dir-photo img { width: 100%; height: 100%; object-fit: cover; }
+.dir-photo-empty { display: grid; place-items: center; height: 100%; font-family: var(--f-arabic); color: var(--gold-2); font-size: 2rem; }
+.dir-body { padding: 1.1rem 1.3rem 1.3rem; }
+.dir-body h3 { font-size: 1.45rem; margin-bottom: .1rem; }
+.dir-body h3 a { color: var(--night); text-decoration: none; }
+.dir-body h3 a:hover { color: var(--lapis); text-decoration: underline; }
+.dir-ur { font-family: var(--f-urdu); color: var(--gold); margin: 0; line-height: 2; text-align: left; }
+.dir-place { display: flex; gap: .4rem; align-items: center; color: var(--muted); font-size: .93rem; margin: .3rem 0 0; }
+.dir-place svg { width: 16px; height: 16px; flex: none; color: var(--gold); }
+.chips--sm { margin: .7rem 0 .4rem; }
+.chips--sm li { font-size: .8rem; padding: .2rem .65rem; }
+.dir-meta { font-size: .88rem; color: var(--muted); margin: .4rem 0 0; }
+.dir-detail { display: grid; grid-template-columns: 1fr minmax(260px, 340px); gap: clamp(2rem, 5vw, 3.5rem); align-items: start; }
+.dir-facts { background: var(--sand); border-radius: 18px; padding: 1.6rem; position: sticky; top: 110px; }
+.dir-facts dl { margin: 0 0 1.3rem; }
+.dir-facts dl div { padding: .7rem 0; border-bottom: 1px solid var(--line); }
+.dir-facts dt { font-size: .82rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+.dir-facts dd { margin: .15rem 0 0; font-weight: 500; }
+.dir-sub { font-size: 1.3rem; margin: 1.6rem 0 .5rem; }
+.dir-list { margin: 0; padding-left: 1.1rem; }
+.dir-hero-ph { aspect-ratio: 16 / 9; border-radius: 18px; }
+.dir-grid--2 { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
+.gallery--compact { grid-template-columns: repeat(3, 1fr); grid-auto-rows: 180px; }
+.photo-credit { text-align: center; color: var(--muted); font-size: .85rem; margin-top: 1.4rem; }
+
+@media (max-width: 920px) {
+  .founder, .founder-intro, .dir-detail { grid-template-columns: 1fr; }
+  .founder-card, .dir-facts { position: static; }
+  .founder-card .founder-frame { max-width: 260px; margin: 0 auto; }
+  .journey { grid-template-columns: 1fr; }
+  .impact-band { grid-template-columns: 1fr 1fr; }
+  .impact-band > div:nth-child(3) { border-left: 0; }
+  .impact-band > div:nth-child(n+3) { border-top: 1px solid var(--line); }
+  .impact-band--dark > div:nth-child(n+3) { border-top-color: rgba(227,190,98,.3); }
+  .locations { grid-template-columns: 1fr; }
+}
+@media (max-width: 640px) {
+  .gallery--compact { grid-template-columns: 1fr 1fr; grid-auto-rows: 130px; }
+  .journey-img { aspect-ratio: 16 / 9; }
+  .dir-search select, .dir-search .btn { flex: 1 1 140px; }
+}

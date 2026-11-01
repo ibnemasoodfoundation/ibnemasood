@@ -1,0 +1,42 @@
+<%- include('_head', { description: m.name_en + ', a Quran Maktab of Jamia Arabia Abdullah Bin Masood in ' + [m.town, m.district].filter(Boolean).join(', ') + '.' }) %>
+<main id="main">
+<section class="page-hero">
+  <div class="wrap">
+    <div>
+      <div class="crumbs"><a href="/">Home</a> / <a href="/makatib">Makatib</a><% if (m.branch) { %> / <a href="/branches/<%= m.branch_code %>"><%= m.branch %></a><% } %></div>
+      <h1><%= m.name_en %></h1>
+      <p><%= [m.town, m.tehsil, m.district].filter(Boolean).join(', ') %></p>
+    </div>
+    <% if (m.name_ur) { %><div class="ar-big" lang="ur"><%= m.name_ur %></div><% } %>
+  </div>
+</section>
+
+<section class="sec">
+  <div class="wrap dir-detail">
+    <div>
+      <% if (photos.length) { %>
+        <div class="gallery gallery--compact">
+          <% photos.forEach(function (p, i) { %><figure class="ph <%= i === 0 ? 'g-wide' : '' %>"><img src="/media/<%= p.id %>" alt="<%= p.caption || m.name_en %>" loading="lazy"><% if (p.caption) { %><figcaption><%= p.caption %></figcaption><% } %></figure><% }) %>
+        </div>
+      <% } else { %>
+        <figure class="ph missing dir-hero-ph" aria-hidden="true"></figure>
+      <% } %>
+    </div>
+    <aside class="dir-facts">
+      <dl>
+        <div><dt>Location</dt><dd><%= [m.town, m.tehsil].filter(Boolean).join(', ') || '—' %></dd></div>
+        <div><dt>District</dt><dd><%= m.district %></dd></div>
+        <% if (m.branch) { %><div><dt>Branch</dt><dd><a href="/branches/<%= m.branch_code %>"><%= m.branch %></a></dd></div><% } %>
+        <div><dt>Programmes</dt><dd><%= m.programmes || 'Quran education (Qaida, Nazra)' %></dd></div>
+        <div><dt>Contact</dt><dd><% if (m.phone) { %><a href="tel:<%= m.phone %>"><%= m.phone %></a><% } else { %>Through the Jamia office: <a href="tel:+923003948748">0300 394 8748</a><% } %></dd></div>
+      </dl>
+      <a class="btn btn--gold" href="/signup">Apply for admission</a>
+      <% if (nearby.length) { %>
+        <h3 class="dir-sub">Other Makatib in this branch</h3>
+        <ul class="dir-list"><% nearby.forEach(function (n) { %><li><a href="/makatib/<%= n.code %>"><%= n.name_en %></a><%= n.town ? ' · ' + n.town : '' %></li><% }) %></ul>
+      <% } %>
+    </aside>
+  </div>
+</section>
+</main>
+<%- include('_footer') %>

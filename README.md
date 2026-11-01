@@ -23,6 +23,17 @@ npm start                 # http://localhost:3000
 - `/api/health` shows `"ok": true` when the database is working.
 - `npm run dev` restarts the server automatically when you edit files.
 
+## Public website
+
+- Static pages in `public/` (Home, About with the founder's biography, Education, Donations, Contact).
+- Live pages from the database: `/makatib` (searchable directory), `/makatib/<code>`, `/branches`,
+  `/branches/<code>`, `/gallery`.
+- Only approved details are public: name, area, programmes, the contact number when "Show its contact number
+  publicly" is ticked, and photos marked "Show on website". Addresses, managers, notes, teachers, students and
+  documents are never shown. Teacher and student photos and all documents can never be made public: the database
+  rejects it (`attachments_public_check`).
+- The figures "≈190 Makatib" and "5,000+ students" are institution-approved and shown until the directory is complete.
+
 ## Moving to a hosted database later
 
 The SQL is standard PostgreSQL. Set `DATABASE_URL` to a hosted Postgres connection string and the app uses it
@@ -70,6 +81,7 @@ src/auth.js          Password hashing (scrypt), CSRF, role guards, sign-in rate 
 src/routes/auth.js   /login, /signup, /logout
 src/routes/app.js    /app/... dashboards and features
 src/routes/api.js    /api/me, /api/contact (used by the public pages)
+src/routes/public.js Public Makatib/branch directory, gallery, approved photos (/media)
 views/               EJS templates (auth pages, dashboards)
 public/              The public website (HTML, CSS, JS, images)
 data/                Local database files (git-ignored)

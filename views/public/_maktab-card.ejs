@@ -1,0 +1,12 @@
+<article class="dir-card">
+  <a class="dir-photo" href="/makatib/<%= m.code %>" tabindex="-1" aria-hidden="true">
+    <% if (m.photo_id) { %><img src="/media/<%= m.photo_id %>" alt="" loading="lazy"><% } else { %><span class="dir-photo-empty" lang="ar">مكتب</span><% } %>
+  </a>
+  <div class="dir-body">
+    <h3><a href="/makatib/<%= m.code %>"><%= m.name_en %></a></h3>
+    <% if (m.name_ur) { %><p class="dir-ur" lang="ur" dir="rtl"><%= m.name_ur %></p><% } %>
+    <p class="dir-place"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="3"/></svg><span><%= [m.town, m.tehsil, m.district].filter(Boolean).join(', ') %></span></p>
+    <% if (m.programmes) { %><ul class="chips chips--sm"><% m.programmes.split(',').map(s => s.trim()).filter(Boolean).forEach(function (p) { %><li><%= p %></li><% }) %></ul><% } %>
+    <p class="dir-meta"><% if (m.branch) { %>Branch: <a href="/branches/<%= m.branch_code %>"><%= m.branch %></a><% } %><% if (m.phone) { %><% if (m.branch) { %> · <% } %><a href="tel:<%= m.phone %>"><%= m.phone %></a><% } %></p>
+  </div>
+</article>

@@ -1,0 +1,35 @@
+<%- include('_head') %>
+<main id="main">
+<section class="page-hero">
+  <div class="wrap">
+    <div>
+      <div class="crumbs"><a href="/">Home</a> / Gallery</div>
+      <h1>Gallery</h1>
+      <p>Life at the Jamia and its Makatib: Quran classes, our mosques and the places where children learn.</p>
+    </div>
+    <div class="ar-big" lang="ur" aria-hidden="true">مناظر</div>
+  </div>
+</section>
+<section class="sec sec--sand">
+  <div class="wrap">
+    <% if (photos.length) { %>
+      <div class="gallery">
+        <% photos.forEach(function (p, i) { %>
+          <figure class="ph <%= i % 5 === 0 ? 'g-wide' : i % 7 === 3 ? 'g-tall' : '' %>">
+            <a href="/media/<%= p.id %>" target="_blank" rel="noopener"><img src="/media/<%= p.id %>" alt="<%= p.caption || p.place %>" loading="lazy"></a>
+            <figcaption><%= p.caption || p.place %><% if (p.caption && p.place) { %> · <a href="/<%= p.entity_type === 'branch' ? 'branches' : 'makatib' %>/<%= p.code %>"><%= p.place %></a><% } %></figcaption>
+          </figure>
+        <% }) %>
+      </div>
+    <% } %>
+    <% if (photos.length) { %><div class="head center" style="margin-top:3rem"><h2>Mosques of Sindh</h2></div><% } %>
+    <div class="gallery">
+      <figure class="ph g-tall"><img src="https://commons.wikimedia.org/wiki/Special:FilePath/PK_Thatta_asv2020-02_img08_Shah_Jahan_Mosque.jpg?width=1400" alt="Painted dome of the Shah Jahan Mosque, Thatta, Sindh" loading="lazy"><figcaption>Shah Jahan Mosque, Thatta</figcaption></figure>
+      <figure class="ph g-wide"><img src="https://commons.wikimedia.org/wiki/Special:FilePath/PK_Karachi_asv2020-02_img69_New_Memon_Mosque.jpg?width=1800" alt="Prayer hall of the New Memon Mosque, Karachi" loading="lazy"><figcaption>New Memon Mosque, Karachi</figcaption></figure>
+    </div>
+    <% if (!photos.length) { %><p class="dir-count" style="margin-top:1.5rem">Photographs of our Makatib and classes will appear here as the Jamia adds them.</p><% } %>
+    <p class="photo-credit">Mosque photographs: A.Savin, Wikimedia Commons (CC BY-SA). Photographs of students are only published with the permission of their families.</p>
+  </div>
+</section>
+</main>
+<%- include('_footer') %>

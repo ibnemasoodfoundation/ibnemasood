@@ -11,9 +11,15 @@
             <figure class="photo">
               <a href="/app/files/<%= p.id %>" target="_blank" rel="noopener"><img src="/app/files/<%= p.id %>" alt="<%= p.file_name %>" loading="lazy"></a>
               <figcaption>
-                <span><%= fmtDate(p.created_at) %></span>
+                <span><%= fmtDate(p.created_at) %><% if (p.is_public) { %> · <span class="badge badge--present">On website</span><% } %></span>
                 <form method="post" action="/app/files/<%= p.id %>/delete" data-confirm="Remove this photo?"><input type="hidden" name="_csrf" value="<%= csrf %>"><button class="link-danger" type="submit">Remove</button></form>
               </figcaption>
+              <form class="publish-form" method="post" action="/app/files/<%= p.id %>/public">
+                <input type="hidden" name="_csrf" value="<%= csrf %>">
+                <input name="caption" value="<%= p.caption || '' %>" placeholder="Caption for the website" maxlength="160" aria-label="Caption">
+                <% if (p.is_public) { %><button class="btn-sm" type="submit" name="is_public" value="0">Hide from website</button>
+                <% } else { %><button class="btn-sm btn-sm--ok" type="submit" name="is_public" value="1">Show on website</button><% } %>
+              </form>
             </figure>
           <% }) %>
         </div>

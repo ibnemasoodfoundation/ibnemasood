@@ -1,0 +1,57 @@
+<%- include('_head') %>
+<main id="main">
+<section class="page-hero">
+  <div class="wrap">
+    <div>
+      <div class="crumbs"><a href="/">Home</a> / Makatib</div>
+      <h1>Makatib directory</h1>
+      <p>Quran Makatib of the Jamia in the towns and villages of Naushahro Feroze and Khairpur, where boys and girls learn Qaida, Nazra and Hifz close to home.</p>
+    </div>
+    <div class="ar-big" lang="ur" aria-hidden="true">مکاتب</div>
+  </div>
+</section>
+
+<section class="sec">
+  <div class="wrap">
+    <dl class="impact-band">
+      <div><dt>≈ <%= APPROVED.makatib %></dt><dd>Makatib</dd></div>
+      <div><dt><%= APPROVED.students.toLocaleString('en-PK') %>+</dt><dd>Students</dd></div>
+      <div><dt>Boys &amp; girls</dt><dd>Qaida, Nazra and Hifz</dd></div>
+      <div><dt>2 districts</dt><dd>Naushahro Feroze and Khairpur</dd></div>
+    </dl>
+
+    <form class="dir-search" method="get" role="search">
+      <label class="sr-only" for="dq">Search Makatib</label>
+      <input id="dq" type="search" name="q" value="<%= f.q %>" placeholder="Search by Maktab name, town or district">
+      <select name="district" aria-label="District">
+        <option value="">All districts</option>
+        <% districts.forEach(function (d) { %><option <%= f.district === d ? 'selected' : '' %>><%= d %></option><% }) %>
+      </select>
+      <% if (branches.length) { %>
+        <select name="branch" aria-label="Branch">
+          <option value="">All branches</option>
+          <% branches.forEach(function (b) { %><option value="<%= b.code %>" <%= f.branch === b.code ? 'selected' : '' %>><%= b.name_en %></option><% }) %>
+        </select>
+      <% } %>
+      <button class="btn btn--blue" type="submit">Search</button>
+    </form>
+    <p class="dir-count">
+      <%= rows.length %> <%= rows.length === 1 ? 'Maktab' : 'Makatib' %> <%= f.q || f.district || f.branch ? 'match your search' : 'listed online so far' %>.
+      <% if (!(f.q || f.district || f.branch) && listed < APPROVED.makatib) { %>More Makatib are being added to the directory.<% } %>
+      <a href="/branches">View branches</a>
+    </p>
+
+    <% if (!rows.length) { %>
+      <div class="dir-empty">
+        <p><%= f.q || f.district || f.branch ? 'No Maktab matches that search. Try another town or district.' : 'The online directory is being prepared. Please contact the Jamia office to find the Maktab nearest to you.' %></p>
+        <a class="btn btn--line" href="/contact.html">Contact the Jamia</a>
+      </div>
+    <% } else { %>
+      <div class="dir-grid">
+        <% rows.forEach(function (m) { %><%- include('_maktab-card', { m }) %><% }) %>
+      </div>
+    <% } %>
+  </div>
+</section>
+</main>
+<%- include('_footer') %>

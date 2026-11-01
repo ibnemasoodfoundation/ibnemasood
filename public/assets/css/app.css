@@ -490,5 +490,9 @@ section[id] { scroll-margin-top: 130px; }
   .att-radio span { width: 30px; height: 30px; }
 }
 
+.publish-form { display: flex; gap: .3rem; margin-top: .3rem; }
+.publish-form input { flex: 1; min-width: 0; font: inherit; font-size: .78rem; padding: .3rem .45rem; border: 1px solid var(--line); border-radius: 6px; }
+.publish-form .btn-sm { font-size: .74rem; padding: .3rem .5rem; }
+
 /* Public site: account link in the main nav */
 .nav .nav-account { font-weight: 500; }
