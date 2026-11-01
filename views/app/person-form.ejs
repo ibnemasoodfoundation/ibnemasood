@@ -1,0 +1,81 @@
+<%- include('../partials/app-top') %>
+<% const editing = !!values.editId; const f = (k) => errors[k] ? 'invalid' : ''; const isT = type === 'teacher';
+   const base = '/app/' + cfg.plural; %>
+<p class="crumb"><a href="<%= base %>">← All <%= cfg.plural %></a></p>
+<section class="card card--form card--wide">
+  <form method="post" action="<%= editing ? base + '/' + values.editId : base %>" novalidate>
+    <input type="hidden" name="_csrf" value="<%= csrf %>">
+    <% if (values.admission_id) { %><input type="hidden" name="admission_id" value="<%= values.admission_id %>"><p class="hint">Linked to admission application #<%= values.admission_id %>.</p><% } %>
+
+    <fieldset class="form-section">
+      <legend>Personal details</legend>
+      <div class="field-row field-row--3">
+        <div class="field <%= f('full_name') %>"><label for="full_name">Full name (English)</label><input id="full_name" name="full_name" value="<%= values.full_name || '' %>" required><span class="err"><%= errors.full_name %></span></div>
+        <div class="field"><label for="name_ur">Name (Urdu) <span class="opt">optional</span></label><input id="name_ur" name="name_ur" class="ur-input" dir="rtl" lang="ur" value="<%= values.name_ur || '' %>"></div>
+        <div class="field <%= f('code') %>"><label for="code"><%= isT ? 'Teacher code' : 'Admission / GR number' %></label><input id="code" name="code" value="<%= values.code || '' %>" required autocapitalize="characters" spellcheck="false"><span class="err"><%= errors.code %></span></div>
+      </div>
+      <div class="field-row field-row--3">
+        <div class="field"><label for="father_name">Father’s name <span class="opt">optional</span></label><input id="father_name" name="father_name" value="<%= values.father_name || '' %>"></div>
+        <div class="field <%= f('gender') %>">
+          <label for="gender">Gender</label>
+          <select id="gender" name="gender" required>
+            <option value="">Choose</option>
+            <% Object.keys(GENDERS).forEach(function (g) { %><option value="<%= g %>" <%= values.gender === g ? 'selected' : '' %>><%= GENDERS[g] %></option><% }) %>
+          </select>
+          <span class="err"><%= errors.gender %></span>
+        </div>
+        <div class="field <%= f('phone') %>"><label for="phone">Phone <span class="opt">optional</span></label><input id="phone" name="phone" type="tel" placeholder="03XX XXXXXXX" value="<%= values.phone || '' %>"><span class="err"><%= errors.phone %></span></div>
+      </div>
+      <% if (isT) { %>
+        <div class="field-row field-row--3">
+          <div class="field <%= f('cnic') %>"><label for="cnic">CNIC <span class="opt">optional</span></label><input id="cnic" name="cnic" placeholder="45101-1234567-1" inputmode="numeric" value="<%= values.cnic || '' %>"><span class="err"><%= errors.cnic %></span></div>
+          <div class="field"><label for="qualification">Qualification <span class="opt">optional</span></label><input id="qualification" name="qualification" placeholder="e.g. Hafiz, Alim, Matric" value="<%= values.qualification || '' %>"></div>
+          <div class="field <%= f('joined_on') %>"><label for="joined_on">Joined on <span class="opt">optional</span></label><input id="joined_on" name="joined_on" type="date" value="<%= values.joined_on || '' %>"><span class="err"><%= errors.joined_on %></span></div>
+        </div>
+      <% } else { %>
+        <div class="field-row field-row--3">
+          <div class="field <%= f('dob') %>"><label for="dob">Date of birth <span class="opt">optional</span></label><input id="dob" name="dob" type="date" value="<%= values.dob || '' %>"><span class="err"><%= errors.dob %></span></div>
+          <div class="field"><label for="programme">Programme <span class="opt">optional</span></label>
+            <input id="programme" name="programme" list="dl-programmes" value="<%= values.programme || '' %>" autocomplete="off">
+            <datalist id="dl-programmes"><% [...new Set(Object.values(PROGRAMMES).flat())].forEach(function (p) { %><option value="<%= p %>"><% }) %></datalist>
+          </div>
+          <div class="field <%= f('enrolled_on') %>"><label for="enrolled_on">Enrolled on <span class="opt">optional</span></label><input id="enrolled_on" name="enrolled_on" type="date" value="<%= values.enrolled_on || '' %>"><span class="err"><%= errors.enrolled_on %></span></div>
+        </div>
+      <% } %>
+    </fieldset>
+
+    <fieldset class="form-section">
+      <legend>Placement</legend>
+      <div class="field-row">
+        <div class="field <%= f('maktab_id') %>">
+          <label for="maktab_id">Maktab <span class="opt">optional</span></label>
+          <select id="maktab_id" name="maktab_id">
+            <option value="">Not assigned</option>
+            <% makatib.forEach(function (m) { %><option value="<%= m.id %>" <%= Number(values.maktab_id) === m.id ? 'selected' : '' %>><%= m.name_en %> (<%= m.code %>)<%= m.branch ? ' · ' + m.branch : '' %></option><% }) %>
+          </select>
+          <span class="err"><%= errors.maktab_id %></span>
+        </div>
+        <div class="field <%= f('branch_id') %>">
+          <label for="branch_id">Branch <span class="opt">set by the Maktab</span></label>
+          <select id="branch_id" name="branch_id">
+            <option value="">No branch</option>
+            <% branches.forEach(function (b) { %><option value="<%= b.id %>" <%= Number(values.branch_id) === b.id ? 'selected' : '' %>><%= b.name_en %></option><% }) %>
+          </select>
+          <span class="err"><%= errors.branch_id %></span>
+        </div>
+      </div>
+      <% if (editing) { %><p class="hint">Changing the Maktab records a transfer in the history.</p><% } %>
+      <fieldset class="choice">
+        <legend>Status</legend>
+        <% cfg.statuses.forEach(function (s) { %><label><input type="radio" name="status" value="<%= s %>" <%= (values.status || 'active') === s ? 'checked' : '' %>> <%= cap(s) %></label><% }) %>
+      </fieldset>
+      <div class="field"><label for="notes">Notes <span class="opt">optional</span></label><textarea id="notes" name="notes"><%= values.notes || '' %></textarea></div>
+    </fieldset>
+
+    <div class="btn-row">
+      <button class="btn btn--gold" type="submit"><%= editing ? 'Save' : 'Register ' + cfg.label.toLowerCase() %></button>
+      <a class="btn btn--line" href="<%= base %>">Cancel</a>
+    </div>
+  </form>
+</section>
+<%- include('../partials/app-bottom') %>

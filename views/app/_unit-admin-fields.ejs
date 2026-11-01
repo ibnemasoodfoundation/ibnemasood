@@ -1,0 +1,29 @@
+<%# Contact, management and notes fields shared by branch and Maktab forms %>
+<% const f = (k) => errors[k] ? 'invalid' : ''; %>
+<fieldset class="form-section">
+  <legend>Management and contact</legend>
+  <div class="field-row field-row--3">
+    <div class="field <%= f('manager_id') %>">
+      <label for="manager_id"><%= unitLabel %> manager <span class="opt">optional</span></label>
+      <select id="manager_id" name="manager_id">
+        <option value="">Not assigned</option>
+        <% managers.forEach(function (u) { %><option value="<%= u.id %>" <%= Number(values.manager_id) === u.id ? 'selected' : '' %>><%= u.name %> (<%= ROLE_LABELS[u.role] %>)</option><% }) %>
+      </select>
+      <span class="err"><%= errors.manager_id %></span>
+    </div>
+    <div class="field <%= f('phone') %>"><label for="phone">Contact number <span class="opt">optional</span></label><input id="phone" name="phone" type="tel" placeholder="03XX XXXXXXX" value="<%= values.phone || '' %>"><span class="err"><%= errors.phone %></span></div>
+    <div class="field <%= f('established_on') %>"><label for="established_on">Established on <span class="opt">optional</span></label><input id="established_on" name="established_on" type="date" value="<%= values.established_on || '' %>"><span class="err"><%= errors.established_on %></span></div>
+  </div>
+  <% if (!managers.length) { %><p class="hint">No manager accounts yet. An admin can promote a user to Manager under Users &amp; roles.</p><% } %>
+  <% if (values.status === 'archived') { %>
+    <input type="hidden" name="status" value="archived">
+    <p class="hint">This <%= unitLabel.toLowerCase() %> is archived. Restore it from its page to make it active again.</p>
+  <% } else { %>
+    <fieldset class="choice">
+      <legend>Status</legend>
+      <label><input type="radio" name="status" value="active" <%= values.status !== 'inactive' ? 'checked' : '' %>> Active</label>
+      <label><input type="radio" name="status" value="inactive" <%= values.status === 'inactive' ? 'checked' : '' %>> Inactive</label>
+    </fieldset>
+  <% } %>
+  <div class="field"><label for="notes">Additional notes <span class="opt">optional</span></label><textarea id="notes" name="notes"><%= values.notes || '' %></textarea></div>
+</fieldset>

@@ -1,0 +1,43 @@
+<%- include('../partials/app-top') %>
+<div class="page-head">
+  <p>Branches group the Makatib by area. Open a branch to see its Makatib, teachers, students and files.</p>
+  <a class="btn btn--blue btn--sm" href="/app/branches/new"><%- include('../partials/icon', { name: 'plus' }) %>Add branch</a>
+</div>
+
+<form class="filters" method="get">
+  <input type="search" name="q" placeholder="Search name, code or town" value="<%= filters.q %>" aria-label="Search branches">
+  <select name="district" aria-label="District">
+    <option value="">All districts</option>
+    <% districts.forEach(function (d) { %><option <%= filters.district === d ? 'selected' : '' %>><%= d %></option><% }) %>
+  </select>
+  <select name="status" aria-label="Status">
+    <option value="">Active and inactive</option>
+    <% ['active','inactive','archived','all'].forEach(function (s) { %><option value="<%= s %>" <%= filters.status === s ? 'selected' : '' %>><%= s === 'all' ? 'Everything' : cap(s) %></option><% }) %>
+  </select>
+  <button class="btn btn--line btn--sm" type="submit">Filter</button>
+</form>
+
+<section class="card card--flush">
+  <% if (!rows.length) { %>
+    <p class="empty"><%= filters.q || filters.district || filters.status ? 'No branches match these filters.' : 'No branches yet.' %> <a href="/app/branches/new">Add the first branch</a>.</p>
+  <% } else { %>
+    <div class="table-wrap"><table class="table">
+      <thead><tr><th>Branch</th><th>Location</th><th>Manager</th><th class="t-right">Makatib</th><th class="t-right">Teachers</th><th class="t-right">Students</th><th>Status</th><th></th></tr></thead>
+      <tbody>
+      <% rows.forEach(function (b) { %>
+        <tr class="<%= b.status === 'archived' ? 'row-muted' : '' %>">
+          <td><a class="row-link" href="/app/branches/<%= b.id %>"><strong><%= b.name_en %></strong></a><small><%= b.code %><% if (b.name_ur) { %> · <span class="ur-inline" lang="ur"><%= b.name_ur %></span><% } %></small></td>
+          <td><%= b.district %><small><%= [b.tehsil, b.town].filter(Boolean).join(', ') %></small></td>
+          <td><%= b.manager || '—' %></td>
+          <td class="t-right num"><%= b.makatib %></td>
+          <td class="t-right num"><%= b.teachers %></td>
+          <td class="t-right num"><%= b.students %></td>
+          <td><%- include('../partials/badge', { s: b.status }) %></td>
+          <td class="t-right nowrap"><a class="btn-sm" href="/app/branches/<%= b.id %>">Open</a> <a class="btn-sm" href="/app/branches/<%= b.id %>/edit">Edit</a></td>
+        </tr>
+      <% }) %>
+      </tbody>
+    </table></div>
+  <% } %>
+</section>
+<%- include('../partials/app-bottom') %>

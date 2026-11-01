@@ -1,0 +1,97 @@
+<%- include('../partials/app-top') %>
+<p class="crumb"><a href="/app/makatib">← All Makatib</a><% if (m.branch) { %> · <a href="/app/branches/<%= m.branch_id %>"><%= m.branch %></a><% } %></p>
+<%- include('_unit-head', { u: m, route: 'makatib', unitLabel: 'Maktab' }) %>
+
+<div class="stats">
+  <a class="stat" href="#teachers"><small>Active teachers</small><strong><%= teachers.filter(t => t.status === 'active').length %></strong></a>
+  <a class="stat" href="#students"><small>Active students</small><strong><%= students.filter(s => s.status === 'active').length %></strong></a>
+  <div class="stat"><small>Boys / girls</small><strong><%= students.filter(s => s.status === 'active' && s.gender === 'male').length %> / <%= students.filter(s => s.status === 'active' && s.gender === 'female').length %></strong></div>
+  <a class="stat" href="#admissions"><small>Admission applications</small><strong><%= admissions.length %></strong></a>
+</div>
+
+<nav class="tabs-inline" aria-label="Sections">
+  <a href="#details">Details</a><a href="#teachers">Teachers</a><a href="#students">Students</a><a href="#admissions">Admissions</a><a href="#attendance">Attendance</a><a href="#transfers">Transfers</a><a href="#files">Files</a>
+</nav>
+
+<section class="card" id="details">
+  <div class="card-head"><h2>Details</h2></div>
+  <dl class="details details--2col">
+    <div><dt>Branch</dt><dd><% if (m.branch) { %><a href="/app/branches/<%= m.branch_id %>"><%= m.branch %></a><% } else { %>No branch<% } %></dd></div>
+    <div><dt>Manager</dt><dd><%= m.manager || 'Not assigned' %></dd></div>
+    <div><dt>Primary teacher</dt><dd><%= m.primary_teacher || 'Not assigned' %></dd></div>
+    <div><dt>Contact</dt><dd><% if (m.phone) { %><a href="tel:<%= m.phone %>"><%= m.phone %></a><% } else { %>—<% } %></dd></div>
+    <div><dt>Classrooms</dt><dd><%= m.classrooms ?? '—' %></dd></div>
+    <div><dt>Established</dt><dd><%= m.established_on ? fmtDate(m.established_on) : '—' %></dd></div>
+  </dl>
+  <% if (m.notes) { %><h3 class="sub">Notes</h3><p class="pre"><%= m.notes %></p><% } %>
+</section>
+
+<% [['teacher', 'Teachers', teachers, otherTeachers], ['student', 'Students', students, otherStudents]].forEach(function (g) { const type = g[0], list = g[2], others = g[3]; %>
+  <section class="card" id="<%= type %>s">
+    <div class="card-head"><h2><%= g[1] %> (<%= list.length %>)</h2><a href="/app/<%= type %>s/new?maktab=<%= m.id %>">Register new</a></div>
+    <% if (!list.length) { %><p class="empty">No <%= type %>s in this Maktab yet.</p><% } else { %>
+      <div class="table-wrap"><table class="table">
+        <thead><tr><th>Name</th><th>Gender</th><th>Phone</th><th>Status</th><th>Transfer to another Maktab</th></tr></thead>
+        <tbody><% list.forEach(function (x) { %>
+          <tr class="<%= x.status !== 'active' ? 'row-muted' : '' %>">
+            <td><a class="row-link" href="/app/<%= type %>s/<%= x.id %>/edit"><strong><%= x.full_name %></strong></a><small><%= x.code %><%= x.father_name ? ' · s/o, d/o ' + x.father_name : '' %></small></td>
+            <td><%= GENDERS[x.gender] %></td>
+            <td><%= x.phone || '—' %></td>
+            <td><%- include('../partials/badge', { s: x.status }) %></td>
+            <td>
+              <form class="transfer-form" method="post" action="/app/<%= type %>s/<%= x.id %>/transfer">
+                <input type="hidden" name="_csrf" value="<%= csrf %>">
+                <select name="maktab_id" aria-label="Transfer <%= x.full_name %> to" required>
+                  <option value="">Choose Maktab</option>
+                  <% makatib.forEach(function (o) { %><option value="<%= o.id %>"><%= o.name_en %></option><% }) %>
+                </select>
+                <button class="btn-sm" type="submit"><%- include('../partials/icon', { name: 'swap' }) %>Move</button>
+              </form>
+            </td>
+          </tr>
+        <% }) %></tbody>
+      </table></div>
+    <% } %>
+    <% if (others.length) { %>
+      <form class="assign" method="post" action="/app/makatib/<%= m.id %>/<%= type %>s">
+        <input type="hidden" name="_csrf" value="<%= csrf %>">
+        <label for="assign-<%= type %>">Assign an existing <%= type %> to this Maktab</label>
+        <div class="assign-row">
+          <select id="assign-<%= type %>" name="person_id" required>
+            <option value="">Choose a <%= type %></option>
+            <% others.forEach(function (o) { %><option value="<%= o.id %>"><%= o.full_name %> (<%= o.code %>) · <%= o.maktab || 'unassigned' %></option><% }) %>
+          </select>
+          <input name="note" placeholder="Reason (optional)" aria-label="Reason for the move" maxlength="300">
+          <button class="btn btn--blue btn--sm" type="submit">Assign</button>
+        </div>
+      </form>
+    <% } %>
+  </section>
+<% }) %>
+
+<div class="grid-2">
+  <section class="card" id="admissions">
+    <div class="card-head"><h2>Admissions</h2><a href="/app/admissions">All admissions</a></div>
+    <% if (!admissions.length) { %><p class="empty">No applications have chosen this Maktab yet.</p><% } else { %>
+      <ul class="rows"><% admissions.forEach(function (a) { %>
+        <li><a href="/app/admissions/<%= a.id %>"><span><strong><%= a.student_name %></strong><small><%= a.programme %> · <%= fmtDate(a.created_at) %></small></span><%- include('../partials/badge', { s: a.status }) %></a></li>
+      <% }) %></ul>
+    <% } %>
+  </section>
+  <section class="card" id="attendance">
+    <div class="card-head"><h2>Attendance</h2></div>
+    <p class="empty">Attendance registers are not set up yet. Daily student and teacher attendance will appear here once the attendance module is added.</p>
+  </section>
+</div>
+
+<section class="card" id="transfers">
+  <div class="card-head"><h2>Transfer history</h2></div>
+  <% if (!transfers.length) { %><p class="empty">No transfers into or out of this Maktab yet.</p><% } else { %>
+    <ul class="log"><% transfers.forEach(function (t) { %>
+      <li><span class="log-time"><%= fmtDateTime(t.created_at) %></span><span><strong><%= t.person || 'Removed record' %></strong> (<%= t.person_type %>): <%= t.from_name || 'unassigned' %> → <%= t.to_name || 'unassigned' %><%= t.note ? ' · ' + t.note : '' %><%= t.by_name ? ' · by ' + t.by_name : '' %></span></li>
+    <% }) %></ul>
+  <% } %>
+</section>
+
+<%- include('_files', { uploadUrl: '/app/makatib/' + m.id + '/files' }) %>
+<%- include('../partials/app-bottom') %>

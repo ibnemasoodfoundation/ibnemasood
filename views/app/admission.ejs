@@ -10,6 +10,7 @@
       <div><dt>Date of birth</dt><dd><%= a.dob ? fmtDate(a.dob) : '—' %></dd></div>
       <div><dt>Branch</dt><dd><%= BRANCHES[a.branch] %></dd></div>
       <div><dt>Programme</dt><dd><%= a.programme %></dd></div>
+      <% if (a.maktab) { %><div><dt>Maktab</dt><dd><% if (staffView) { %><a href="/app/makatib/<%= a.maktab_id %>"><%= a.maktab %></a><% } else { %><%= a.maktab %><% } %></dd></div><% } %>
       <div><dt>Phone</dt><dd><a href="tel:<%= a.phone %>"><%= a.phone %></a></dd></div>
       <div><dt>Address</dt><dd><%= a.address || '—' %></dd></div>
       <div><dt>Submitted</dt><dd><%= fmtDateTime(a.created_at) %></dd></div>
@@ -33,6 +34,16 @@
         <button class="btn btn--blue" type="submit">Save decision</button>
       </form>
       <% if (a.reviewer) { %><p class="muted small">Last reviewed by <%= a.reviewer %>, <%= fmtDateTime(a.updated_at) %></p><% } %>
+      <% if (a.status === 'approved') { %>
+        <div class="enrol">
+          <% if (a.student_id) { %>
+            <p class="muted small">Registered as a student.</p>
+            <a class="btn btn--line btn--sm" href="/app/students/<%= a.student_id %>/edit">View student record</a>
+          <% } else { %>
+            <a class="btn btn--gold btn--sm" href="/app/students/new?admission=<%= a.id %>"><%- include('../partials/icon', { name: 'plus' }) %>Register as student</a>
+          <% } %>
+        </div>
+      <% } %>
     <% } else { %>
       <div class="card-head"><h2>Status</h2></div>
       <% const msg = { pending: 'Your application is with the office. They will contact you soon, in sha Allah.', approved: 'Mubarak! The application is approved.', waitlisted: 'The class is currently full. The application is on the waiting list.', rejected: 'The office could not accept this application.' }; %>

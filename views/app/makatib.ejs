@@ -1,0 +1,48 @@
+<%- include('../partials/app-top') %>
+<div class="page-head">
+  <p>Every Maktab of the Jamia across Sindh. Open one to manage its teachers, students, admissions and files.</p>
+  <a class="btn btn--blue btn--sm" href="/app/makatib/new"><%- include('../partials/icon', { name: 'plus' }) %>Register Maktab</a>
+</div>
+
+<form class="filters" method="get">
+  <input type="search" name="q" placeholder="Search name, code, town or tehsil" value="<%= filters.q %>" aria-label="Search Makatib">
+  <select name="district" aria-label="District">
+    <option value="">All districts</option>
+    <% districts.forEach(function (d) { %><option <%= filters.district === d ? 'selected' : '' %>><%= d %></option><% }) %>
+  </select>
+  <select name="branch" aria-label="Branch">
+    <option value="">All branches</option>
+    <% branches.forEach(function (b) { %><option value="<%= b.id %>" <%= filters.branch === b.id ? 'selected' : '' %>><%= b.name_en %></option><% }) %>
+  </select>
+  <select name="status" aria-label="Status">
+    <option value="">Active and inactive</option>
+    <% ['active','inactive','archived','all'].forEach(function (s) { %><option value="<%= s %>" <%= filters.status === s ? 'selected' : '' %>><%= s === 'all' ? 'Everything' : cap(s) %></option><% }) %>
+  </select>
+  <button class="btn btn--line btn--sm" type="submit">Filter</button>
+</form>
+
+<p class="result-count"><%= rows.length %> <%= rows.length === 1 ? 'Maktab' : 'Makatib' %></p>
+<section class="card card--flush">
+  <% if (!rows.length) { %>
+    <p class="empty"><%= filters.q || filters.district || filters.branch || filters.status ? 'No Makatib match these filters.' : 'No Makatib registered yet.' %> <a href="/app/makatib/new">Register a Maktab</a>.</p>
+  <% } else { %>
+    <div class="table-wrap"><table class="table">
+      <thead><tr><th>Maktab</th><th>Location</th><th>Branch</th><th>Primary teacher</th><th class="t-right">Teachers</th><th class="t-right">Students</th><th>Status</th><th></th></tr></thead>
+      <tbody>
+      <% rows.forEach(function (m) { %>
+        <tr class="<%= m.status === 'archived' ? 'row-muted' : '' %>">
+          <td><a class="row-link" href="/app/makatib/<%= m.id %>"><strong><%= m.name_en %></strong></a><small><%= m.code %><% if (m.name_ur) { %> · <span class="ur-inline" lang="ur"><%= m.name_ur %></span><% } %></small></td>
+          <td><%= m.town || m.tehsil || '—' %><small><%= m.district %></small></td>
+          <td><%= m.branch || '—' %></td>
+          <td><%= m.primary_teacher || '—' %></td>
+          <td class="t-right num"><%= m.teachers %></td>
+          <td class="t-right num"><%= m.students %></td>
+          <td><%- include('../partials/badge', { s: m.status }) %></td>
+          <td class="t-right nowrap"><a class="btn-sm" href="/app/makatib/<%= m.id %>">Open</a> <a class="btn-sm" href="/app/makatib/<%= m.id %>/edit">Edit</a></td>
+        </tr>
+      <% }) %>
+      </tbody>
+    </table></div>
+  <% } %>
+</section>
+<%- include('../partials/app-bottom') %>

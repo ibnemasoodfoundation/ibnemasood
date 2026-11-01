@@ -5,7 +5,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 const { hashPassword } = require("./auth");
 
-const SCHEMA = path.join(__dirname, "..", "db", "schema.sql");
+const MIGRATIONS = path.join(__dirname, "..", "db", "migrations");
 
 // COUNT() and SUM(integer) come back as int8 (type 20); amounts fit safely in a JS number.
 // DATE (type 1082) stays "YYYY-MM-DD" so dates of birth never shift with time zones.
@@ -55,7 +55,13 @@ async function postgresClient() {
   pool.on("error", (err) => logDatabaseError("pool", err));
   return {
     query: async (sql, params) => (await pool.query(sql, params)).rows,
-    exec: (sql) => pool.query(sql),
+    // One connection per exec, so a failed BEGIN…COMMIT block is rolled back where it ran
+    exec: async (sql) => {
+      const conn = await pool.connect();
+      try { return await conn.query(sql); }
+      catch (err) { await conn.query("ROLLBACK").catch(() => {}); throw err; }
+      finally { conn.release(); }
+    },
   };
 }
 
@@ -97,12 +103,28 @@ async function seedAdmin() {
   console.log("First admin account ready: " + email);
 }
 
-/* Runs once per server: create missing tables (never drops or changes data), then seed */
+/* Applies db/migrations/NNN_*.sql in order, each once, each in its own transaction.
+   Migrations are additive: they never drop tables or delete data. */
+async function migrate(db) {
+  await db.exec(`CREATE TABLE IF NOT EXISTS schema_migrations (
+    name TEXT PRIMARY KEY, applied_at TIMESTAMPTZ NOT NULL DEFAULT now())`);
+  const done = new Set((await db.query("SELECT name FROM schema_migrations")).map((r) => r.name));
+  const files = fs.readdirSync(MIGRATIONS).filter((f) => /^\d{3}_.+\.sql$/.test(f)).sort();
+  for (const file of files) {
+    if (done.has(file)) continue;
+    const sql = fs.readFileSync(path.join(MIGRATIONS, file), "utf8");
+    await db.exec(`BEGIN;\n${sql}\n;INSERT INTO schema_migrations (name) VALUES ('${file}');\nCOMMIT;`)
+      .catch(async (err) => { await db.exec("ROLLBACK").catch(() => {}); throw err; });
+    console.log("Applied migration " + file);
+  }
+}
+
+/* Runs once per server: apply pending migrations, then seed */
 let readyPromise = null;
 function ready() {
   if (!readyPromise) {
     readyPromise = getClient()
-      .then((db) => db.exec(fs.readFileSync(SCHEMA, "utf8")))
+      .then(migrate)
       .then(seedAdmin)
       .catch((err) => {
         logDatabaseError("schema_init", err);

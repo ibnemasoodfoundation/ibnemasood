@@ -1,0 +1,73 @@
+<%- include('../partials/app-top') %>
+<p class="crumb"><a href="/app/branches">← All branches</a></p>
+<%- include('_unit-head', { u: b, route: 'branches', unitLabel: 'Branch' }) %>
+
+<div class="stats">
+  <a class="stat" href="#makatib"><small>Makatib</small><strong><%= stats.makatib %></strong></a>
+  <a class="stat" href="#teachers"><small>Active teachers</small><strong><%= stats.teachers %></strong></a>
+  <a class="stat" href="#students"><small>Active students</small><strong><%= stats.students %></strong></a>
+  <div class="stat"><small>Boys / girls</small><strong><%= stats.male %> / <%= stats.female %></strong></div>
+</div>
+
+<div class="grid-2 grid-2--wide">
+  <section class="card" id="makatib">
+    <div class="card-head"><h2>Makatib in this branch</h2><a href="/app/makatib/new?branch=<%= b.id %>">Register new</a></div>
+    <% if (!makatib.length) { %><p class="empty">No Makatib assigned yet.</p><% } else { %>
+      <div class="table-wrap"><table class="table">
+        <thead><tr><th>Maktab</th><th>Town</th><th class="t-right">Teachers</th><th class="t-right">Students</th><th>Status</th></tr></thead>
+        <tbody><% makatib.forEach(function (m) { %>
+          <tr class="<%= m.status === 'archived' ? 'row-muted' : '' %>"><td><a class="row-link" href="/app/makatib/<%= m.id %>"><strong><%= m.name_en %></strong></a><small><%= m.code %></small></td><td><%= m.town || '—' %></td><td class="t-right num"><%= m.teachers %></td><td class="t-right num"><%= m.students %></td><td><%- include('../partials/badge', { s: m.status }) %></td></tr>
+        <% }) %></tbody>
+      </table></div>
+    <% } %>
+    <% if (unassigned.length) { %>
+      <form class="assign" method="post" action="/app/branches/<%= b.id %>/makatib">
+        <input type="hidden" name="_csrf" value="<%= csrf %>">
+        <label for="assign-maktab">Assign an existing Maktab</label>
+        <div class="assign-row">
+          <select id="assign-maktab" name="maktab_id" required>
+            <option value="">Choose a Maktab</option>
+            <% unassigned.forEach(function (m) { %><option value="<%= m.id %>"><%= m.name_en %> (<%= m.code %>) · <%= m.branch || 'no branch' %></option><% }) %>
+          </select>
+          <button class="btn btn--blue btn--sm" type="submit">Assign</button>
+        </div>
+      </form>
+    <% } %>
+  </section>
+
+  <section class="card">
+    <div class="card-head"><h2>Details</h2></div>
+    <dl class="details">
+      <div><dt>Manager</dt><dd><%= b.manager || 'Not assigned' %></dd></div>
+      <div><dt>Contact</dt><dd><% if (b.phone) { %><a href="tel:<%= b.phone %>"><%= b.phone %></a><% } else { %>—<% } %></dd></div>
+      <div><dt>Established</dt><dd><%= b.established_on ? fmtDate(b.established_on) : '—' %></dd></div>
+      <div><dt>District</dt><dd><%= b.district %></dd></div>
+      <div><dt>Tehsil</dt><dd><%= b.tehsil || '—' %></dd></div>
+      <div><dt>Town or village</dt><dd><%= b.town || '—' %></dd></div>
+      <div><dt>Last updated</dt><dd><%= fmtDateTime(b.updated_at) %></dd></div>
+    </dl>
+    <% if (b.notes) { %><h3 class="sub">Notes</h3><p class="pre"><%= b.notes %></p><% } %>
+  </section>
+</div>
+
+<div class="grid-2">
+  <section class="card" id="teachers">
+    <div class="card-head"><h2>Teachers (<%= teachers.length %>)</h2><a href="/app/teachers?branch=<%= b.id %>">Open list</a></div>
+    <% if (!teachers.length) { %><p class="empty">No teachers in this branch yet.</p><% } else { %>
+      <ul class="rows"><% teachers.slice(0, 12).forEach(function (t) { %>
+        <li><a href="/app/teachers/<%= t.id %>/edit"><span><strong><%= t.full_name %></strong><small><%= t.code %> · <%= t.maktab || 'No Maktab' %></small></span><%- include('../partials/badge', { s: t.status }) %></a></li>
+      <% }) %></ul>
+    <% } %>
+  </section>
+  <section class="card" id="students">
+    <div class="card-head"><h2>Students (<%= students.length %>)</h2><a href="/app/students?branch=<%= b.id %>">Open list</a></div>
+    <% if (!students.length) { %><p class="empty">No students in this branch yet.</p><% } else { %>
+      <ul class="rows"><% students.slice(0, 12).forEach(function (s) { %>
+        <li><a href="/app/students/<%= s.id %>/edit"><span><strong><%= s.full_name %></strong><small><%= s.code %> · <%= GENDERS[s.gender] %> · <%= s.maktab || 'No Maktab' %></small></span><%- include('../partials/badge', { s: s.status }) %></a></li>
+      <% }) %></ul>
+    <% } %>
+  </section>
+</div>
+
+<%- include('_files', { uploadUrl: '/app/branches/' + b.id + '/files' }) %>
+<%- include('../partials/app-bottom') %>

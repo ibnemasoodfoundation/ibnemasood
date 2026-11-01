@@ -1,0 +1,16 @@
+<%- include('../partials/app-top') %>
+<% const editing = !!values.editId; %>
+<p class="crumb"><a href="<%= editing ? '/app/branches/' + values.editId : '/app/branches' %>">← <%= editing ? 'Back to branch' : 'All branches' %></a></p>
+<section class="card card--form card--wide">
+  <form method="post" action="<%= editing ? '/app/branches/' + values.editId : '/app/branches' %>" novalidate>
+    <input type="hidden" name="_csrf" value="<%= csrf %>">
+    <%- include('_unit-fields', { unitLabel: 'Branch' }) %>
+    <%- include('_unit-admin-fields', { unitLabel: 'Branch' }) %>
+    <% if (!editing) { %><p class="hint">You can add the branch photograph and documents on the next page.</p><% } %>
+    <div class="btn-row">
+      <button class="btn btn--gold" type="submit"><%= editing ? 'Save branch' : 'Add branch' %></button>
+      <a class="btn btn--line" href="<%= editing ? '/app/branches/' + values.editId : '/app/branches' %>">Cancel</a>
+    </div>
+  </form>
+</section>
+<%- include('../partials/app-bottom') %>

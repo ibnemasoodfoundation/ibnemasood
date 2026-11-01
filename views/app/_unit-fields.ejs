@@ -1,0 +1,24 @@
+<%# Fields shared by the branch and Maktab forms. Expects: values, errors, managers, locations, unitLabel %>
+<% const f = (k) => errors[k] ? 'invalid' : ''; %>
+<fieldset class="form-section">
+  <legend>Name and code</legend>
+  <div class="field-row field-row--3">
+    <div class="field <%= f('name_en') %>"><label for="name_en"><%= unitLabel %> name (English)</label><input id="name_en" name="name_en" value="<%= values.name_en || '' %>" required><span class="err"><%= errors.name_en %></span></div>
+    <div class="field <%= f('name_ur') %>"><label for="name_ur"><%= unitLabel %> name (Urdu) <span class="opt">optional</span></label><input id="name_ur" name="name_ur" class="ur-input" dir="rtl" lang="ur" value="<%= values.name_ur || '' %>"><span class="err"><%= errors.name_ur %></span></div>
+    <div class="field <%= f('code') %>"><label for="code"><%= unitLabel %> code</label><input id="code" name="code" value="<%= values.code || '' %>" required autocapitalize="characters" spellcheck="false"><span class="err"><%= errors.code %></span></div>
+  </div>
+</fieldset>
+
+<fieldset class="form-section">
+  <legend>Location</legend>
+  <div class="field-row field-row--3">
+    <div class="field <%= f('district') %>"><label for="district">District</label><input id="district" name="district" list="dl-districts" value="<%= values.district || '' %>" required autocomplete="off"><span class="err"><%= errors.district %></span></div>
+    <div class="field"><label for="tehsil">Tehsil <span class="opt">optional</span></label><input id="tehsil" name="tehsil" list="dl-tehsils" value="<%= values.tehsil || '' %>" autocomplete="off"></div>
+    <div class="field"><label for="town">Town or village <span class="opt">optional</span></label><input id="town" name="town" list="dl-towns" value="<%= values.town || '' %>" autocomplete="off"></div>
+  </div>
+  <p class="hint">Pick a suggestion or type a new place; new districts and towns are added automatically.</p>
+  <datalist id="dl-districts"><% locations.districts.forEach(function (x) { %><option value="<%= x %>"><% }) %></datalist>
+  <datalist id="dl-tehsils"><% locations.tehsils.forEach(function (x) { %><option value="<%= x %>"><% }) %></datalist>
+  <datalist id="dl-towns"><% locations.towns.forEach(function (x) { %><option value="<%= x %>"><% }) %></datalist>
+  <div class="field"><label for="address">Full address <span class="opt">optional</span></label><input id="address" name="address" value="<%= values.address || '' %>"></div>
+</fieldset>

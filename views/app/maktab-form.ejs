@@ -1,0 +1,39 @@
+<%- include('../partials/app-top') %>
+<% const editing = !!values.editId; const f = (k) => errors[k] ? 'invalid' : ''; %>
+<p class="crumb"><a href="<%= editing ? '/app/makatib/' + values.editId : '/app/makatib' %>">← <%= editing ? 'Back to Maktab' : 'All Makatib' %></a></p>
+<section class="card card--form card--wide">
+  <form method="post" action="<%= editing ? '/app/makatib/' + values.editId : '/app/makatib' %>" novalidate>
+    <input type="hidden" name="_csrf" value="<%= csrf %>">
+    <%- include('_unit-fields', { unitLabel: 'Maktab' }) %>
+    <fieldset class="form-section">
+      <legend>Branch, teacher and classrooms</legend>
+      <div class="field-row field-row--3">
+        <div class="field <%= f('branch_id') %>">
+          <label for="branch_id">Branch <span class="opt">optional</span></label>
+          <select id="branch_id" name="branch_id">
+            <option value="">No branch</option>
+            <% branches.forEach(function (b) { %><option value="<%= b.id %>" <%= Number(values.branch_id) === b.id ? 'selected' : '' %>><%= b.name_en %> (<%= b.code %>)</option><% }) %>
+          </select>
+          <span class="err"><%= errors.branch_id %></span>
+        </div>
+        <div class="field <%= f('primary_teacher_id') %>">
+          <label for="primary_teacher_id">Primary teacher <span class="opt">optional</span></label>
+          <select id="primary_teacher_id" name="primary_teacher_id">
+            <option value="">Not assigned</option>
+            <% teachers.forEach(function (t) { %><option value="<%= t.id %>" <%= Number(values.primary_teacher_id) === t.id ? 'selected' : '' %>><%= t.full_name %> (<%= t.code %><%= t.maktab ? ', ' + t.maktab : '' %>)</option><% }) %>
+          </select>
+          <span class="err"><%= errors.primary_teacher_id %></span>
+        </div>
+        <div class="field <%= f('classrooms') %>"><label for="classrooms">Classrooms <span class="opt">optional</span></label><input id="classrooms" name="classrooms" type="number" min="0" max="200" inputmode="numeric" value="<%= values.classrooms ?? '' %>"><span class="err"><%= errors.classrooms %></span></div>
+      </div>
+      <% if (!teachers.length) { %><p class="hint">No teachers registered yet. <a href="/app/teachers/new">Register a teacher</a> first, or assign one later.</p><% } %>
+    </fieldset>
+    <%- include('_unit-admin-fields', { unitLabel: 'Maktab' }) %>
+    <% if (!editing) { %><p class="hint">You can add the Maktab photograph and documents on the next page.</p><% } %>
+    <div class="btn-row">
+      <button class="btn btn--gold" type="submit"><%= editing ? 'Save Maktab' : 'Register Maktab' %></button>
+      <a class="btn btn--line" href="<%= editing ? '/app/makatib/' + values.editId : '/app/makatib' %>">Cancel</a>
+    </div>
+  </form>
+</section>
+<%- include('../partials/app-bottom') %>

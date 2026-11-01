@@ -17,8 +17,9 @@ npm start                 # http://localhost:3000
 ```
 
 - Data is saved in `data/pgdata` (git-ignored). Stop the server and delete that folder to start fresh.
-- On first start the app creates the tables from [db/schema.sql](db/schema.sql) and the admin account from
-  `ADMIN_EMAIL` / `ADMIN_PASSWORD`. Sign in at `/login`.
+- On start the app applies any new migrations from [db/migrations/](db/migrations/) (each once, in order,
+  additive only) and creates the admin account from `ADMIN_EMAIL` / `ADMIN_PASSWORD`. Sign in at `/login`.
+- Branch and Maktab photos and documents are saved in `uploads/` (git-ignored) and are only served to staff.
 - `/api/health` shows `"ok": true` when the database is working.
 - `npm run dev` restarts the server automatically when you edit files.
 
@@ -51,8 +52,11 @@ The app always keeps at least one active admin, and admins cannot demote or dele
 server.js            Express app (exports the app; listens when run directly)
 api/index.js         Vercel serverless entry, wraps server.js
 vercel.json          Static files from public/, everything else to the app
-db/schema.sql        Tables and indexes (created on start if missing; never dropped)
-src/db.js            Local PGlite database, or Postgres via DATABASE_URL
+db/migrations/       SQL migrations, applied in order on start (also usable in any Postgres SQL editor)
+src/db.js            Local PGlite database (or Postgres via DATABASE_URL) and the migration runner
+src/dashboard.js     Staff dashboard statistics and chart data
+src/uploads.js       Photo and document uploads (type and size checks)
+src/routes/institution.js  Branches, Makatib, teachers, students, transfers, files
 src/auth.js          Password hashing (scrypt), CSRF, role guards, sign-in rate limit
 src/routes/auth.js   /login, /signup, /logout
 src/routes/app.js    /app/... dashboards and features
@@ -60,6 +64,7 @@ src/routes/api.js    /api/me, /api/contact (used by the public pages)
 views/               EJS templates (auth pages, dashboards)
 public/              The public website (HTML, CSS, JS, images)
 data/                Local database files (git-ignored)
+uploads/             Uploaded photos and documents (git-ignored)
 ```
 
 The contact form on the website still opens WhatsApp, and also saves the message so staff see it under **Messages**.

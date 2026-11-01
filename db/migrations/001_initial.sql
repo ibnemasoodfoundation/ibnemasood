@@ -1,6 +1,5 @@
--- Jamia Arabia Abdullah Bin Masood portal schema (PostgreSQL).
--- The app runs this on start. It only creates tables and indexes that are missing;
--- it never drops tables or changes existing data.
+-- 001: initial portal schema (users, admissions, donations, messages, announcements, activity).
+-- Idempotent: only creates what is missing.
 
 CREATE TABLE IF NOT EXISTS users (
   id            SERIAL PRIMARY KEY,

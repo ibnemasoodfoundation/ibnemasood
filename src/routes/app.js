@@ -5,6 +5,7 @@ const express = require("express");
 const { one, all, run, log } = require("../db");
 const { ROLES, hashPassword, verifyPassword, checkCsrf, requireLogin, requireRole } = require("../auth");
 const { BRANCHES, PROGRAMMES, DONATION_KINDS, DONATION_METHODS } = require("../helpers");
+const { dashboardData } = require("../dashboard");
 
 const router = express.Router();
 router.use(requireLogin, checkCsrf);
@@ -42,37 +43,8 @@ router.get("/", async (req, res) => {
     });
   }
 
-  const stats = await one(`SELECT
-    (SELECT COUNT(*) FROM admissions WHERE status = 'pending') AS "pendingAdmissions",
-    (SELECT COUNT(*) FROM admissions WHERE status = 'approved') AS students,
-    (SELECT COUNT(*) FROM donations WHERE status = 'pending') AS "pendingDonations",
-    (SELECT COALESCE(SUM(amount),0) FROM donations WHERE status = 'verified'
-       AND created_at >= date_trunc('month', now())) AS "monthTotal",
-    (SELECT COUNT(*) FROM messages WHERE status = 'new') AS "newMessages"`);
-  const byBranch = await all("SELECT branch, COUNT(*) AS n FROM admissions WHERE status = 'approved' GROUP BY branch");
-  const shared = {
-    stats,
-    byBranch: Object.keys(BRANCHES).map((k) => ({ key: k, n: (byBranch.find((b) => b.branch === k) || {}).n || 0 })),
-    recentAdmissions: await all("SELECT * FROM admissions WHERE status = 'pending' ORDER BY id DESC LIMIT 6"),
-    recentDonations: await all("SELECT * FROM donations ORDER BY id DESC LIMIT 6"),
-    announcements: await announcementsFor(u, 3),
-  };
-
-  if (u.role === "manager") return res.render("app/home-manager", { title: "Manager dashboard", ...shared });
-
-  const roleRows = await all("SELECT role, COUNT(*) AS n FROM users GROUP BY role");
-  const roleCounts = Object.fromEntries(ROLES.map((r) => [r, (roleRows.find((x) => x.role === r) || {}).n || 0]));
-  res.render("app/home-admin", {
-    title: "Admin dashboard",
-    ...shared,
-    roleCounts,
-    suspended: await count("SELECT COUNT(*) AS n FROM users WHERE status = 'suspended'"),
-    newUsers: await all("SELECT id, name, email, role, created_at FROM users ORDER BY id DESC LIMIT 6"),
-    activity: await all("SELECT a.*, u.name FROM activity a LEFT JOIN users u ON u.id = a.user_id ORDER BY a.id DESC LIMIT 8"),
-    monthly: await all(`SELECT to_char(created_at AT TIME ZONE 'UTC', 'YYYY-MM') AS m, SUM(amount) AS total FROM donations
-                        WHERE status = 'verified' AND created_at >= date_trunc('month', now()) - interval '5 months'
-                        GROUP BY m ORDER BY m`),
-  });
+  const data = await dashboardData(u);
+  res.render("app/dashboard", { title: u.role === "admin" ? "Admin dashboard" : "Manager dashboard", ...data });
 });
 
 /* ---------- Admissions ---------- */
@@ -93,8 +65,12 @@ router.get("/admissions", async (req, res) => {
   res.render("app/admissions", { title: isStaff(u) ? "Admissions" : "My applications", rows, filters: { status, branch, q } });
 });
 
-router.get("/admissions/new", (req, res) => {
-  res.render("app/admission-form", { title: "New admission application", values: { phone: req.user.phone || "" }, errors: {}, PROGRAMMES });
+const activeMakatib = () => all(`SELECT m.id, m.name_en, m.name_ur, m.town FROM makatib m WHERE m.status = 'active' ORDER BY m.name_en`);
+
+router.get("/admissions/new", async (req, res) => {
+  res.render("app/admission-form", {
+    title: "New admission application", values: { phone: req.user.phone || "" }, errors: {}, PROGRAMMES, makatib: await activeMakatib(),
+  });
 });
 
 router.post("/admissions", async (req, res) => {
@@ -107,8 +83,10 @@ router.post("/admissions", async (req, res) => {
     phone: str(req.body.phone, 30),
     address: str(req.body.address, 300),
     notes: str(req.body.notes, 1000),
+    maktab_id: /^\d{1,9}$/.test(String(req.body.maktab_id || "")) ? Number(req.body.maktab_id) : null,
   };
   const errors = {};
+  if (v.maktab_id && !(await one("SELECT id FROM makatib WHERE id = ? AND status = 'active'", v.maktab_id))) errors.maktab_id = "Choose a Maktab from the list.";
   if (v.student_name.length < 2) errors.student_name = "Enter the student's name.";
   if (v.father_name.length < 2) errors.father_name = "Enter the father's or guardian's name.";
   if (v.dob && (!/^\d{4}-\d{2}-\d{2}$/.test(v.dob) || isNaN(Date.parse(v.dob)))) errors.dob = "Enter a valid date.";
@@ -116,12 +94,14 @@ router.post("/admissions", async (req, res) => {
   else if (!PROGRAMMES[v.branch].includes(v.programme)) errors.programme = "Choose a programme for this branch.";
   if (!/^[+\d][\d\s-]{6,19}$/.test(v.phone)) errors.phone = "Enter a valid phone number.";
   if (Object.keys(errors).length) {
-    return res.status(400).render("app/admission-form", { title: "New admission application", values: v, errors, PROGRAMMES });
+    return res.status(400).render("app/admission-form", {
+      title: "New admission application", values: v, errors, PROGRAMMES, makatib: await activeMakatib(),
+    });
   }
   const r = await one(
-    `INSERT INTO admissions (user_id, student_name, father_name, dob, branch, programme, phone, address, notes)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`,
-    req.user.id, v.student_name, v.father_name, v.dob || null, v.branch, v.programme, v.phone, v.address || null, v.notes || null
+    `INSERT INTO admissions (user_id, student_name, father_name, dob, branch, programme, phone, address, notes, maktab_id)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`,
+    req.user.id, v.student_name, v.father_name, v.dob || null, v.branch, v.programme, v.phone, v.address || null, v.notes || null, v.maktab_id
   );
   await log(req.user.id, "admission.create", `#${r.id} ${v.student_name}`);
   req.flash("ok", "Application submitted. The office will review it soon.");
@@ -132,8 +112,10 @@ router.get("/admissions/:id", async (req, res, next) => {
   const id = Number(req.params.id);
   if (!Number.isInteger(id)) return next();
   const a = await one(
-    `SELECT a.*, u.name AS applicant, u.email AS applicant_email, r.name AS reviewer
-     FROM admissions a JOIN users u ON u.id = a.user_id LEFT JOIN users r ON r.id = a.reviewed_by WHERE a.id = ?`, id
+    `SELECT a.*, u.name AS applicant, u.email AS applicant_email, r.name AS reviewer, m.name_en AS maktab,
+            (SELECT id FROM students s WHERE s.admission_id = a.id LIMIT 1) AS student_id
+     FROM admissions a JOIN users u ON u.id = a.user_id LEFT JOIN users r ON r.id = a.reviewed_by
+     LEFT JOIN makatib m ON m.id = a.maktab_id WHERE a.id = ?`, id
   );
   if (!a || (!isStaff(req.user) && a.user_id !== req.user.id)) return next();
   res.render("app/admission", { title: "Application #" + a.id, a });

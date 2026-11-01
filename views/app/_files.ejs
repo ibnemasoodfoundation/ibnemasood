@@ -1,0 +1,47 @@
+<%# Photos and documents panel. Expects: files, uploadUrl %>
+<% const photos = files.filter(x => x.kind === 'photo'), docs = files.filter(x => x.kind === 'document'); %>
+<section class="card" id="files">
+  <div class="card-head"><h2>Photos and documents</h2></div>
+  <div class="grid-2 grid-2--files">
+    <div>
+      <h3 class="sub">Photos</h3>
+      <% if (!photos.length) { %><p class="empty">No photos yet.</p><% } else { %>
+        <div class="photo-grid">
+          <% photos.forEach(function (p) { %>
+            <figure class="photo">
+              <a href="/app/files/<%= p.id %>" target="_blank" rel="noopener"><img src="/app/files/<%= p.id %>" alt="<%= p.file_name %>" loading="lazy"></a>
+              <figcaption>
+                <span><%= fmtDate(p.created_at) %></span>
+                <form method="post" action="/app/files/<%= p.id %>/delete" data-confirm="Remove this photo?"><input type="hidden" name="_csrf" value="<%= csrf %>"><button class="link-danger" type="submit">Remove</button></form>
+              </figcaption>
+            </figure>
+          <% }) %>
+        </div>
+      <% } %>
+      <form class="upload" method="post" action="<%= uploadUrl %>?kind=photo" enctype="multipart/form-data">
+        <input type="hidden" name="_csrf" value="<%= csrf %>">
+        <label class="upload-pick"><%- include('../partials/icon', { name: 'upload' }) %><span>Choose photo</span><input type="file" name="file" accept="image/jpeg,image/png,image/webp" required data-autosubmit></label>
+        <small>JPG, PNG or WebP, up to 5 MB</small>
+      </form>
+    </div>
+    <div>
+      <h3 class="sub">Documents</h3>
+      <% if (!docs.length) { %><p class="empty">No documents yet.</p><% } else { %>
+        <ul class="docs">
+          <% docs.forEach(function (d) { %>
+            <li>
+              <%- include('../partials/icon', { name: 'file' }) %>
+              <span><a href="/app/files/<%= d.id %>" target="_blank" rel="noopener"><%= d.file_name %></a><small><%= fileSize(d.size_bytes) %> · <%= fmtDate(d.created_at) %><%= d.uploader ? ' · ' + d.uploader : '' %></small></span>
+              <form method="post" action="/app/files/<%= d.id %>/delete" data-confirm="Remove <%= d.file_name %>?"><input type="hidden" name="_csrf" value="<%= csrf %>"><button class="link-danger" type="submit">Remove</button></form>
+            </li>
+          <% }) %>
+        </ul>
+      <% } %>
+      <form class="upload" method="post" action="<%= uploadUrl %>?kind=document" enctype="multipart/form-data">
+        <input type="hidden" name="_csrf" value="<%= csrf %>">
+        <label class="upload-pick"><%- include('../partials/icon', { name: 'upload' }) %><span>Choose document</span><input type="file" name="file" accept=".pdf,.doc,.docx,.xls,.xlsx,image/jpeg,image/png,image/webp" required data-autosubmit></label>
+        <small>PDF, Word, Excel or image, up to 10 MB</small>
+      </form>
+    </div>
+  </div>
+</section>

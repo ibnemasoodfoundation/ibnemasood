@@ -28,6 +28,16 @@
         <span class="err"><%= errors.programme %></span>
       </div>
     </div>
+    <% if (makatib.length) { %>
+      <div class="field <%= errors.maktab_id ? 'invalid' : '' %>">
+        <label for="maktab_id">Nearest Maktab <span class="opt">optional</span></label>
+        <select id="maktab_id" name="maktab_id">
+          <option value="">Not sure / main campus</option>
+          <% makatib.forEach(function (m) { %><option value="<%= m.id %>" <%= Number(values.maktab_id) === m.id ? 'selected' : '' %>><%= m.name_en %><%= m.town ? ' (' + m.town + ')' : '' %></option><% }) %>
+        </select>
+        <span class="err"><%= errors.maktab_id %></span>
+      </div>
+    <% } %>
     <div class="field"><label for="address">Home address <span class="opt">optional</span></label><input id="address" name="address" value="<%= values.address || '' %>"></div>
     <div class="field"><label for="notes">Anything we should know? <span class="opt">optional</span></label><textarea id="notes" name="notes" placeholder="Previous madrasa or school, how much Quran is memorised, health needs, hostel required…"><%= values.notes || '' %></textarea></div>
     <div class="btn-row">

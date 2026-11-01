@@ -3,9 +3,19 @@
 const staffRole = user.role === 'admin' || user.role === 'manager';
 const nav = [
   { href: '/app', label: user.role === 'user' ? 'My dashboard' : 'Overview', icon: 'home' },
-  { href: '/app/admissions', label: staffRole ? 'Admissions' : 'My applications', icon: 'file' },
-  { href: '/app/donations', label: staffRole ? 'Donations' : 'My donations', icon: 'heart' },
 ];
+if (staffRole) nav.push(
+  { section: 'Institution' },
+  { href: '/app/branches', label: 'Branches', icon: 'branch' },
+  { href: '/app/makatib', label: 'Makatib', icon: 'maktab' },
+  { href: '/app/teachers', label: 'Teachers', icon: 'teacher' },
+  { href: '/app/students', label: 'Students', icon: 'student' },
+  { section: 'Office' }
+);
+nav.push(
+  { href: '/app/admissions', label: staffRole ? 'Admissions' : 'My applications', icon: 'file' },
+  { href: '/app/donations', label: staffRole ? 'Donations' : 'My donations', icon: 'heart' }
+);
 if (staffRole) nav.push({ href: '/app/messages', label: 'Messages', icon: 'mail' });
 nav.push({ href: '/app/announcements', label: 'Announcements', icon: 'bell' });
 if (user.role === 'admin') {
@@ -26,6 +36,7 @@ const isOn = (href) => href === '/app' ? (path === '/app' || path === '/app/') :
     <div class="side-role role-<%= user.role %>"><%- include('icon', { name: 'shield' }) %><%= ROLE_LABELS[user.role] %> portal</div>
     <nav class="side-nav" aria-label="Dashboard">
       <% nav.forEach(function (n) { %>
+        <% if (n.section) { %><span class="side-section"><%= n.section %></span><% return; } %>
         <a href="<%= n.href %>" <% if (isOn(n.href)) { %>aria-current="page"<% } %>><%- include('icon', { name: n.icon }) %><span><%= n.label %></span></a>
       <% }) %>
     </nav>

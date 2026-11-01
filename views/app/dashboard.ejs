@@ -1,0 +1,157 @@
+<%- include('../partials/app-top') %>
+<%
+  const s = stats;
+  const tile = (label, value, href, note) => ({ label, value, href, note });
+  const groups = [
+    { title: 'Institution overview', tiles: [
+      tile('Branches', s.branches, '/app/branches'),
+      tile('Makatib', s.makatib, '/app/makatib'),
+      tile('Teachers', s.teachers, '/app/teachers', s.active_teachers + ' active'),
+      tile('Students', s.students, '/app/students', s.active_students + ' active'),
+      tile('Male students', s.male_students, '/app/students?gender=male'),
+      tile('Female students', s.female_students, '/app/students?gender=female'),
+      tile('Active teachers', s.active_teachers, '/app/teachers?status=active'),
+      tile('Active students', s.active_students, '/app/students?status=active'),
+    ]},
+    { title: 'Admissions', tiles: [
+      tile('Total applications', s.applications, '/app/admissions'),
+      tile('Awaiting review', s.pending_applications, '/app/admissions?status=pending'),
+      tile('Approved', s.approved_applications, '/app/admissions?status=approved'),
+      tile('Rejected', s.rejected_applications, '/app/admissions?status=rejected'),
+      tile('Currently enrolled', s.active_students, '/app/students?status=active'),
+    ]},
+    { title: 'Financial overview', gold: true, tiles: [
+      tile('Total verified donations', money(s.donations_total), '/app/donations?status=verified'),
+      tile('Pending verification', s.donations_pending, '/app/donations?status=pending'),
+      tile('Verified this month', money(s.donations_month), '/app/donations?status=verified'),
+    ]},
+  ];
+  if (isAdmin) groups.push({ title: 'Administration', tiles: [
+    tile('Administrators', s.admins, '/app/users?role=admin'),
+    tile('Managers', s.managers, '/app/users?role=manager'),
+    tile('Suspended users', s.suspended, '/app/users'),
+    tile('New messages', s.new_messages, '/app/messages?status=new'),
+  ]});
+  else groups.push({ title: 'Office', tiles: [ tile('New messages', s.new_messages, '/app/messages?status=new') ]});
+
+  const chartDefs = [
+    { id: 'studentsByBranch', title: 'Students by branch', kind: 'bar-h', empty: 'No students registered yet.' },
+    { id: 'studentsByGender', title: 'Students by gender', kind: 'bar', empty: 'No students registered yet.' },
+    { id: 'teachersByBranch', title: 'Teachers by branch', kind: 'bar-h', empty: 'No teachers registered yet.' },
+    { id: 'makatibByDistrict', title: 'Makatib by district', kind: 'bar-h', empty: 'No Makatib registered yet.' },
+    { id: 'admissionsMonthly', title: 'Admissions per month', kind: 'bar', empty: 'No applications in the last 12 months.' },
+    { id: 'donationsMonthly', title: 'Verified donations per month', kind: 'bar', empty: 'No verified donations in the last 12 months.' },
+  ];
+  const quick = [
+    ['/app/makatib/new', 'Add Maktab', 'maktab'], ['/app/branches/new', 'Add Branch', 'branch'],
+    ['/app/teachers/new', 'Register Teacher', 'teacher'], ['/app/students/new', 'Register Student', 'student'],
+    ['/app/admissions/new', 'Create Admission', 'file'], ['/app/donations/new', 'Add Donation', 'heart'],
+  ];
+%>
+<div class="welcome">
+  <div>
+    <span class="ar" lang="ar">السلام علیکم</span>
+    <h2><%= isAdmin ? 'Admin overview' : user.name.split(' ')[0] + ', here is the Jamia today' %></h2>
+    <p><%= s.branches %> branches, <%= s.makatib %> Makatib, <%= s.active_teachers %> active teachers and <%= s.active_students %> active students.</p>
+  </div>
+</div>
+
+<section class="card quick-card" aria-label="Quick actions">
+  <div class="quick-grid">
+    <% quick.forEach(function (q) { %>
+      <a class="quick-action" href="<%= q[0] %>"><span class="action-icon"><%- include('../partials/icon', { name: q[2] }) %></span><span><%= q[1] %></span></a>
+    <% }) %>
+  </div>
+</section>
+
+<% groups.forEach(function (g) { %>
+  <section class="stat-group" aria-labelledby="g-<%= g.title.replace(/\W+/g, '') %>">
+    <h2 class="group-title" id="g-<%= g.title.replace(/\W+/g, '') %>"><%= g.title %></h2>
+    <div class="stats">
+      <% g.tiles.forEach(function (t) { %>
+        <a class="stat <%= g.gold ? 'stat--gold' : '' %>" href="<%= t.href %>"><small><%= t.label %></small><strong><%= t.value %></strong><% if (t.note) { %><span><%= t.note %></span><% } %></a>
+      <% }) %>
+    </div>
+  </section>
+<% }) %>
+
+<h2 class="group-title">Charts</h2>
+<div class="chart-grid">
+  <% chartDefs.forEach(function (c) { const d = charts[c.id]; const hasData = d.values.some(v => v > 0); %>
+    <section class="card chart-card">
+      <div class="card-head"><h2><%= c.title %></h2></div>
+      <% if (!hasData) { %>
+        <p class="empty chart-empty"><%= c.empty %></p>
+      <% } else { %>
+        <div class="chart-box <%= c.kind === 'bar-h' ? 'chart-box--h' : '' %>" style="<%= c.kind === 'bar-h' ? 'height:' + Math.max(160, d.labels.length * 34 + 40) + 'px' : '' %>">
+          <canvas data-chart="<%= c.id %>" data-kind="<%= c.kind %>" role="img" aria-label="<%= c.title %>"></canvas>
+        </div>
+        <details class="chart-table">
+          <summary>View as table</summary>
+          <table class="table"><tbody>
+            <% d.labels.forEach(function (l, i) { %><tr><td><%= l %></td><td class="t-right num"><%= d.money ? money(d.values[i]) : d.values[i] %></td></tr><% }) %>
+          </tbody></table>
+        </details>
+      <% } %>
+    </section>
+  <% }) %>
+</div>
+<script type="application/json" id="chart-data"><%- JSON.stringify(charts).replace(/</g, '\\u003c') %></script>
+
+<h2 class="group-title">Recent</h2>
+<div class="grid-2">
+  <section class="card">
+    <div class="card-head"><h2>Admissions</h2><a href="/app/admissions">View all</a></div>
+    <% if (!recent.admissions.length) { %><p class="empty">No applications yet.</p><% } else { %>
+      <ul class="rows"><% recent.admissions.forEach(function (a) { %>
+        <li><a href="/app/admissions/<%= a.id %>"><span><strong><%= a.student_name %></strong><small><%= a.programme %>, <%= cap(a.branch) %> · <%= fmtDate(a.created_at) %></small></span><%- include('../partials/badge', { s: a.status }) %></a></li>
+      <% }) %></ul>
+    <% } %>
+  </section>
+  <section class="card">
+    <div class="card-head"><h2>Donations</h2><a href="/app/donations">View all</a></div>
+    <% if (!recent.donations.length) { %><p class="empty">No donations recorded yet.</p><% } else { %>
+      <ul class="rows"><% recent.donations.forEach(function (d) { %>
+        <li><span><strong><%= d.donor_name %> · <%= money(d.amount) %></strong><small><%= d.kind %> · <%= fmtDate(d.created_at) %></small></span><%- include('../partials/badge', { s: d.status }) %></li>
+      <% }) %></ul>
+    <% } %>
+  </section>
+  <section class="card">
+    <div class="card-head"><h2>Teachers</h2><a href="/app/teachers">View all</a></div>
+    <% if (!recent.teachers.length) { %><p class="empty">No teachers registered yet. <a href="/app/teachers/new">Register a teacher</a>.</p><% } else { %>
+      <ul class="rows"><% recent.teachers.forEach(function (t) { %>
+        <li><a href="/app/teachers/<%= t.id %>/edit"><span><strong><%= t.full_name %></strong><small><%= t.code %> · <%= t.maktab || 'No Maktab yet' %></small></span><%- include('../partials/badge', { s: t.status }) %></a></li>
+      <% }) %></ul>
+    <% } %>
+  </section>
+  <section class="card">
+    <div class="card-head"><h2>Students</h2><a href="/app/students">View all</a></div>
+    <% if (!recent.students.length) { %><p class="empty">No students registered yet. <a href="/app/students/new">Register a student</a>.</p><% } else { %>
+      <ul class="rows"><% recent.students.forEach(function (st) { %>
+        <li><a href="/app/students/<%= st.id %>/edit"><span><strong><%= st.full_name %></strong><small><%= st.code %> · <%= GENDERS[st.gender] %> · <%= st.maktab || 'No Maktab yet' %></small></span><%- include('../partials/badge', { s: st.status }) %></a></li>
+      <% }) %></ul>
+    <% } %>
+  </section>
+  <section class="card">
+    <div class="card-head"><h2>Messages</h2><a href="/app/messages">View all</a></div>
+    <% if (!recent.messages.length) { %><p class="empty">No messages from the website yet.</p><% } else { %>
+      <ul class="rows"><% recent.messages.forEach(function (m) { %>
+        <li><a href="/app/messages"><span><strong><%= m.name %></strong><small><%= m.topic || 'General' %> · <%= fmtDate(m.created_at) %></small></span><%- include('../partials/badge', { s: m.status }) %></a></li>
+      <% }) %></ul>
+    <% } %>
+  </section>
+  <% if (isAdmin) { %>
+    <section class="card">
+      <div class="card-head"><h2>Activity</h2><a href="/app/activity">Full log</a></div>
+      <% if (!recent.activity.length) { %><p class="empty">No activity yet.</p><% } else { %>
+        <ul class="log log--compact"><% recent.activity.forEach(function (a) { %>
+          <li><span class="log-time"><%= fmtDateTime(a.created_at) %></span><span><strong><%= a.name || 'System' %></strong> <code><%= a.action %></code> <%= a.detail || '' %></span></li>
+        <% }) %></ul>
+      <% } %>
+    </section>
+  <% } %>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
+<script src="/assets/js/dashboard.js" defer></script>
+<%- include('../partials/app-bottom') %>

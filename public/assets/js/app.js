@@ -31,6 +31,16 @@
     });
   });
 
+  /* Upload as soon as a file is picked */
+  document.querySelectorAll("input[type=file][data-autosubmit]").forEach(function (input) {
+    input.addEventListener("change", function () {
+      if (!input.files.length) return;
+      var label = input.closest(".upload-pick");
+      if (label) { label.classList.add("is-busy"); label.querySelector("span").textContent = "Uploading…"; }
+      input.form.submit();
+    });
+  });
+
   /* Show / hide a section */
   document.querySelectorAll("[data-toggle]").forEach(function (btn) {
     btn.addEventListener("click", function () {

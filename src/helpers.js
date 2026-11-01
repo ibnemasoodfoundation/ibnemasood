@@ -18,6 +18,21 @@ const DONATION_METHODS = ["Bank Al Habib", "JazzCash", "EasyPaisa", "Cash at the
 
 const ROLE_LABELS = { admin: "Admin", manager: "Manager", user: "Member" };
 
+// Towns the Jamia already serves. Offered as suggestions only: any new town can be typed in.
+const REPORTED_TOWNS = [
+  { en: "Bhiria Road", ur: "بھریا روڈ" },
+  { en: "Paka Chang", ur: "پکا چانگ" },
+  { en: "Akri Perosan", ur: "اکری پیروسن" },
+  { en: "Kharrara", ur: "کھرڑا" },
+  { en: "Padidan", ur: "پڈعیدن" },
+  { en: "Kumb", ur: "کنب" },
+];
+
+const UNIT_STATUSES = ["active", "inactive", "archived"];
+const TEACHER_STATUSES = ["active", "inactive", "left"];
+const STUDENT_STATUSES = ["active", "inactive", "graduated", "left"];
+const GENDERS = { male: "Male", female: "Female" };
+
 /* Postgres gives timestamps as Date objects and DATE columns as "YYYY-MM-DD" */
 function toDate(s) {
   if (!s) return null;
@@ -43,9 +58,14 @@ function initials(name) {
   return String(name || "?").trim().split(/\s+/).slice(0, 2).map((w) => w[0]).join("").toUpperCase();
 }
 
+function fileSize(n) {
+  return n >= 1048576 ? (n / 1048576).toFixed(1) + " MB" : Math.max(1, Math.round(n / 1024)) + " KB";
+}
+
 function cap(s) { return s ? s[0].toUpperCase() + s.slice(1) : ""; }
 
 module.exports = {
   BRANCHES, PROGRAMMES, DONATION_KINDS, DONATION_METHODS, ROLE_LABELS,
+  REPORTED_TOWNS, UNIT_STATUSES, TEACHER_STATUSES, STUDENT_STATUSES, GENDERS, fileSize,
   fmtDate, fmtDateTime, money, initials, cap,
 };
