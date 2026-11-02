@@ -2,7 +2,7 @@
   "name": "jaabm-webapp",
   "version": "1.0.0",
   "private": true,
-  "description": "Jamia Arabia Abdullah Bin Masood: public website with sign-in and Admin, Manager and User dashboards (Supabase + Vercel)",
+  "description": "Jamia Arabia Abdullah Bin Masood: public website with sign-in and Admin, Manager and User dashboards (Postgres, runs locally or on Vercel)",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",

@@ -5,7 +5,7 @@
 "use strict";
 const express = require("express");
 const { one, all } = require("../db");
-const { filePath } = require("../uploads");
+const { sendStored } = require("../uploads");
 
 const router = express.Router();
 const str = (v, max = 80) => String(v ?? "").trim().slice(0, max);
@@ -101,10 +101,9 @@ router.get("/media/:id", async (req, res) => {
     LEFT JOIN makatib m ON a.entity_type = 'maktab' AND m.id = a.entity_id AND m.status = 'active' AND m.public_listing
     LEFT JOIN branches b ON a.entity_type = 'branch' AND b.id = a.entity_id AND b.status = 'active' AND b.public_listing
     WHERE a.id = ? AND a.is_public AND a.kind = 'photo' AND (m.id IS NOT NULL OR b.id IS NOT NULL)`, id);
-  const p = f && filePath(f.stored_name);
-  if (!p) return res.status(404).end();
+  if (!f) return res.status(404).end();
   res.set("Cache-Control", "public, max-age=86400");
-  res.type(f.mime).sendFile(p, (err) => { if (err && !res.headersSent) res.status(404).end(); });
+  if (!(await sendStored(res, f.stored_name, f.mime))) res.set("Cache-Control", "no-store").status(404).end();
 });
 
 module.exports = router;

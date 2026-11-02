@@ -4,7 +4,7 @@
 const express = require("express");
 const { one, all, run, log } = require("../db");
 const { checkCsrf, requireRole } = require("../auth");
-const { acceptUpload, filePath, removeFile } = require("../uploads");
+const { acceptUpload, sendStored, removeFile } = require("../uploads");
 const { withScope, branchSql, maktabSql, personSql, inMaktab, inBranch, canSeePerson, canSeeBranch } = require("../scope");
 const { movePerson } = require("../transfers");
 const { REPORTED_TOWNS, UNIT_STATUSES, DOC_CATEGORIES } = require("../helpers");
@@ -453,13 +453,12 @@ for (const [route, cfg] of Object.entries(ENTITIES)) {
 
 router.get("/files/:id", requireRole("admin", "manager", "teacher"), withScope, async (req, res, next) => {
   const f = int(req.params.id) && await one("SELECT * FROM attachments WHERE id = ?", int(req.params.id));
-  const p = f && filePath(f.stored_name);
-  if (!p) return next();
+  if (!f) return next();
   if (!(await canAccessEntity(req, f.entity_type, f.entity_id, false))) return forbidden(res);
   const inline = /^image\/|^application\/pdf$/.test(f.mime) && req.query.download !== "1";
   res.set("Cache-Control", "private, max-age=3600");
   res.set("Content-Disposition", `${inline ? "inline" : "attachment"}; filename*=UTF-8''${encodeURIComponent(f.file_name)}`);
-  res.type(f.mime).sendFile(p, (err) => { if (err && !res.headersSent) next(); });
+  if (!(await sendStored(res, f.stored_name, f.mime))) { res.removeHeader("Content-Disposition"); next(); }
 });
 
 /* Approve (or withdraw) a branch / Maktab photo for the public website, with a caption */

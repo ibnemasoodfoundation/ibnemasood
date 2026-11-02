@@ -34,10 +34,26 @@ npm start                 # http://localhost:3000
   rejects it (`attachments_public_check`).
 - The figures "≈190 Makatib" and "5,000+ students" are institution-approved and shown until the directory is complete.
 
-## Moving to a hosted database later
+## Deploying on Vercel with Supabase
 
-The SQL is standard PostgreSQL. Set `DATABASE_URL` to a hosted Postgres connection string and the app uses it
-instead of the local database, creating any missing tables on start. Local data is not copied over.
+Vercel's disk is read-only, so online the app needs a hosted database and file storage. Add these in
+Vercel > Project > Settings > Environment Variables, then redeploy:
+
+| Name | Value |
+|---|---|
+| `SESSION_SECRET` | long random text (`node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`) |
+| `ADMIN_EMAIL`, `ADMIN_PASSWORD` | the first admin account |
+| `DATABASE_URL` | Supabase > Connect > Transaction pooler URI, with the real database password (special characters percent-encoded) |
+| `SUPABASE_URL` | `https://<project-ref>.supabase.co` |
+| `SUPABASE_SECRET_KEY` | Supabase > Project Settings > API Keys > Secret key (`sb_secret_...`) |
+
+- Tables are created by the app itself on first start (from [db/migrations/](db/migrations/)); do not run
+  `supabase db push` for them.
+- Photos and documents go to a private Storage bucket named `uploads`, created automatically. They are served only
+  through the app's permission checks, never by public Supabase links.
+- The publishable key and `@supabase/supabase-js` are not used: the browser never talks to Supabase directly.
+- `/api/health` shows `"ok": true` and `"files": "supabase-storage"` when everything is connected.
+- Local data is not copied to Supabase.
 
 ## Roles
 

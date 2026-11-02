@@ -60,7 +60,7 @@ app.get("/api/health", async (req, res) => {
   res.set("Cache-Control", "no-store");
   if (missing.length) return res.status(500).json({ ok: false, missing, hint: "Add these in Vercel > Settings > Environment Variables, then redeploy." });
   const db = await health();
-  res.status(db.ok ? 200 : 500).json({ ok: db.ok, database: db });
+  res.status(db.ok ? 200 : 500).json({ ok: db.ok, database: db, files: require("./src/uploads").remote ? "supabase-storage" : "local-disk" });
 });
 
 app.use((req, res, next) => {
