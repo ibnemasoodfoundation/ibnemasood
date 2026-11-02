@@ -35,7 +35,25 @@ app.use(express.static(path.join(__dirname, "public"), { extensions: ["html"], m
 /* Missing settings on the host: say exactly what to add instead of crashing */
 const missing = [];
 if (!secret) missing.push("SESSION_SECRET");
+// Vercel's disk is read-only and wiped between requests, so the local database can't be used there
+if (process.env.VERCEL && !process.env.DATABASE_URL) missing.push("DATABASE_URL");
 if (missing.length) console.error("Missing environment variables: " + missing.join(", "));
+
+function setupPage(names) {
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Portal setup | Jamia Arabia Abdullah Bin Masood</title><link rel="stylesheet" href="/assets/css/style.css">
+<style>body{background:#f7f5ef;margin:0}.setup{max-width:640px;margin:12vh auto;padding:32px 24px;background:#fff;border-radius:12px;box-shadow:0 2px 12px rgba(0,0,0,.08);font-family:system-ui,sans-serif;color:#1d2433}
+.setup h1{color:#0F1842;margin-top:0;font-size:1.5rem}.setup code{background:#eef1f8;padding:2px 6px;border-radius:4px}.setup li{margin:6px 0}</style></head>
+<body><main class="setup"><h1>The portal is not set up on this server yet</h1>
+<p>The public website works. Sign in, the dashboards and the Makatib directory need these settings, added in
+Vercel &rsaquo; Project &rsaquo; Settings &rsaquo; Environment Variables (then redeploy):</p>
+<ul>${names.map((n) => "<li><code>" + n + "</code>" + (SETUP_HINTS[n] ? " &mdash; " + SETUP_HINTS[n] : "") + "</li>").join("")}</ul>
+<p><a href="/">&larr; Back to the website</a></p></main></body></html>`;
+}
+const SETUP_HINTS = {
+  SESSION_SECRET: "a long random text that keeps sign-ins secure",
+  DATABASE_URL: "the connection string of a hosted PostgreSQL database",
+};
 
 /* Setup check for the site owner: open /api/health after each deploy */
 app.get("/api/health", async (req, res) => {
@@ -47,10 +65,7 @@ app.get("/api/health", async (req, res) => {
 
 app.use((req, res, next) => {
   if (!missing.length) return next();
-  res.status(500).type("text").send(
-    "The portal is not configured yet.\n\nAdd these Environment Variables in Vercel (Project > Settings > Environment Variables), then redeploy:\n  " +
-    missing.join("\n  ")
-  );
+  res.status(503).set("Cache-Control", "no-store").type("html").send(setupPage(missing));
 });
 
 app.use(express.urlencoded({ extended: false, limit: "100kb" }));
