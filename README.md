@@ -43,7 +43,7 @@ Vercel > Project > Settings > Environment Variables, then redeploy:
 |---|---|
 | `SESSION_SECRET` | long random text (`node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`) |
 | `ADMIN_EMAIL`, `ADMIN_PASSWORD` | the first admin account |
-| `DATABASE_URL` | Supabase > Connect > Transaction pooler URI, with the real database password (special characters percent-encoded) |
+| `DATABASE_URL` | Supabase > Connect > Transaction pooler URI, with the real database password (special characters percent-encoded). Not needed when the Supabase integration is installed on Vercel: its `POSTGRES_URL` is used first and stays correct after a password reset |
 | `SUPABASE_URL` | `https://<project-ref>.supabase.co` |
 | `SUPABASE_SECRET_KEY` | Supabase > Project Settings > API Keys > Secret key (`sb_secret_...`) |
 

@@ -1,5 +1,6 @@
 /* Database: local Postgres (PGlite, saved in ./data/pgdata) for development.
-   Set DATABASE_URL to use any hosted Postgres instead; the SQL is the same. */
+   Set DATABASE_URL to use any hosted Postgres instead; the SQL is the same.
+   POSTGRES_URL (added by the Supabase integration on Vercel, which keeps it up to date) takes precedence. */
 "use strict";
 const fs = require("node:fs");
 const path = require("node:path");
@@ -18,10 +19,12 @@ function logDatabaseError(operation, err) {
   console.error(JSON.stringify({ event: "database_error", operation, code }));
 }
 
+const databaseUrl = () => process.env.POSTGRES_URL || process.env.DATABASE_URL || "";
+
 /* One client per process: { query(sql, params) -> rows, exec(sql) } */
 let clientPromise = null;
 function getClient() {
-  if (!clientPromise) clientPromise = (process.env.DATABASE_URL ? postgresClient() : localClient()).catch((err) => {
+  if (!clientPromise) clientPromise = (databaseUrl() ? postgresClient() : localClient()).catch((err) => {
     clientPromise = null;
     throw err;
   });
@@ -42,8 +45,8 @@ async function localClient() {
 async function postgresClient() {
   const { Pool, types } = require("pg");
   for (const [oid, fn] of Object.entries(PARSERS)) types.setTypeParser(Number(oid), fn);
-  const url = new URL(process.env.DATABASE_URL);
-  url.searchParams.delete("sslmode"); // would override the ssl option below
+  const url = new URL(databaseUrl());
+  url.search = ""; // sslmode would override the ssl option below; Supabase's extra parameters are not for pg
   const local = ["localhost", "127.0.0.1"].includes(url.hostname);
   const pool = new Pool({
     connectionString: url.toString(),
@@ -137,14 +140,15 @@ function ready() {
 
 /* Used by /api/health: never returns secrets, only status and an error code */
 async function health() {
+  const source = process.env.POSTGRES_URL ? "POSTGRES_URL" : process.env.DATABASE_URL ? "DATABASE_URL" : "local";
   try {
     await ready();
     const admins = await one("SELECT COUNT(*) AS n FROM users WHERE role = 'admin'");
-    return { ok: true, engine: process.env.DATABASE_URL ? "postgres" : "local", admin: admins.n > 0 };
+    return { ok: true, engine: databaseUrl() ? "postgres" : "local", source, admin: admins.n > 0 };
   } catch (err) {
     const code = typeof err?.code === "string" && /^[A-Z0-9_]{2,32}$/.test(err.code) ? err.code : "UNKNOWN";
-    return { ok: false, code };
+    return { ok: false, source, code };
   }
 }
 
-module.exports = { one, all, run, log, ready, health, logDatabaseError };
+module.exports = { databaseUrl, one, all, run, log, ready, health, logDatabaseError };

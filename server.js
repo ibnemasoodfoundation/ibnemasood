@@ -36,7 +36,7 @@ app.use(express.static(path.join(__dirname, "public"), { extensions: ["html"], m
 const missing = [];
 if (!secret) missing.push("SESSION_SECRET");
 // Vercel's disk is read-only and wiped between requests, so the local database can't be used there
-if (process.env.VERCEL && !process.env.DATABASE_URL) missing.push("DATABASE_URL");
+if (process.env.VERCEL && !process.env.POSTGRES_URL && !process.env.DATABASE_URL) missing.push("DATABASE_URL");
 if (missing.length) console.error("Missing environment variables: " + missing.join(", "));
 
 function setupPage(names) {
