@@ -699,6 +699,6 @@ body { top: 0 !important; }
 
 /* ---------- Backgrounds: the logo watermark only (no star pattern) ---------- */
 :root {
-  --pattern: url("/assets/images/logo-watermark.png") center / 180px 180px repeat;
+  --pattern: url("/assets/images/logo-watermark.png") center / 260px 260px repeat;
   --pattern-light: none;
 }
