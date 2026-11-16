@@ -5,14 +5,14 @@
 "use strict";
 const express = require("express");
 const { one, all, run, log } = require("../db");
-const { checkCsrf, requireRole } = require("../auth");
-const { withScope, maktabSql, personSql, inMaktab, canSeePerson } = require("../scope");
+const { checkCsrf, requireRole, STAFF_ROLES } = require("../auth");
+const { withScope, maktabSql, schoolSql, personSql, inMaktab, inSchool, canSeePerson } = require("../scope");
 const { ATTENDANCE, SESSIONS, todayPk } = require("../helpers");
 const { helpers: h } = require("./institution");
 
 const router = express.Router();
-const staff = [requireRole("admin", "manager"), withScope, checkCsrf];
-const staffOrTeacher = [requireRole("admin", "manager", "teacher"), withScope, checkCsrf];
+const staff = [requireRole(...STAFF_ROLES), withScope, checkCsrf];
+const staffOrTeacher = [requireRole(...STAFF_ROLES, "teacher"), withScope, checkCsrf];
 const { str, int, DATE_RE, forbidden } = h;
 
 const TEACHER_EDIT_DAYS = 7; // teachers may correct the last week; managers and admins any past date
@@ -46,23 +46,29 @@ async function classOptions(scope) {
 const teacherOptions = (scope) => all(`SELECT t.id, t.full_name, t.maktab_id FROM teachers t
   WHERE t.status IN ('active','on_leave') AND ${scope.canManage ? personSql(scope, "t", "teacher") : "FALSE"} ORDER BY t.full_name`);
 
-/* Students on a register: active, in scope, optionally narrowed by Maktab / class / teacher */
+const schoolList = (scope) => all(`SELECT sc.id, sc.code, sc.name_en FROM schools sc WHERE sc.status <> 'archived' AND ${schoolSql(scope, "sc")} ORDER BY sc.name_en`);
+
+/* Students on a register: active, in scope, optionally narrowed by Maktab or school / class / teacher */
 function registerStudents(scope, f) {
   const where = ["s.status = 'active'", personSql(scope, "s", "student")], p = [];
   if (f.maktab) { where.push("s.maktab_id = ?"); p.push(f.maktab); }
+  if (f.school) { where.push("s.school_id = ?"); p.push(f.school); }
   if (f.cls) { where.push("s.class_name = ?"); p.push(f.cls); }
   if (f.teacher) { where.push("s.teacher_id = ?"); p.push(f.teacher); }
-  return all(`SELECT s.id, s.code, s.full_name, s.name_ur, s.father_name, s.class_name, s.maktab_id, m.name_en AS maktab
-    FROM students s LEFT JOIN makatib m ON m.id = s.maktab_id WHERE ${where.join(" AND ")} ORDER BY m.name_en NULLS LAST, s.class_name NULLS LAST, s.full_name`, ...p);
+  return all(`SELECT s.id, s.code, s.full_name, s.name_ur, s.father_name, s.class_name, s.maktab_id, COALESCE(m.name_en, sc.name_en) AS maktab
+    FROM students s LEFT JOIN makatib m ON m.id = s.maktab_id LEFT JOIN schools sc ON sc.id = s.school_id
+    WHERE ${where.join(" AND ")} ORDER BY 8 NULLS LAST, s.class_name NULLS LAST, s.full_name`, ...p);
 }
 
 function filtersFrom(req) {
   const f = {
-    maktab: int(req.query.maktab), cls: str(req.query.class, 60), teacher: int(req.query.teacher),
+    maktab: int(req.query.maktab), school: int(req.query.school), cls: str(req.query.class, 60), teacher: int(req.query.teacher),
     session: SESSIONS[req.query.session] ? req.query.session : "morning",
   };
   // A teacher's register defaults to their own Maktab
   if (req.user.role === "teacher" && !f.maktab && req.scope.maktabIds.length) f.maktab = req.scope.maktabIds[0];
+  if (req.user.role === "teacher" && !f.maktab && !f.school && req.scope.schoolIds.length) f.school = req.scope.schoolIds[0];
+  if (f.maktab) f.school = null; // one register at a time
   return f;
 }
 
@@ -70,21 +76,29 @@ function filtersFrom(req) {
 router.get("/attendance", staffOrTeacher, async (req, res) => {
   const f = filtersFrom(req);
   f.date = pickDate(req.query.date);
-  if (f.maktab && !inMaktab(req.scope, f.maktab)) return forbidden(res);
+  if ((f.maktab && !inMaktab(req.scope, f.maktab)) || (f.school && !inSchool(req.scope, f.school))) return forbidden(res);
   const makatib = await h.maktabList(req.scope);
+  const schools = await schoolList(req.scope);
 
-  // Staff without a Maktab chosen: today's overview across their Makatib
+  // Staff without a Maktab or school chosen: today's overview across their Makatib and schools
   let overview = null;
-  if (!f.maktab && req.scope.canManage) {
-    overview = await all(`SELECT m.id, m.name_en, b.name_en AS branch,
+  if (!f.maktab && !f.school && req.scope.canManage) {
+    overview = await all(`SELECT 'maktab' AS kind, m.id, m.name_en, b.name_en AS branch,
         (SELECT COUNT(*) FROM students s WHERE s.maktab_id = m.id AND s.status = 'active') AS students,
         (SELECT COUNT(*) FROM student_attendance a WHERE a.maktab_id = m.id AND a.att_date = ? AND a.session = ?) AS marked,
         (SELECT COUNT(*) FROM student_attendance a WHERE a.maktab_id = m.id AND a.att_date = ? AND a.session = ? AND a.status = 'absent') AS absent
       FROM makatib m LEFT JOIN branches b ON b.id = m.branch_id
       WHERE m.status <> 'archived' AND ${maktabSql(req.scope, "m")} ORDER BY b.name_en NULLS LAST, m.name_en`, f.date, f.session, f.date, f.session);
+    const schoolRows = await all(`SELECT 'school' AS kind, sc.id, sc.name_en, b.name_en AS branch,
+        (SELECT COUNT(*) FROM students s WHERE s.school_id = sc.id AND s.status = 'active') AS students,
+        (SELECT COUNT(*) FROM student_attendance a JOIN students s ON s.id = a.student_id WHERE s.school_id = sc.id AND a.att_date = ? AND a.session = ?) AS marked,
+        (SELECT COUNT(*) FROM student_attendance a JOIN students s ON s.id = a.student_id WHERE s.school_id = sc.id AND a.att_date = ? AND a.session = ? AND a.status = 'absent') AS absent
+      FROM schools sc LEFT JOIN branches b ON b.id = sc.branch_id
+      WHERE sc.status <> 'archived' AND ${schoolSql(req.scope, "sc")} ORDER BY b.name_en NULLS LAST, sc.name_en`, f.date, f.session, f.date, f.session);
+    overview = overview.concat(schoolRows);
   }
 
-  const students = f.maktab || !req.scope.canManage ? await registerStudents(req.scope, f) : [];
+  const students = f.maktab || f.school || !req.scope.canManage ? await registerStudents(req.scope, f) : [];
   const marks = students.length ? await all(`SELECT student_id, status, note FROM student_attendance
     WHERE att_date = ? AND session = ? AND student_id IN (${students.map((s) => s.id).join(",")})`, f.date, f.session) : [];
   const byStudent = Object.fromEntries(marks.map((m) => [m.student_id, m]));
@@ -92,7 +106,7 @@ router.get("/attendance", staffOrTeacher, async (req, res) => {
   const locked = req.user.role === "teacher" && f.date < shiftDays(todayPk(), -TEACHER_EDIT_DAYS);
 
   res.render("app/attendance", {
-    title: "Student attendance", f, makatib, students, byStudent, counts, overview, locked,
+    title: "Student attendance", f, makatib, schools, students, byStudent, counts, overview, locked,
     classes: await classOptions(req.scope), teachers: await teacherOptions(req.scope),
     ATTENDANCE, SESSIONS, today: todayPk(), editDays: TEACHER_EDIT_DAYS,
   });
@@ -100,7 +114,7 @@ router.get("/attendance", staffOrTeacher, async (req, res) => {
 
 router.post("/attendance", staffOrTeacher, async (req, res) => {
   const date = str(req.body.date, 10), session = SESSIONS[req.body.session] ? req.body.session : "morning";
-  const back = `/app/attendance?${new URLSearchParams({ date, session, maktab: req.body.maktab || "", class: req.body.class || "", teacher: req.body.teacher || "" })}`;
+  const back = `/app/attendance?${new URLSearchParams({ date, session, maktab: req.body.maktab || "", school: req.body.school || "", class: req.body.class || "", teacher: req.body.teacher || "" })}`;
   if (!DATE_RE.test(date) || isNaN(Date.parse(date)) || date > todayPk()) { req.flash("err", "Attendance can only be marked for today or an earlier date."); return res.redirect(back); }
   if (req.user.role === "teacher" && date < shiftDays(todayPk(), -TEACHER_EDIT_DAYS)) {
     req.flash("err", `Teachers can mark or correct attendance for the last ${TEACHER_EDIT_DAYS} days only. Ask your branch manager for older dates.`);
@@ -109,7 +123,7 @@ router.post("/attendance", staffOrTeacher, async (req, res) => {
   const entries = Object.entries(req.body).filter(([k, v]) => /^status_\d{1,9}$/.test(k) && ATTENDANCE[v]).map(([k, v]) => [Number(k.slice(7)), v]);
   if (!entries.length) { req.flash("err", "Mark at least one student."); return res.redirect(back); }
 
-  const students = await all(`SELECT id, maktab_id, branch_id, teacher_id, full_name FROM students WHERE status = 'active' AND id IN (${entries.map((e) => e[0]).join(",")})`);
+  const students = await all(`SELECT id, maktab_id, school_id, branch_id, teacher_id, full_name FROM students WHERE status = 'active' AND id IN (${entries.map((e) => e[0]).join(",")})`);
   const byId = Object.fromEntries(students.map((s) => [s.id, s]));
   let saved = 0;
   for (const [id, status] of entries) {
@@ -131,9 +145,9 @@ router.post("/attendance", staffOrTeacher, async (req, res) => {
 router.get("/attendance/monthly", staffOrTeacher, async (req, res) => {
   const f = filtersFrom(req);
   f.month = pickMonth(req.query.month);
-  if (f.maktab && !inMaktab(req.scope, f.maktab)) return forbidden(res);
+  if ((f.maktab && !inMaktab(req.scope, f.maktab)) || (f.school && !inSchool(req.scope, f.school))) return forbidden(res);
   const days = daysOf(f.month);
-  const students = f.maktab || f.cls || f.teacher || !req.scope.canManage ? await registerStudents(req.scope, f) : [];
+  const students = f.maktab || f.school || f.cls || f.teacher || !req.scope.canManage ? await registerStudents(req.scope, f) : [];
   const marks = students.length && days.length ? await all(`SELECT student_id, att_date, status FROM student_attendance
     WHERE session = ? AND att_date BETWEEN ? AND ? AND student_id IN (${students.map((s) => s.id).join(",")})`, f.session, days[0], days[days.length - 1]) : [];
   const grid = {};
@@ -144,20 +158,22 @@ router.get("/attendance/monthly", staffOrTeacher, async (req, res) => {
     return { ...s, marks: grid[s.id] || {}, counts: c, pct: pct(c) };
   });
   const total = rows.reduce((t, r) => { for (const k in t) t[k] += r.counts[k]; return t; }, emptyCounts());
-  const maktab = f.maktab ? await one("SELECT name_en, name_ur FROM makatib WHERE id = ?", f.maktab) : null;
+  const maktab = f.maktab ? await one("SELECT name_en, name_ur FROM makatib WHERE id = ?", f.maktab)
+    : f.school ? await one("SELECT name_en, name_ur FROM schools WHERE id = ?", f.school) : null;
   res.render("app/attendance-monthly", {
     title: "Monthly attendance", f, days, rows, total, totalPct: pct(total), maktab,
-    makatib: await h.maktabList(req.scope), classes: await classOptions(req.scope), teachers: await teacherOptions(req.scope),
+    makatib: await h.maktabList(req.scope), schools: await schoolList(req.scope), classes: await classOptions(req.scope), teachers: await teacherOptions(req.scope),
     ATTENDANCE, SESSIONS, printedOn: todayPk(),
   });
 });
 
 /* ================= Student attendance: summary report ================= */
 router.get("/attendance/report", staff, async (req, res) => {
-  const month = pickMonth(req.query.month), by = ["maktab", "teacher", "class", "branch"].includes(req.query.by) ? req.query.by : "maktab";
+  const month = pickMonth(req.query.month), by = ["maktab", "school", "teacher", "class", "branch"].includes(req.query.by) ? req.query.by : "maktab";
   const days = daysOf(month);
   const group = {
     maktab: { key: "COALESCE(m.name_en, 'No Maktab')", label: "Maktab" },
+    school: { key: "COALESCE(sc.name_en, 'No school')", label: "School" },
     branch: { key: "COALESCE(b.name_en, 'No branch')", label: "Branch" },
     teacher: { key: "COALESCE(t.full_name, 'No teacher assigned')", label: "Teacher" },
     class: { key: "COALESCE(s.class_name, 'No class')", label: "Class" },
@@ -167,7 +183,7 @@ router.get("/attendance/report", staff, async (req, res) => {
       COUNT(*) FILTER (WHERE a.status = 'present') AS present, COUNT(*) FILTER (WHERE a.status = 'late') AS late,
       COUNT(*) FILTER (WHERE a.status = 'absent') AS absent, COUNT(*) FILTER (WHERE a.status = 'leave') AS leave
     FROM student_attendance a JOIN students s ON s.id = a.student_id
-    LEFT JOIN makatib m ON m.id = a.maktab_id LEFT JOIN branches b ON b.id = s.branch_id LEFT JOIN teachers t ON t.id = s.teacher_id
+    LEFT JOIN makatib m ON m.id = a.maktab_id LEFT JOIN schools sc ON sc.id = s.school_id LEFT JOIN branches b ON b.id = s.branch_id LEFT JOIN teachers t ON t.id = s.teacher_id
     WHERE a.att_date BETWEEN ? AND ? AND ${personSql(req.scope, "s", "student")}
     GROUP BY 1 ORDER BY 1`, days[0], days[days.length - 1]) : [];
   rows.forEach((r) => { r.pct = pct(r); });
@@ -198,7 +214,7 @@ router.post("/teacher-attendance", staff, async (req, res) => {
   if (!DATE_RE.test(date) || isNaN(Date.parse(date)) || date > todayPk()) { req.flash("err", "Attendance can only be marked for today or an earlier date."); return res.redirect(back); }
   const entries = Object.entries(req.body).filter(([k, v]) => /^status_\d{1,9}$/.test(k) && ATTENDANCE[v]).map(([k, v]) => [Number(k.slice(7)), v]);
   if (!entries.length) { req.flash("err", "Mark at least one teacher."); return res.redirect(back); }
-  const teachers = await all(`SELECT id, maktab_id, branch_id FROM teachers WHERE id IN (${entries.map((e) => e[0]).join(",")})`);
+  const teachers = await all(`SELECT id, maktab_id, school_id, branch_id FROM teachers WHERE id IN (${entries.map((e) => e[0]).join(",")})`);
   const byId = Object.fromEntries(teachers.map((t) => [t.id, t]));
   for (const [id, status] of entries) {
     const t = byId[id];

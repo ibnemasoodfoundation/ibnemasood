@@ -1,0 +1,96 @@
+<%- include('../partials/app-top') %>
+<%
+  const s = stats, unitWord = nazim ? 'Makatib' : 'Schools', one = nazim ? 'Maktab' : 'school';
+  const base = nazim ? '/app/makatib' : '/app/schools';
+  const notMarked = units.filter((u) => u.students > 0 && u.marked < u.students);
+  const chartDefs = [
+    { id: 'unitStudents', title: 'Students by ' + one, kind: 'bar-h', empty: 'No students registered yet.' },
+    { id: 'byClass', title: 'Students by class', kind: 'bar-h', empty: 'No classes recorded yet.' },
+  ];
+  if (nazim) chartDefs.push({ id: 'byDistrict', title: 'Makatib by district', kind: 'bar-h', empty: 'No Makatib registered yet.' });
+  const quick = nazim
+    ? [['/app/makatib/new', 'Register Maktab', 'maktab'], ['/app/teachers/new', 'Register Teacher', 'teacher'], ['/app/students/new', 'Register Student', 'student'],
+       ['/app/attendance', 'Student attendance', 'list'], ['/app/results/new', 'New exam', 'file'], ['/app/attendance/report', 'Reports', 'file']]
+    : [['/app/teachers/new', 'Register Teacher', 'teacher'], ['/app/students/new', 'Register Student', 'student'], ['/app/attendance', 'Student attendance', 'list'],
+       ['/app/teacher-attendance', 'Teacher attendance', 'teacher'], ['/app/results/new', 'New exam', 'file'], ['/app/attendance/report?by=class', 'Reports', 'file']];
+%>
+<div class="welcome">
+  <div>
+    <span class="ar" lang="ar">السلام علیکم</span>
+    <h2><%= t(nazim ? 'Makatib dashboard' : 'School dashboard') %></h2>
+    <p><%= s.units %> <%= s.units === 1 ? one : unitWord.toLowerCase() %>, <%= s.teachers %> active teachers and <%= s.students %> active students<%= nazim ? '' : ' under your leadership' %>.</p>
+  </div>
+  <a class="btn btn--gold" href="/app/attendance"><%- include('../partials/icon', { name: 'list' }) %>Today’s attendance</a>
+</div>
+
+<section class="card quick-card" aria-label="Quick actions">
+  <div class="quick-grid">
+    <% quick.forEach(function (q) { %><a class="quick-action" href="<%= q[0] %>"><span class="action-icon"><%- include('../partials/icon', { name: q[2] }) %></span><span><%= q[1] %></span></a><% }) %>
+  </div>
+</section>
+
+<div class="stats">
+  <a class="stat" href="<%= base %>"><small><%= unitWord %></small><strong><%= s.units %></strong></a>
+  <a class="stat" href="/app/teachers"><small>Active teachers</small><strong><%= s.teachers %></strong><span><%= s.teachers_present %> present today</span></a>
+  <a class="stat" href="/app/students"><small>Active students</small><strong><%= s.students %></strong><span><%= s.boys %> boys · <%= s.girls %> girls</span></a>
+  <a class="stat <%= s.marked_today < s.students ? 'stat--gold' : '' %>" href="/app/attendance"><small>Marked today (morning)</small><strong><%= s.marked_today %> / <%= s.students %></strong><span><%= s.absent_today %> absent</span></a>
+</div>
+
+<div class="grid-2">
+  <section class="card">
+    <div class="card-head"><h2>Attendance still to mark today</h2><a href="/app/attendance">Register</a></div>
+    <% if (!units.length) { %><p class="empty">No <%= unitWord.toLowerCase() %> assigned to you yet.<%= nazim ? '' : ' Ask an admin to set you as principal of your school.' %></p>
+    <% } else if (!notMarked.length) { %><p class="empty">Every <%= one %> has marked today’s morning attendance.</p>
+    <% } else { %>
+      <ul class="rows"><% notMarked.slice(0, 12).forEach(function (u) { %>
+        <li><a href="/app/attendance?<%= nazim ? 'maktab' : 'school' %>=<%= u.id %>"><span><strong><%= u.name %></strong><small><%= u.district %><%= u.branch ? ' · ' + u.branch : '' %></small></span><span class="badge <%= u.marked ? 'badge--pending' : 'badge--absent' %>"><%= u.marked %> / <%= u.students %></span></a></li>
+      <% }) %></ul>
+      <% if (notMarked.length > 12) { %><p class="small"><%= notMarked.length - 12 %> more on the <a href="/app/attendance">register</a>.</p><% } %>
+    <% } %>
+  </section>
+  <section class="card">
+    <div class="card-head"><h2>Exams and results</h2><a href="/app/results">All exams</a></div>
+    <% if (!exams.length) { %><p class="empty">No exams yet. <a href="/app/results/new">Create one</a>.</p><% } else { %>
+      <ul class="rows"><% exams.forEach(function (e) { %>
+        <li><a href="/app/results/<%= e.id %>"><span><strong><%= e.title %></strong><small><%= e.place %> · <%= EXAM_TYPES[e.exam_type] %><%= e.held_on ? ' · ' + fmtDate(e.held_on) : '' %></small></span><%- include('../partials/badge', { s: e.status }) %></a></li>
+      <% }) %></ul>
+    <% } %>
+  </section>
+</div>
+
+<section class="card card--flush">
+  <div class="card-head card-head--pad"><h2>My <%= unitWord.toLowerCase() %></h2><a href="<%= base %>">Open list</a></div>
+  <% if (!units.length) { %><p class="empty">Nothing here yet.</p><% } else { %>
+    <div class="table-wrap"><table class="table">
+      <thead><tr><th><%= nazim ? 'Maktab' : 'School' %></th><th>Branch</th><th class="t-right">Teachers</th><th class="t-right">Students</th><th class="t-right">Marked today</th><th></th></tr></thead>
+      <tbody><% units.slice(0, 50).forEach(function (u) { %>
+        <tr><td><strong><%= u.name %></strong><small><%= u.district %></small></td><td><%= u.branch || '—' %></td>
+          <td class="t-right num"><%= u.teachers %></td><td class="t-right num"><%= u.students %></td><td class="t-right num"><%= u.marked %></td>
+          <td class="t-right"><a class="btn-sm" href="<%= base %>/<%= u.id %>">Open</a></td></tr>
+      <% }) %></tbody>
+    </table></div>
+  <% } %>
+</section>
+
+<h2 class="group-title">Charts</h2>
+<div class="chart-grid">
+  <% chartDefs.forEach(function (c) { const d = charts[c.id]; const hasData = d.values.some(v => v > 0); %>
+    <section class="card chart-card">
+      <div class="card-head"><h2><%= c.title %></h2></div>
+      <% if (!hasData) { %><p class="empty chart-empty"><%= c.empty %></p><% } else { %>
+        <div class="chart-box chart-box--h" style="height:<%= Math.max(160, d.labels.length * 34 + 40) %>px"><canvas data-chart="<%= c.id %>" data-kind="bar-h" role="img" aria-label="<%= c.title %>"></canvas></div>
+        <details class="chart-table"><summary>View as table</summary><table class="table"><tbody><% d.labels.forEach(function (l, i) { %><tr><td><%= l %></td><td class="t-right num"><%= d.values[i] %></td></tr><% }) %></tbody></table></details>
+      <% } %>
+    </section>
+  <% }) %>
+</div>
+<script type="application/json" id="chart-data"><%- JSON.stringify(charts).replace(/</g, '\\u003c') %></script>
+
+<section class="card">
+  <div class="card-head"><h2>Announcements</h2><a href="/app/announcements">All</a></div>
+  <%- include('_announcement-list', { list: announcements }) %>
+</section>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
+<script src="/assets/js/dashboard.js" defer></script>
+<%- include('../partials/app-bottom') %>

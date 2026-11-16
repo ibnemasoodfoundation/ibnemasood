@@ -21,11 +21,12 @@
     row('Hifz', HIFZ_STATUSES[x.hifz_status]), row('Tajweed', TAJWEED_STATUSES[x.tajweed_status]), row('Admission date', x.enrolled_on ? fmtDate(x.enrolled_on) : ''),
   ];
   const institution = isT ? [
-    row('Teacher ID', x.code), row('Branch', x.branch), row('Maktab', x.maktab), row('Designation', x.designation),
+    row('Teacher ID', x.code), row('Branch', x.branch), row('Maktab', x.maktab), row('School', x.school), row('Designation', x.designation),
     row('Appointment date', x.joined_on ? fmtDate(x.joined_on) : ''), row('Employment type', EMPLOYMENT_TYPES[x.employment_type]),
     row('Monthly salary', canManage && x.salary != null ? money(x.salary) : (x.salary != null ? 'Recorded' : '')),
   ] : [
-    row('Student ID', x.code), row('Branch', x.branch), row('Maktab', x.maktab), row('Teacher', x.teacher),
+    row('Student ID', x.code), row('Branch', x.branch), row('Maktab', x.maktab), row('School', x.school), row('Teacher', x.teacher),
+    row('Parent login', canManage ? x.parent_email : (x.parent_email ? 'Yes' : '')),
     row('Class / department', x.class_name), row('Programme', x.programme),
   ];
   const docsByCat = Object.keys(categories).map((k) => ({ key: k, label: categories[k], files: files.filter((d) => d.kind === 'document' && (d.category || 'other') === k) }));
@@ -39,7 +40,7 @@
     <div class="unit-meta"><span class="code-chip"><%= x.code %></span><%- include('../partials/badge', { s: x.status }) %><% if (isT && x.designation) { %><span class="muted small-inline"><%= x.designation %></span><% } %></div>
     <h2><%= x.full_name %></h2>
     <% if (x.name_ur) { %><p class="unit-ur" lang="ur" dir="rtl"><%= x.name_ur %></p><% } %>
-    <p class="unit-place"><%- include('../partials/icon', { name: 'maktab' }) %><span><%= x.maktab || 'No Maktab' %><%= x.branch ? ' · ' + x.branch : '' %></span></p>
+    <p class="unit-place"><%- include('../partials/icon', { name: 'maktab' }) %><span><%= x.maktab || x.school || 'No Maktab' %><%= x.branch ? ' · ' + x.branch : '' %></span></p>
     <div class="btn-row profile-actions">
       <% if (canManage) { %><a class="btn btn--blue btn--sm" href="<%= base %>/<%= x.id %>/edit"><%- include('../partials/icon', { name: 'edit' }) %>Edit</a><% } %>
       <a class="btn btn--line btn--sm" href="<%= base %>/<%= x.id %>/print" target="_blank"><%- include('../partials/icon', { name: 'file' }) %>Print profile</a>
@@ -147,6 +148,22 @@
     <% } %>
   </section>
 <% } else { %>
+  <section class="card" id="results">
+    <div class="card-head"><h2>Exam results</h2><% if (canManage) { %><a href="/app/results">All exams</a><% } %></div>
+    <% if (!results.length) { %><p class="empty">No results recorded yet.</p><% } else { %>
+      <div class="table-wrap"><table class="table">
+        <thead><tr><th>Exam</th><th class="t-right">Marks</th><th class="t-right">%</th><th>Grade</th><th>Status</th><th></th></tr></thead>
+        <tbody><% results.forEach(function (r) { %>
+          <tr><td><strong><%= r.title %></strong><small><%= EXAM_TYPES[r.exam_type] %><%= r.session_year ? ' · ' + r.session_year : '' %></small></td>
+            <td class="t-right num"><%= r.obtained %> / <%= r.total %></td><td class="t-right num"><%= Number(r.percentage).toFixed(1) %></td>
+            <td><span class="badge <%= r.grade === 'Fail' ? 'badge--absent' : 'badge--present' %>"><%= r.grade %></span></td>
+            <td><%- include('../partials/badge', { s: r.exam_status }) %></td>
+            <td class="t-right"><a class="btn-sm" href="/app/results/<%= r.exam_id %>/certificate/<%= x.id %>" target="_blank">Certificate</a></td></tr>
+        <% }) %></tbody>
+      </table></div>
+    <% } %>
+  </section>
+
   <section class="card" id="progress">
     <div class="card-head"><h2>Educational progress</h2></div>
     <form class="progress-form" method="post" action="/app/students/<%= x.id %>/progress">

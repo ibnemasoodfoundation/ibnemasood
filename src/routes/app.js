@@ -3,9 +3,11 @@
 const crypto = require("node:crypto");
 const express = require("express");
 const { one, all, run, log } = require("../db");
-const { ROLES, hashPassword, verifyPassword, checkCsrf, requireLogin, requireRole } = require("../auth");
+const { ROLES, STAFF_ROLES, hashPassword, verifyPassword, checkCsrf, requireLogin, requireRole } = require("../auth");
 const { BRANCHES, PROGRAMMES, DONATION_KINDS, DONATION_METHODS, todayPk } = require("../helpers");
-const { dashboardData } = require("../dashboard");
+const { dashboardData, unitDashboardData } = require("../dashboard");
+const { parentHome } = require("./parent");
+const finance = require("./finance");
 
 const router = express.Router();
 router.use(requireLogin, checkCsrf);
@@ -13,6 +15,11 @@ router.use(requireLogin, checkCsrf);
 const staff = requireRole("admin", "manager");
 const adminOnly = requireRole("admin");
 const isStaff = (u) => u.role === "admin" || u.role === "manager";
+// The Accountant also sees and verifies every donation
+const donationStaff = (u) => isStaff(u) || u.role === "accountant";
+const donationGuard = requireRole("admin", "manager", "accountant");
+// Who may post announcements: office staff and the heads of Makatib and schools
+const announcers = requireRole(...STAFF_ROLES);
 const str = (v, max = 200) => String(v ?? "").trim().slice(0, max);
 const back = (req, fallback) => {
   const ref = req.get("referer");
@@ -21,11 +28,14 @@ const back = (req, fallback) => {
 };
 const count = async (sql, ...p) => (await one(sql, ...p)).n;
 
+/* Everyone sees "all"; staff also see "staff" notices; parents also see "parents" notices; announcers see everything */
 function announcementsFor(user, limit = 50) {
+  const audiences = ["all"];
+  if (STAFF_ROLES.includes(user.role) || user.role === "accountant") audiences.push("staff");
+  if (user.role === "parent" || STAFF_ROLES.includes(user.role)) audiences.push("parents");
   return all(
     `SELECT a.*, u.name AS author FROM announcements a LEFT JOIN users u ON u.id = a.author_id
-     WHERE a.audience = 'all' OR ?::int = 1 ORDER BY a.created_at DESC, a.id DESC LIMIT ?`,
-    isStaff(user) ? 1 : 0, limit
+     WHERE a.audience IN (${audiences.map((x) => `'${x}'`).join(",")}) ORDER BY a.created_at DESC, a.id DESC LIMIT ?`, limit
   );
 }
 
@@ -40,6 +50,19 @@ router.get("/", async (req, res) => {
       donations: await all("SELECT * FROM donations WHERE user_id = ? ORDER BY id DESC LIMIT 5", u.id),
       given: await count("SELECT COALESCE(SUM(amount),0) AS n FROM donations WHERE user_id = ? AND status = 'verified'", u.id),
       announcements: await announcementsFor(u, 4),
+    });
+  }
+
+  if (u.role === "parent") {
+    return res.render("app/home-parent", { title: "Parent dashboard", kids: await parentHome(u), announcements: await announcementsFor(u, 5) });
+  }
+
+  if (u.role === "accountant") return finance.dashboard(req, res);
+
+  if (u.role === "nazim" || u.role === "principal") {
+    const data = await unitDashboardData(u);
+    return res.render("app/home-unit", {
+      title: u.role === "nazim" ? "Makatib dashboard" : "School dashboard", ...data, announcements: await announcementsFor(u, 4),
     });
   }
 
@@ -155,16 +178,16 @@ router.get("/donations", async (req, res) => {
   const u = req.user;
   const status = ["pending", "verified", "rejected"].includes(req.query.status) ? req.query.status : "";
   const where = [], params = [];
-  if (!isStaff(u)) { where.push("user_id = ?"); params.push(u.id); }
+  if (!donationStaff(u)) { where.push("user_id = ?"); params.push(u.id); }
   if (status) { where.push("status = ?"); params.push(status); }
   const w = where.length ? "WHERE " + where.join(" AND ") : "";
   const rows = await all(`SELECT * FROM donations ${w} ORDER BY id DESC LIMIT 300`, ...params);
   const totals = await one(
     `SELECT COALESCE(SUM(CASE WHEN status='verified' THEN amount END),0) AS verified,
             COALESCE(SUM(CASE WHEN status='pending' THEN amount END),0) AS pending
-     FROM donations ${isStaff(u) ? "" : "WHERE user_id = ?"}`, ...(isStaff(u) ? [] : [u.id])
+     FROM donations ${donationStaff(u) ? "" : "WHERE user_id = ?"}`, ...(donationStaff(u) ? [] : [u.id])
   );
-  res.render("app/donations", { title: isStaff(u) ? "Donations" : "My donations", rows, totals, filters: { status } });
+  res.render("app/donations", { title: donationStaff(u) ? "Donations" : "My donations", rows, totals, filters: { status }, canVerify: donationStaff(u) });
 });
 
 router.get("/donations/new", (req, res) => {
@@ -188,7 +211,7 @@ router.post("/donations", async (req, res) => {
     return res.status(400).render("app/donation-form", { title: "Record a donation", values: v, errors, DONATION_KINDS, DONATION_METHODS });
   }
   // Staff entering a donation received at the office can mark it verified straight away
-  const status = isStaff(req.user) && req.body.verified === "1" ? "verified" : "pending";
+  const status = donationStaff(req.user) && req.body.verified === "1" ? "verified" : "pending";
   const r = await one(
     "INSERT INTO donations (user_id, donor_name, amount, kind, method, reference, status, verified_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?) RETURNING id",
     req.user.id, v.donor_name, v.amount, v.kind, v.method, v.reference || null, status, status === "verified" ? req.user.id : null
@@ -198,7 +221,7 @@ router.post("/donations", async (req, res) => {
   res.redirect("/app/donations");
 });
 
-router.post("/donations/:id/status", staff, async (req, res, next) => {
+router.post("/donations/:id/status", donationGuard, async (req, res, next) => {
   const id = Number(req.params.id);
   const d = Number.isInteger(id) && await one("SELECT * FROM donations WHERE id = ?", id);
   if (!d) return next();
@@ -233,8 +256,8 @@ router.get("/announcements", async (req, res) => {
   res.render("app/announcements", { title: "Announcements", rows: await announcementsFor(req.user), values: {}, errors: {} });
 });
 
-router.post("/announcements", staff, async (req, res) => {
-  const v = { title: str(req.body.title, 120), body: str(req.body.body, 4000), audience: req.body.audience === "staff" ? "staff" : "all" };
+router.post("/announcements", announcers, async (req, res) => {
+  const v = { title: str(req.body.title, 120), body: str(req.body.body, 4000), audience: ["staff", "parents"].includes(req.body.audience) ? req.body.audience : "all" };
   const errors = {};
   if (v.title.length < 3) errors.title = "Add a short title.";
   if (v.body.length < 3) errors.body = "Write the announcement.";
@@ -247,7 +270,7 @@ router.post("/announcements", staff, async (req, res) => {
   res.redirect("/app/announcements");
 });
 
-router.post("/announcements/:id/delete", staff, async (req, res, next) => {
+router.post("/announcements/:id/delete", announcers, async (req, res, next) => {
   const id = Number(req.params.id);
   const a = Number.isInteger(id) && await one("SELECT * FROM announcements WHERE id = ?", id);
   if (!a) return next();

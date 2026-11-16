@@ -1,0 +1,45 @@
+<%- include('../partials/app-top') %>
+<div class="page-head">
+  <p>Every income and expense entry. Verified donations are counted on the dashboard and in reports automatically.</p>
+  <div class="btn-row">
+    <a class="btn btn--blue btn--sm" href="/app/finance/new?type=expense"><%- include('../partials/icon', { name: 'plus' }) %>Expense</a>
+    <a class="btn btn--line btn--sm" href="/app/finance/new?type=income"><%- include('../partials/icon', { name: 'plus' }) %>Income</a>
+    <a class="btn btn--line btn--sm" href="/app/finance/report?<%= new URLSearchParams({ from: f.from, to: f.to }) %>" target="_blank"><%- include('../partials/icon', { name: 'file' }) %>Report</a>
+  </div>
+</div>
+
+<form class="filters" method="get">
+  <label class="filter-label">From <input type="date" name="from" value="<%= f.from %>"></label>
+  <label class="filter-label">To <input type="date" name="to" value="<%= f.to %>"></label>
+  <select name="type" aria-label="Type"><option value="">Income and expenses</option><% Object.keys(TYPES).forEach(function (k) { %><option value="<%= k %>" <%= f.type === k ? 'selected' : '' %>><%= TYPES[k] %></option><% }) %></select>
+  <select name="category" aria-label="Category"><option value="">All categories</option><% categories.forEach(function (c) { %><option <%= f.category === c ? 'selected' : '' %>><%= c %></option><% }) %></select>
+  <% if (branches.length) { %><select name="branch" aria-label="Branch"><option value="">All branches</option><% branches.forEach(function (b) { %><option value="<%= b.id %>" <%= f.branch === b.id ? 'selected' : '' %>><%= b.name_en %></option><% }) %></select><% } %>
+  <input type="search" name="q" placeholder="Search description, party or receipt" value="<%= f.q %>" aria-label="Search">
+  <button class="btn btn--line btn--sm" type="submit">Filter</button>
+</form>
+
+<div class="stats">
+  <div class="stat stat--gold"><small>Income (entries)</small><strong><%= money(income) %></strong></div>
+  <div class="stat"><small>Expenses</small><strong><%= money(expense) %></strong></div>
+  <div class="stat"><small>Difference</small><strong><%= income - expense < 0 ? '− ' + money(expense - income) : money(income - expense) %></strong><span><%= fmtDate(f.from) %> to <%= fmtDate(f.to) %></span></div>
+</div>
+
+<section class="card card--flush">
+  <% if (!rows.length) { %><p class="empty">No entries for these filters.</p><% } else { %>
+    <div class="table-wrap"><table class="table">
+      <thead><tr><th>Date</th><th>Type</th><th>Category</th><th>Details</th><th>Branch</th><th class="t-right">Amount</th><th></th></tr></thead>
+      <tbody><% rows.forEach(function (x) { %>
+        <tr>
+          <td class="nowrap"><%= fmtDate(x.entry_date) %></td>
+          <td><span class="badge <%= x.entry_type === 'income' ? 'badge--present' : 'badge--absent' %>"><%= TYPES[x.entry_type] %></span></td>
+          <td><%= x.category %></td>
+          <td><%= x.description || '—' %><small><%= [x.party, x.method, x.reference ? 'Ref ' + x.reference : ''].filter(Boolean).join(' · ') %><%= x.by_name ? ' · by ' + x.by_name : '' %></small></td>
+          <td><%= x.branch || '—' %></td>
+          <td class="t-right num"><%= money(x.amount) %></td>
+          <td class="t-right nowrap"><a class="btn-sm" href="/app/finance/<%= x.id %>/edit">Edit</a></td>
+        </tr>
+      <% }) %></tbody>
+    </table></div>
+  <% } %>
+</section>
+<%- include('../partials/app-bottom') %>

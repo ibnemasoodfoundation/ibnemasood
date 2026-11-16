@@ -57,27 +57,52 @@ Vercel > Project > Settings > Environment Variables, then redeploy:
 
 ## Roles
 
-| | Member | Teacher | Branch Manager | Super Admin |
-|---|:-:|:-:|:-:|:-:|
-| Sign up, own profile, password | ✓ | ✓ | ✓ | ✓ |
-| Apply for admission, record own donations | ✓ | | ✓ | ✓ |
-| See own Maktab and students, mark their attendance (last 7 days), record progress | | ✓ | ✓ | ✓ |
-| Update own contact details | | ✓ | ✓ | ✓ |
-| Teachers, students, Makatib, attendance and reports | | | own branches | everywhere |
-| Register / edit / transfer / archive teachers and students, photos and documents | | | own branches | everywhere |
-| Teacher attendance | | | own branches | everywhere |
-| Admissions, donations, messages, announcements | | | ✓ | ✓ |
-| Add branches, archive branches and Makatib | | | | ✓ |
-| Users, roles, teacher logins, activity log | | | | ✓ |
+Every role has its own dashboard after signing in.
+
+| | Member | Parent | Teacher | Accountant | School Principal | Makatib Nazim | Branch Manager | Super Admin |
+|---|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
+| Own profile, password, announcements | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Apply for admission, record own donations | ✓ | | | | | | ✓ | ✓ |
+| Own children: attendance, progress, published results, certificates | | ✓ | | | | | | |
+| Mark attendance and enter marks for own students | | | ✓ | | ✓ | ✓ | ✓ | ✓ |
+| Teachers, students, attendance, exams, results, reports | | | | | own school | all Makatib | own branches | everywhere |
+| Register Makatib | | | | | | ✓ | own branches | ✓ |
+| Schools | | | | | edit own | | own branches | ✓ |
+| Accounts: income, expenses, financial reports; verify donations | | | | ✓ | | | donations only | ✓ |
+| Admissions, messages | | | | | | | ✓ | ✓ |
+| Add branches, archive branches, Makatib and schools | | | | | | | | ✓ |
+| Users, roles, teacher logins, activity log | | | | | | | | ✓ |
 
 - A **Branch Manager** manages the branches where they are set as manager (Branch → Edit → Branch manager), every
-  Maktab in those branches, and any Maktab where they are set as Maktab manager. One manager can run several branches.
+  Maktab and school in those branches, and any Maktab where they are set as Maktab manager.
+- A **Makatib Nazim** manages every Maktab with its teachers, students, attendance, reports and results.
+- A **School Principal** manages the schools where they are set as principal (School → Edit → School Principal).
+- An **Accountant** records income and expenses and prints financial reports. Verified donations count as income
+  automatically, so they are never entered twice.
+- A **Parent** login is created on the student's form (Parent portal access: email and password). Brothers and sisters
+  share one login by entering the same email. Parents see only their own children, never CNIC numbers or documents.
 - A **Teacher** login is created by a Super Admin from the teacher's profile. Teachers see only their own teacher
-  record (not colleagues' CNIC, salary or documents), their Maktab's students and students assigned to them.
+  record, their Maktab's or school's students and students assigned to them; they enter marks while an exam is a draft.
+- Staff accounts for the other roles are created by a Super Admin under **Users & roles**.
 - All of this is checked on the server for every request, not only by hiding menu items.
 
-New sign-ups are always **Members**. A Super Admin changes roles under **Users & roles**.
-The app always keeps at least one active admin, and admins cannot demote or delete themselves.
+New sign-ups are always **Members**. The app always keeps at least one active admin, and admins cannot demote or
+delete themselves.
+
+## Exams, results and certificates
+
+Create an exam for all Makatib, one Maktab or one school, with its subjects and total marks (suggested Makatib
+subjects are filled in and can be changed). Enter marks per student, then **Publish**: parents then see the result and
+can print the **result certificate**. The result sheet and certificates print or download as PDF. Grades: A+ 90%,
+A 80%, B 70%, C 60%, D 50%, E below 50%, Fail below the exam's pass mark (40% unless changed).
+
+## Languages
+
+- **Portal:** English or اردو from the switch in the header. Menus, roles and page titles are translated and the
+  layout turns right-to-left; names and records stay as entered. Translation happens on the server, so no student data
+  is sent to any outside service.
+- **Public website:** English, اردو, سنڌي or العربية from the globe button in the header, using Google's page
+  translation. Urdu and Arabic text, Quranic verses and the founder's name are marked so they are never machine-translated.
 
 ## Structure
 
@@ -93,6 +118,11 @@ src/scope.js         Who can see and change what (enforced on every request)
 src/routes/institution.js  Branches, Makatib, photo/document files
 src/routes/people.js Teachers and students: profiles, transfers, logins, progress, print, ID cards
 src/routes/attendance.js   Student and teacher attendance, monthly sheets, reports
+src/routes/schools.js      Schools and their principals
+src/routes/results.js      Exams, marks, result sheets and certificates
+src/routes/finance.js      Accounts: income, expenses, dashboard and financial reports
+src/routes/parent.js       Parent portal: their children's details
+src/i18n.js          Portal languages (English, Urdu)
 src/auth.js          Password hashing (scrypt), CSRF, role guards, sign-in rate limit
 src/routes/auth.js   /login, /signup, /logout
 src/routes/app.js    /app/... dashboards and features

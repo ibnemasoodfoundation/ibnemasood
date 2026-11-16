@@ -1,0 +1,50 @@
+<%- include('../partials/print-top', { pdfName: 'Result certificate ' + s.code + ' ' + e.title, pageClass: 'print-page--cert' }) %>
+<% const subjects = e.subjects || [], pass = r.grade !== 'Fail'; %>
+<article class="cert">
+  <header class="cert-head">
+    <img src="/assets/images/logo.jpeg" alt="" class="cert-logo">
+    <div>
+      <p class="cert-ur" lang="ur" dir="rtl">جامعہ عربیہ عبداللہ بن مسعود</p>
+      <p class="cert-en">Jamia Arabia Abdullah Bin Masood</p>
+      <p class="cert-addr">Fateh Pur Bhiria Road, Distt. Naushahro Feroze, Sindh</p>
+    </div>
+    <img src="/assets/images/logo.jpeg" alt="" class="cert-logo" aria-hidden="true">
+  </header>
+
+  <p class="cert-ayah" lang="ar" dir="rtl">رَّبِّ زِدْنِي عِلْمًا</p>
+  <h1 class="cert-title">Result Certificate <span lang="ur" dir="rtl">نتیجہ امتحان</span></h1>
+  <p class="cert-exam"><%= e.title %> · <%= EXAM_TYPES[e.exam_type] %><%= e.session_year ? ' · ' + e.session_year : '' %><%= e.held_on ? ' · ' + fmtDate(e.held_on) : '' %></p>
+
+  <dl class="cert-fields">
+    <div><dt>Student</dt><dd><%= s.full_name %><% if (s.name_ur) { %> <span lang="ur" dir="rtl" class="cert-ur-val"><%= s.name_ur %></span><% } %></dd></div>
+    <div><dt>Father’s name</dt><dd><%= s.father_name || '—' %></dd></div>
+    <div><dt>Student ID</dt><dd><%= s.code %></dd></div>
+    <div><dt><%= s.school ? 'School' : 'Maktab' %></dt><dd><%= s.school || s.maktab || '—' %><%= s.branch ? ' · ' + s.branch : '' %></dd></div>
+    <div><dt>Class</dt><dd><%= s.class_name || s.programme || '—' %></dd></div>
+  </dl>
+
+  <table class="cert-table">
+    <thead><tr><th>Subject</th><th class="t-right">Total marks</th><th class="t-right">Marks obtained</th></tr></thead>
+    <tbody><% subjects.forEach(function (sub, i) { %>
+      <tr><td><%= sub.name %></td><td class="t-right"><%= sub.total %></td><td class="t-right"><%= r.marks[i] != null ? r.marks[i] : '—' %></td></tr>
+    <% }) %></tbody>
+    <tfoot><tr><th>Total</th><th class="t-right"><%= r.total %></th><th class="t-right"><%= r.obtained %></th></tr></tfoot>
+  </table>
+
+  <div class="cert-summary">
+    <div><small>Percentage</small><strong><%= Number(r.percentage).toFixed(1) %>%</strong></div>
+    <div><small>Grade</small><strong><%= r.grade %></strong></div>
+    <div><small>Result</small><strong class="<%= pass ? 'cert-pass' : 'cert-fail' %>"><%= pass ? 'Pass' : 'Fail' %></strong></div>
+    <div><small>Position</small><strong><%= pos ? pos.rank + ' of ' + pos.of : '—' %></strong></div>
+  </div>
+  <% if (r.remarks) { %><p class="cert-remarks"><strong>Remarks:</strong> <%= r.remarks %></p><% } %>
+  <% if (e.status !== 'published') { %><p class="cert-draft">Draft: these results have not been published yet.</p><% } %>
+
+  <footer class="cert-signs">
+    <div><span></span>Teacher</div>
+    <div><span></span><%= s.school ? 'Principal' : 'Nazim' %></div>
+    <div><span></span>Head of the Jamia</div>
+  </footer>
+  <p class="cert-issued">Issued <%= fmtDate(issuedOn) %> · Pass mark <%= e.pass_percent %>%</p>
+</article>
+<%- include('../partials/print-bottom') %>

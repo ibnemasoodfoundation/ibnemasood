@@ -1,0 +1,76 @@
+<%- include('../partials/app-top') %>
+<%
+  const chartDefs = [
+    { id: 'incomeMonthly', title: 'Income per month', kind: 'bar', empty: 'No income recorded in the last 12 months.' },
+    { id: 'expenseMonthly', title: 'Expenses per month', kind: 'bar', empty: 'No expenses recorded in the last 12 months.' },
+    { id: 'expenseByCategory', title: 'Expenses this year by category', kind: 'bar-h', empty: 'No expenses recorded this year.' },
+  ];
+  const yearNow = new Date().getFullYear();
+%>
+<div class="welcome">
+  <div>
+    <span class="ar" lang="ar">السلام علیکم</span>
+    <h2><%= t('Accounts dashboard') %></h2>
+    <p>Income includes verified donations from the Donations page, so they never need to be entered twice.</p>
+  </div>
+  <div class="btn-row">
+    <a class="btn btn--gold" href="/app/finance/new?type=expense"><%- include('../partials/icon', { name: 'plus' }) %>Record expense</a>
+    <a class="btn btn--line btn--line-light" href="/app/finance/new?type=income"><%- include('../partials/icon', { name: 'plus' }) %>Record income</a>
+  </div>
+</div>
+
+<% [['This month', month], ['This year (' + yearNow + ')', year]].forEach(function (g) { const x = g[1]; %>
+  <section class="stat-group">
+    <h2 class="group-title"><%= g[0] %></h2>
+    <div class="stats">
+      <a class="stat stat--gold" href="/app/finance/entries?type=income"><small>Income</small><strong><%= money(x.income) %></strong><span><%= money(x.entries) %> entries · <%= money(x.donations) %> donations</span></a>
+      <a class="stat" href="/app/finance/entries?type=expense"><small>Expenses</small><strong><%= money(x.expense) %></strong></a>
+      <div class="stat <%= x.balance < 0 ? 'stat--warn' : '' %>"><small>Balance</small><strong><%= x.balance < 0 ? '− ' + money(-x.balance) : money(x.balance) %></strong><span><%= x.balance < 0 ? 'Spent more than received' : 'Income minus expenses' %></span></div>
+    </div>
+  </section>
+<% }) %>
+
+<section class="card quick-card" aria-label="Quick actions">
+  <div class="quick-grid">
+    <a class="quick-action" href="/app/finance/entries"><span class="action-icon"><%- include('../partials/icon', { name: 'list' }) %></span><span>All entries</span></a>
+    <a class="quick-action" href="/app/finance/report" target="_blank"><span class="action-icon"><%- include('../partials/icon', { name: 'file' }) %></span><span>Monthly report</span></a>
+    <a class="quick-action" href="/app/finance/report?from=<%= yearNow %>-01-01" target="_blank"><span class="action-icon"><%- include('../partials/icon', { name: 'file' }) %></span><span>Yearly report</span></a>
+    <a class="quick-action" href="/app/donations?status=pending"><span class="action-icon"><%- include('../partials/icon', { name: 'heart' }) %></span><span>Donations to verify (<%= pending.n %>)</span></a>
+  </div>
+</section>
+
+<h2 class="group-title">Charts</h2>
+<div class="chart-grid">
+  <% chartDefs.forEach(function (c) { const d = charts[c.id]; const hasData = d.values.some(v => v > 0); %>
+    <section class="card chart-card">
+      <div class="card-head"><h2><%= c.title %></h2></div>
+      <% if (!hasData) { %>
+        <p class="empty chart-empty"><%= c.empty %></p>
+      <% } else { %>
+        <div class="chart-box <%= c.kind === 'bar-h' ? 'chart-box--h' : '' %>" style="<%= c.kind === 'bar-h' ? 'height:' + Math.max(160, d.labels.length * 34 + 40) + 'px' : '' %>">
+          <canvas data-chart="<%= c.id %>" data-kind="<%= c.kind %>" role="img" aria-label="<%= c.title %>"></canvas>
+        </div>
+        <details class="chart-table">
+          <summary>View as table</summary>
+          <table class="table"><tbody>
+            <% d.labels.forEach(function (l, i) { %><tr><td><%= l %></td><td class="t-right num"><%= money(d.values[i]) %></td></tr><% }) %>
+          </tbody></table>
+        </details>
+      <% } %>
+    </section>
+  <% }) %>
+</div>
+<script type="application/json" id="chart-data"><%- JSON.stringify(charts).replace(/</g, '\\u003c') %></script>
+
+<section class="card">
+  <div class="card-head"><h2>Recent entries</h2><a href="/app/finance/entries">View all</a></div>
+  <% if (!recent.length) { %><p class="empty">Nothing recorded yet. <a href="/app/finance/new?type=expense">Record the first expense</a>.</p><% } else { %>
+    <ul class="rows"><% recent.forEach(function (x) { %>
+      <li><a href="/app/finance/<%= x.id %>/edit"><span><strong><%= x.category %> · <%= money(x.amount) %></strong><small><%= fmtDate(x.entry_date) %><%= x.party ? ' · ' + x.party : '' %><%= x.description ? ' · ' + x.description : '' %></small></span><span class="badge <%= x.entry_type === 'income' ? 'badge--present' : 'badge--absent' %>"><%= TYPES[x.entry_type] %></span></a></li>
+    <% }) %></ul>
+  <% } %>
+</section>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
+<script src="/assets/js/dashboard.js" defer></script>
+<%- include('../partials/app-bottom') %>

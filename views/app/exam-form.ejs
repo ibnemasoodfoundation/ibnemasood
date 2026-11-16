@@ -1,0 +1,56 @@
+<%- include('../partials/app-top') %>
+<%
+  const editing = !!values.editId;
+  const f = (k) => errors[k] ? 'invalid' : '';
+  const val = (k) => values[k] ?? '';
+%>
+<p class="crumb"><a href="<%= editing ? '/app/results/' + values.editId : '/app/results' %>">← <%= editing ? 'Back to exam' : 'All exams' %></a></p>
+<section class="card card--form card--wide">
+  <form method="post" action="<%= editing ? '/app/results/' + values.editId + '/edit' : '/app/results' %>" novalidate>
+    <input type="hidden" name="_csrf" value="<%= csrf %>">
+    <fieldset class="form-section">
+      <legend>Exam <span class="legend-ur" lang="ur">امتحان</span></legend>
+      <div class="field-row field-row--3">
+        <div class="field <%= f('title') %>"><label for="e-title">Title</label><input id="e-title" name="title" value="<%= val('title') %>" placeholder="e.g. Annual Exam 2026" required><span class="err"><%= errors.title %></span></div>
+        <div class="field"><label for="e-type">Type</label>
+          <select id="e-type" name="exam_type"><% Object.keys(EXAM_TYPES).forEach(function (k) { %><option value="<%= k %>" <%= val('exam_type') === k ? 'selected' : '' %>><%= EXAM_TYPES[k] %></option><% }) %></select>
+        </div>
+        <div class="field"><label for="e-year">Session / year <span class="opt">optional</span></label><input id="e-year" name="session_year" value="<%= val('session_year') %>" placeholder="e.g. 2026 or 1447 AH"></div>
+      </div>
+      <div class="field-row field-row--3">
+        <div class="field <%= f('held_on') %>"><label for="e-date">Exam date <span class="opt">optional</span></label><input id="e-date" name="held_on" type="date" value="<%= val('held_on') %>"><span class="err"><%= errors.held_on %></span></div>
+        <div class="field <%= f('pass_percent') %>"><label for="e-pass">Pass mark (%)</label><input id="e-pass" name="pass_percent" type="number" min="0" max="100" value="<%= val('pass_percent') %>" inputmode="numeric"><span class="err"><%= errors.pass_percent %></span></div>
+        <div class="field <%= f('target') %>">
+          <label for="e-target">Held at</label>
+          <% if (editing) { %>
+            <input id="e-target" value="<%= values.coverage %>" disabled>
+          <% } else { %>
+            <select id="e-target" name="target" required>
+              <option value="">Choose…</option>
+              <% if (allMakatib) { %><option value="all" <%= val('target') === 'all' ? 'selected' : '' %>>All Makatib</option><% } %>
+              <% if (makatib.length) { %><optgroup label="One Maktab"><% makatib.forEach(function (m) { %><option value="m:<%= m.id %>" <%= val('target') === 'm:' + m.id ? 'selected' : '' %>><%= m.name_en %></option><% }) %></optgroup><% } %>
+              <% if (schools.length) { %><optgroup label="One school"><% schools.forEach(function (sc) { %><option value="s:<%= sc.id %>" <%= val('target') === 's:' + sc.id ? 'selected' : '' %>><%= sc.name_en %></option><% }) %></optgroup><% } %>
+            </select>
+          <% } %>
+          <span class="err"><%= errors.target %></span>
+        </div>
+      </div>
+    </fieldset>
+
+    <fieldset class="form-section">
+      <legend>Subjects and total marks <span class="legend-ur" lang="ur">مضامین</span></legend>
+      <div class="field <%= f('subjects') %>">
+        <label for="e-subjects">One subject per line: name | total marks</label>
+        <textarea id="e-subjects" name="subjects" rows="7" <%= values.hasResults ? 'readonly' : '' %> placeholder="Nazra reading | 100&#10;Tajweed | 50"><%= val('subjects_text') %></textarea>
+        <span class="err"><%= errors.subjects %></span>
+      </div>
+      <p class="hint"><%= values.hasResults ? 'Marks have already been entered, so the subjects can no longer change.' : 'The suggested Makatib subjects can be changed or replaced. Up to 15 subjects.' %></p>
+    </fieldset>
+
+    <div class="btn-row">
+      <button class="btn btn--gold" type="submit"><%= editing ? 'Save exam' : 'Create exam' %></button>
+      <a class="btn btn--line" href="<%= editing ? '/app/results/' + values.editId : '/app/results' %>">Cancel</a>
+    </div>
+  </form>
+</section>
+<%- include('../partials/app-bottom') %>

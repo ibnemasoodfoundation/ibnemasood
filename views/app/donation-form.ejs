@@ -21,7 +21,7 @@
         </div>
       </div>
       <div class="field"><label for="reference">Transaction ID / reference <span class="opt">optional</span></label><input id="reference" name="reference" value="<%= values.reference || '' %>" placeholder="Helps the office find your transfer"></div>
-      <% if (user.role !== 'user') { %>
+      <% if (['admin', 'manager', 'accountant'].includes(user.role)) { %>
         <label class="check"><input type="checkbox" name="verified" value="1"> Received at the office, mark as verified now</label>
       <% } %>
       <div class="btn-row">

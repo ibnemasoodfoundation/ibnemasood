@@ -16,7 +16,38 @@ const PROGRAMMES = {
 const DONATION_KINDS = ["Sadaqah", "Zakat", "General donation", "Fitrana", "Student sponsorship", "Construction"];
 const DONATION_METHODS = ["Bank Al Habib", "JazzCash", "EasyPaisa", "Cash at the Jamia"];
 
-const ROLE_LABELS = { admin: "Super Admin", manager: "Branch Manager", teacher: "Teacher", user: "Member" };
+const ROLE_LABELS = {
+  admin: "Super Admin", manager: "Branch Manager", nazim: "Makatib Nazim", principal: "School Principal",
+  accountant: "Accountant", teacher: "Teacher", parent: "Parent", user: "Member",
+};
+const ROLE_ORDER = ["admin", "manager", "nazim", "principal", "accountant", "teacher", "parent", "user"];
+
+const EXPENSE_CATEGORIES = [
+  "Teacher salaries", "Staff salaries", "Utilities (electricity, gas, water)", "Rent", "Food and kitchen",
+  "Books and stationery", "Construction and repairs", "Transport", "Student welfare", "Events and programmes",
+  "Office expenses", "Other expense",
+];
+const INCOME_CATEGORIES = [
+  "Donation (cash/bank)", "Zakat", "Sadaqah", "Fitrana", "Student fees", "School fees", "Grant", "Other income",
+];
+const PAYMENT_METHODS = ["Cash", "Bank transfer", "Cheque", "JazzCash", "EasyPaisa", "Other"];
+const EXAM_TYPES = { monthly: "Monthly test", quarterly: "Quarterly exam", half_yearly: "Half-yearly exam", annual: "Annual exam", other: "Other" };
+// Suggested subjects for a Makatib exam; every exam's subjects can be changed when it is created
+const MAKTAB_SUBJECTS = [
+  "Nazra / Hifz reading | 100", "Tajweed | 50", "Memorised surahs and duas | 50",
+  "Masail (basic Islamic rulings) | 50", "Akhlaq and conduct | 50",
+].join("\n");
+
+/* Grade from a percentage; below the pass mark is always "Fail" */
+function gradeFor(pct, pass = 40) {
+  if (pct < pass) return "Fail";
+  if (pct >= 90) return "A+";
+  if (pct >= 80) return "A";
+  if (pct >= 70) return "B";
+  if (pct >= 60) return "C";
+  if (pct >= 50) return "D";
+  return "E";
+}
 
 // Towns the Jamia already serves. Offered as suggestions only: any new town can be typed in.
 const REPORTED_TOWNS = [
@@ -86,7 +117,8 @@ function todayPk() { return new Date().toLocaleDateString("en-CA", { timeZone: T
 function cap(s) { return s ? s[0].toUpperCase() + s.slice(1) : ""; }
 
 module.exports = {
-  BRANCHES, PROGRAMMES, DONATION_KINDS, DONATION_METHODS, ROLE_LABELS,
+  BRANCHES, PROGRAMMES, DONATION_KINDS, DONATION_METHODS, ROLE_LABELS, ROLE_ORDER,
+  EXPENSE_CATEGORIES, INCOME_CATEGORIES, PAYMENT_METHODS, EXAM_TYPES, MAKTAB_SUBJECTS, gradeFor,
   REPORTED_TOWNS, UNIT_STATUSES, TEACHER_STATUSES, STUDENT_STATUSES, GENDERS, fileSize,
   HIFZ_STATUSES, TAJWEED_STATUSES, EMPLOYMENT_TYPES, DESIGNATIONS, EDUCATION_LEVELS, QURAN_LEVELS,
   ATTENDANCE, SESSIONS, DOC_CATEGORIES, label, todayPk,

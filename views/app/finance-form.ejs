@@ -1,0 +1,61 @@
+<%- include('../partials/app-top') %>
+<%
+  const editing = !!values.editId;
+  const f = (k) => errors[k] ? 'invalid' : '';
+  const val = (k) => values[k] ?? '';
+  const isIncome = values.entry_type === 'income';
+%>
+<p class="crumb"><a href="/app/finance/entries">← All entries</a></p>
+<section class="card card--form card--wide">
+  <form method="post" action="<%= editing ? '/app/finance/' + values.editId : '/app/finance' %>" novalidate>
+    <input type="hidden" name="_csrf" value="<%= csrf %>">
+    <fieldset class="choice">
+      <legend>Type</legend>
+      <% Object.keys(TYPES).forEach(function (k) { %><label><input type="radio" name="entry_type" value="<%= k %>" <%= (values.entry_type || 'expense') === k ? 'checked' : '' %>> <%= TYPES[k] %></label><% }) %>
+    </fieldset>
+    <div class="field-row field-row--3">
+      <div class="field <%= f('entry_date') %>"><label for="fe-date">Date</label><input id="fe-date" name="entry_date" type="date" value="<%= val('entry_date') %>" max="<%= new Date().toISOString().slice(0, 10) %>" required><span class="err"><%= errors.entry_date %></span></div>
+      <div class="field <%= f('amount') %>"><label for="fe-amount">Amount (Rs)</label><input id="fe-amount" name="amount" type="number" min="1" step="1" value="<%= val('amount') %>" inputmode="numeric" required><span class="err"><%= errors.amount %></span></div>
+      <div class="field <%= f('category') %>">
+        <label for="fe-cat">Category</label>
+        <input id="fe-cat" name="category" list="fe-cats" value="<%= val('category') %>" autocomplete="off" required>
+        <datalist id="fe-cats"><% (isIncome ? INCOME_CATEGORIES : EXPENSE_CATEGORIES).concat(isIncome ? EXPENSE_CATEGORIES : INCOME_CATEGORIES).forEach(function (c) { %><option value="<%= c %>"><% }) %></datalist>
+        <span class="err"><%= errors.category %></span>
+      </div>
+    </div>
+    <div class="field"><label for="fe-desc">Description <span class="opt">optional</span></label><input id="fe-desc" name="description" value="<%= val('description') %>" placeholder="e.g. Electricity bill for October"></div>
+    <div class="field-row field-row--3">
+      <div class="field"><label for="fe-party"><%= isIncome ? 'Received from' : 'Paid to' %> <span class="opt">optional</span></label><input id="fe-party" name="party" value="<%= val('party') %>"></div>
+      <div class="field"><label for="fe-method">Payment method <span class="opt">optional</span></label>
+        <select id="fe-method" name="method"><option value="">Choose</option><% PAYMENT_METHODS.forEach(function (m) { %><option <%= val('method') === m ? 'selected' : '' %>><%= m %></option><% }) %></select>
+      </div>
+      <div class="field"><label for="fe-ref">Receipt / voucher no. <span class="opt">optional</span></label><input id="fe-ref" name="reference" value="<%= val('reference') %>"></div>
+    </div>
+    <div class="field-row field-row--3">
+      <div class="field <%= f('branch_id') %>"><label for="fe-branch">Branch <span class="opt">optional</span></label>
+        <select id="fe-branch" name="branch_id"><option value="">General / no branch</option><% branches.forEach(function (b) { %><option value="<%= b.id %>" <%= Number(values.branch_id) === b.id ? 'selected' : '' %>><%= b.name_en %></option><% }) %></select>
+        <span class="err"><%= errors.branch_id %></span>
+      </div>
+      <div class="field <%= f('maktab_id') %>"><label for="fe-maktab">Maktab <span class="opt">optional</span></label>
+        <select id="fe-maktab" name="maktab_id"><option value="">—</option><% makatib.forEach(function (m) { %><option value="<%= m.id %>" <%= Number(values.maktab_id) === m.id ? 'selected' : '' %>><%= m.name_en %></option><% }) %></select>
+        <span class="err"><%= errors.maktab_id %></span>
+      </div>
+      <div class="field <%= f('school_id') %>"><label for="fe-school">School <span class="opt">optional</span></label>
+        <select id="fe-school" name="school_id"><option value="">—</option><% schools.forEach(function (sc) { %><option value="<%= sc.id %>" <%= Number(values.school_id) === sc.id ? 'selected' : '' %>><%= sc.name_en %></option><% }) %></select>
+        <span class="err"><%= errors.school_id %></span>
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn--gold" type="submit"><%= editing ? 'Save entry' : 'Save' %></button>
+      <% if (!editing) { %><button class="btn btn--line" type="submit" name="another" value="1">Save and add another</button><% } %>
+      <a class="btn btn--line" href="/app/finance/entries">Cancel</a>
+    </div>
+  </form>
+  <% if (editing) { %>
+    <form method="post" action="/app/finance/<%= values.editId %>/delete" data-confirm="Delete this entry? This cannot be undone." class="danger-zone">
+      <input type="hidden" name="_csrf" value="<%= csrf %>">
+      <button class="btn btn--line btn--sm btn--danger-line" type="submit">Delete entry</button>
+    </form>
+  <% } %>
+</section>
+<%- include('../partials/app-bottom') %>

@@ -5,8 +5,8 @@
 const crypto = require("node:crypto");
 const express = require("express");
 const { one, all, run, log } = require("../db");
-const { checkCsrf, requireRole, hashPassword } = require("../auth");
-const { withScope, branchSql, maktabSql, personSql, inMaktab, inBranch, canSeePerson } = require("../scope");
+const { checkCsrf, requireRole, hashPassword, STAFF_ROLES } = require("../auth");
+const { withScope, branchSql, maktabSql, schoolSql, personSql, inMaktab, inSchool, inBranch, canSeePerson } = require("../scope");
 const { movePerson } = require("../transfers");
 const {
   GENDERS, TEACHER_STATUSES, STUDENT_STATUSES, HIFZ_STATUSES, TAJWEED_STATUSES, EMPLOYMENT_TYPES,
@@ -15,8 +15,8 @@ const {
 const { helpers: h } = require("./institution");
 
 const router = express.Router();
-const staff = [requireRole("admin", "manager"), withScope, checkCsrf];
-const staffOrTeacher = [requireRole("admin", "manager", "teacher"), withScope, checkCsrf];
+const staff = [requireRole(...STAFF_ROLES), withScope, checkCsrf];
+const staffOrTeacher = [requireRole(...STAFF_ROLES, "teacher"), withScope, checkCsrf];
 const admin = [requireRole("admin"), withScope, checkCsrf];
 const { str, int, like, isUnique, PHONE_RE, DATE_RE, CODE_RE, forbidden } = h;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
@@ -27,13 +27,13 @@ const PEOPLE = {
     table: "teachers", plural: "teachers", prefix: "TC", statuses: TEACHER_STATUSES, label: "Teacher", labelPlural: "Teachers",
     cols: ["code", "full_name", "name_ur", "father_name", "gender", "dob", "cnic", "phone", "whatsapp", "email", "address", "district",
       "qualification", "contemporary_qualification", "hifz_status", "tajweed_status", "experience_years", "additional_qualifications",
-      "designation", "joined_on", "employment_type", "salary", "status", "notes", "branch_id", "maktab_id"],
+      "designation", "joined_on", "employment_type", "salary", "status", "notes", "branch_id", "maktab_id", "school_id"],
   },
   student: {
     table: "students", plural: "students", prefix: "ST", statuses: STUDENT_STATUSES, label: "Student", labelPlural: "Students",
     cols: ["code", "full_name", "name_ur", "father_name", "mother_name", "gender", "dob", "cnic_bform", "phone", "guardian_phone", "address",
       "education_level", "quran_level", "previous_institution", "hifz_status", "tajweed_status", "enrolled_on", "programme", "class_name",
-      "teacher_id", "status", "notes", "branch_id", "maktab_id", "admission_id"],
+      "teacher_id", "status", "notes", "branch_id", "maktab_id", "school_id", "admission_id"],
   },
 };
 
@@ -48,6 +48,7 @@ async function personFields(req, type) {
   v.gender = GENDERS[v.gender] ? v.gender : "";
   v.status = cfg.statuses.includes(v.status) ? v.status : "active";
   v.maktab_id = int(b.maktab_id);
+  v.school_id = int(b.school_id);
   v.branch_id = int(b.branch_id);
   v.hifz_status = HIFZ_STATUSES[v.hifz_status] ? v.hifz_status : "";
   v.tajweed_status = TAJWEED_STATUSES[v.tajweed_status] ? v.tajweed_status : "";
@@ -71,22 +72,77 @@ async function personFields(req, type) {
     if (str(b.salary) !== "" && v.salary === null) e.salary = "Enter the monthly salary in rupees, numbers only.";
   } else {
     if (v.cnic_bform && !CNIC_RE.test(v.cnic_bform)) e.cnic_bform = "Enter the 13-digit B-Form or CNIC number.";
+    // Parent portal login (optional): created or linked after the student is saved
+    v.parent_email = str(b.parent_email, 120).toLowerCase();
+    v.parent_password = String(b.parent_password ?? "").slice(0, 200);
+    v.parent_remove = b.parent_remove === "1";
+    if (v.parent_email && !EMAIL_RE.test(v.parent_email)) e.parent_email = "Enter a valid email address.";
+    if (v.parent_password && v.parent_password.length < 8) e.parent_password = "Use at least 8 characters.";
+    if (v.parent_password && !v.parent_email) e.parent_email = "Enter the parent's email for this password.";
+    if (v.parent_email && !e.parent_email) {
+      const u = await one("SELECT id, role FROM users WHERE email = ?", v.parent_email);
+      if (u && u.role !== "parent") e.parent_email = "This email already belongs to a staff or member account. Use the parent's own email.";
+      else if (u && v.parent_password && !(await parentInScope(req, u.id))) e.parent_password = "This parent has children outside your area; ask an admin to change their password.";
+    }
     v.teacher_id = int(b.teacher_id);
     v.admission_id = int(b.admission_id);
     if (v.teacher_id) {
-      const t = await one("SELECT id, maktab_id, branch_id FROM teachers WHERE id = ?", v.teacher_id);
+      const t = await one("SELECT id, maktab_id, school_id, branch_id FROM teachers WHERE id = ?", v.teacher_id);
       if (!t || !canSeePerson(req.scope, t, "teacher")) e.teacher_id = "Choose a teacher.";
     }
   }
 
+  if (v.maktab_id && v.school_id) e.school_id = "Choose either a Maktab or a school, not both.";
+  if (v.school_id) {
+    const sc = await one("SELECT branch_id, status FROM schools WHERE id = ?", v.school_id);
+    if (!sc || sc.status === "archived") e.school_id = "Choose an active school.";
+    else if (!inSchool(req.scope, v.school_id)) e.school_id = "Choose a school you manage.";
+    else if (!v.maktab_id) v.branch_id = sc.branch_id; // a school's branch always wins
+  }
   if (v.maktab_id) {
     const m = await one("SELECT branch_id, status FROM makatib WHERE id = ?", v.maktab_id);
     if (!m || m.status === "archived") e.maktab_id = "Choose an active Maktab.";
     else if (!inMaktab(req.scope, v.maktab_id)) e.maktab_id = "Choose a Maktab you manage.";
     else v.branch_id = m.branch_id; // a Maktab's branch always wins
   } else if (v.branch_id && !(await one("SELECT id FROM branches WHERE id = ?", v.branch_id))) e.branch_id = "Choose a branch.";
-  if (!req.scope.all && !v.maktab_id && !inBranch(req.scope, v.branch_id)) e.maktab_id = "Choose a Maktab or branch you manage.";
+  if (!req.scope.all && !v.maktab_id && !v.school_id && !inBranch(req.scope, v.branch_id)) e.maktab_id = "Choose a Maktab, school or branch you manage.";
   return [v, e];
+}
+
+/* True when every child of this parent account is inside the signed-in user's scope */
+async function parentInScope(req, parentId) {
+  if (req.scope.all) return true;
+  const kids = await all("SELECT id, maktab_id, school_id, branch_id, teacher_id FROM students WHERE parent_user_id = ?", parentId);
+  return kids.every((k) => canSeePerson(req.scope, k, "student"));
+}
+
+/* Creates or links the parent login for a saved student; returns a message for the office, or "" */
+async function linkParent(req, studentId, currentParentId, v) {
+  if (v.parent_remove) {
+    if (!currentParentId) return "";
+    await run("UPDATE students SET parent_user_id = NULL WHERE id = ?", studentId);
+    await log(req.user.id, "student.parent_unlink", "#" + studentId);
+    return " Parent access removed.";
+  }
+  if (!v.parent_email) return "";
+  let u = await one("SELECT id, role FROM users WHERE email = ?", v.parent_email);
+  let msg = "";
+  if (!u) {
+    const password = v.parent_password || crypto.randomBytes(6).toString("base64url");
+    u = await one("INSERT INTO users (name, email, phone, password_hash, role) VALUES (?, ?, ?, ?, 'parent') RETURNING id",
+      v.father_name || "Parent of " + v.full_name, v.parent_email, v.guardian_phone || null, hashPassword(password));
+    msg = v.parent_password ? ` Parent login created: ${v.parent_email} with the password you entered.`
+      : ` Parent login created: ${v.parent_email}, temporary password ${password}`;
+    await log(req.user.id, "parent.create_login", v.parent_email);
+  } else if (v.parent_password) {
+    await run("UPDATE users SET password_hash = ?, status = 'active' WHERE id = ?", hashPassword(v.parent_password), u.id);
+    msg = " Parent password updated.";
+    await log(req.user.id, "parent.reset_password", v.parent_email);
+  } else if (u.id !== currentParentId) {
+    msg = ` Linked to the existing parent login ${v.parent_email}.`;
+  }
+  if (u.id !== currentParentId) await run("UPDATE students SET parent_user_id = ? WHERE id = ?", u.id, studentId);
+  return msg;
 }
 
 const nullify = (v, cols) => cols.map((c) => (v[c] === "" || v[c] === undefined ? null : v[c]));
@@ -94,6 +150,7 @@ const nullify = (v, cols) => cols.map((c) => (v[c] === "" || v[c] === undefined 
 async function formOptions(req) {
   return {
     branches: await h.branchList(req.scope), makatib: await h.maktabList(req.scope),
+    schools: await all(`SELECT sc.id, sc.code, sc.name_en FROM schools sc WHERE sc.status <> 'archived' AND ${schoolSql(req.scope, "sc")} ORDER BY sc.name_en`),
     teachers: await all(`SELECT t.id, t.code, t.full_name, m.name_en AS maktab FROM teachers t LEFT JOIN makatib m ON m.id = t.maktab_id
                          WHERE t.status = 'active' AND ${personSql(req.scope, "t", "teacher")} ORDER BY t.full_name`),
     classes: (await all("SELECT DISTINCT class_name FROM students WHERE class_name IS NOT NULL ORDER BY 1")).map((r) => r.class_name),
@@ -104,9 +161,11 @@ async function formOptions(req) {
 async function loadPerson(req, type) {
   const cfg = PEOPLE[type];
   const id = int(req.params.id);
-  const x = id && await one(`SELECT x.*, b.name_en AS branch, m.name_en AS maktab, m.name_ur AS maktab_ur
-    ${type === "student" ? ", t.full_name AS teacher" : ", u.email AS login_email"}
+  const x = id && await one(`SELECT x.*, b.name_en AS branch, m.name_en AS maktab, m.name_ur AS maktab_ur, sc.name_en AS school
+    ${type === "student" ? ", t.full_name AS teacher, pu.email AS parent_email" : ", u.email AS login_email"}
     FROM ${cfg.table} x LEFT JOIN branches b ON b.id = x.branch_id LEFT JOIN makatib m ON m.id = x.maktab_id
+    LEFT JOIN schools sc ON sc.id = x.school_id
+    ${type === "student" ? "LEFT JOIN users pu ON pu.id = x.parent_user_id" : ""}
     ${type === "student" ? "LEFT JOIN teachers t ON t.id = x.teacher_id" : "LEFT JOIN users u ON u.id = x.user_id"}
     WHERE x.id = ?`, id);
   if (!x) return { missing: true };
@@ -138,7 +197,7 @@ for (const [type, cfg] of Object.entries(PEOPLE)) {
   /* ---------- List (students: teachers see their own, read-only) ---------- */
   router.get(`/${cfg.plural}`, type === "student" ? staffOrTeacher : staff, async (req, res) => {
     const f = {
-      q: str(req.query.q, 80), branch: int(req.query.branch), maktab: int(req.query.maktab), teacher: int(req.query.teacher),
+      q: str(req.query.q, 80), branch: int(req.query.branch), maktab: int(req.query.maktab), school: int(req.query.school), teacher: int(req.query.teacher),
       gender: GENDERS[req.query.gender] ? req.query.gender : "", cls: str(req.query.class, 60),
       employment: EMPLOYMENT_TYPES[req.query.employment] ? req.query.employment : "",
       status: [...cfg.statuses, "all"].includes(req.query.status) ? req.query.status : "",
@@ -148,6 +207,7 @@ for (const [type, cfg] of Object.entries(PEOPLE)) {
     else if (!f.status && type === "teacher") where.push("x.status <> 'archived'");
     if (f.branch) { where.push("x.branch_id = ?"); p.push(f.branch); }
     if (f.maktab) { where.push("x.maktab_id = ?"); p.push(f.maktab); }
+    if (f.school) { where.push("x.school_id = ?"); p.push(f.school); }
     if (f.gender) { where.push("x.gender = ?"); p.push(f.gender); }
     if (type === "student" && f.teacher) { where.push("x.teacher_id = ?"); p.push(f.teacher); }
     if (type === "student" && f.cls) { where.push("x.class_name = ?"); p.push(f.cls); }
@@ -156,10 +216,11 @@ for (const [type, cfg] of Object.entries(PEOPLE)) {
       where.push("(x.full_name ILIKE ? OR x.name_ur ILIKE ? OR x.code ILIKE ? OR x.father_name ILIKE ? OR x.phone ILIKE ?)");
       p.push(like(f.q), like(f.q), like(f.q), like(f.q), like(f.q));
     }
-    const rows = await all(`SELECT x.*, b.name_en AS branch, m.name_en AS maktab,
+    const rows = await all(`SELECT x.*, b.name_en AS branch, m.name_en AS maktab, sc.name_en AS school,
         (SELECT a.id FROM attachments a WHERE a.entity_type = '${type}' AND a.entity_id = x.id AND a.kind = 'photo' ORDER BY a.id DESC LIMIT 1) AS photo_id
         ${type === "student" ? ", t.full_name AS teacher" : ""}
       FROM ${cfg.table} x LEFT JOIN branches b ON b.id = x.branch_id LEFT JOIN makatib m ON m.id = x.maktab_id
+      LEFT JOIN schools sc ON sc.id = x.school_id
       ${type === "student" ? "LEFT JOIN teachers t ON t.id = x.teacher_id" : ""}
       WHERE ${where.join(" AND ")} ORDER BY x.full_name LIMIT 1000`, ...p);
     res.render("app/people", { title: req.user.role === "teacher" ? "My students" : cfg.labelPlural, rows, type, cfg, filters: f, ...(await formOptions(req)) });
@@ -167,7 +228,7 @@ for (const [type, cfg] of Object.entries(PEOPLE)) {
 
   /* ---------- Register ---------- */
   router.get(`/${cfg.plural}/new`, staff, async (req, res) => {
-    const values = { code: await h.nextCode(cfg.table, cfg.prefix), status: "active", maktab_id: int(req.query.maktab) };
+    const values = { code: await h.nextCode(cfg.table, cfg.prefix), status: "active", maktab_id: int(req.query.maktab), school_id: int(req.query.school) };
     // Registering an approved applicant: start from their admission details
     const adm = type === "student" && int(req.query.admission) && await one("SELECT * FROM admissions WHERE id = ?", int(req.query.admission));
     if (adm) Object.assign(values, {
@@ -193,7 +254,8 @@ for (const [type, cfg] of Object.entries(PEOPLE)) {
       throw err;
     }
     await log(req.user.id, type + ".create", `${v.code} ${v.full_name}`);
-    req.flash("ok", `${cfg.label} ${v.full_name} registered. Add a photograph and documents below.`);
+    const parentNote = type === "student" ? await linkParent(req, r.id, null, v) : "";
+    req.flash("ok", `${cfg.label} ${v.full_name} registered. Add a photograph and documents below.${parentNote}`);
     res.redirect(`${base}/${r.id}`);
   });
 
@@ -202,7 +264,7 @@ for (const [type, cfg] of Object.entries(PEOPLE)) {
     const { x, missing, denied } = await loadPerson(req, type);
     if (missing) return next();
     if (denied) return forbidden(res);
-    const [files, photo, att, transfers, extra] = await Promise.all([
+    const [files, photo, att, transfers, extra, results] = await Promise.all([
       h.filesFor(type, x.id), photoOf(type, x.id), attendanceSummary(type, x.id),
       all(`SELECT tr.*, f.name_en AS from_name, t.name_en AS to_name, u.name AS by_name FROM transfers tr
            LEFT JOIN makatib f ON f.id = tr.from_maktab_id LEFT JOIN makatib t ON t.id = tr.to_maktab_id
@@ -211,9 +273,13 @@ for (const [type, cfg] of Object.entries(PEOPLE)) {
         ? all("SELECT id, code, full_name, class_name, status FROM students WHERE teacher_id = ? ORDER BY full_name", x.id)
         : all(`SELECT p.*, u.name AS by_name FROM student_progress p LEFT JOIN users u ON u.id = p.recorded_by
                WHERE p.student_id = ? ORDER BY p.recorded_on DESC, p.id DESC`, x.id),
+      type === "student"
+        ? all(`SELECT r.*, e.title, e.exam_type, e.session_year, e.status AS exam_status FROM results r JOIN exams e ON e.id = r.exam_id
+               WHERE r.student_id = ? ORDER BY e.held_on DESC NULLS LAST, e.id DESC`, x.id)
+        : [],
     ]);
     res.render("app/person", {
-      title: x.full_name, x, type, cfg, files, photo, att, transfers,
+      title: x.full_name, x, type, cfg, files, photo, att, transfers, results,
       students: type === "teacher" ? extra : [], progress: type === "student" ? extra : [],
       makatib: req.scope.canManage ? (await h.maktabList(req.scope)).filter((m) => m.id !== x.maktab_id) : [],
       branches: req.scope.canManage ? await h.branchList(req.scope) : [],
@@ -228,7 +294,7 @@ for (const [type, cfg] of Object.entries(PEOPLE)) {
     const { x, missing, denied } = await loadPerson(req, type);
     if (missing) return next();
     if (denied) return forbidden(res);
-    await renderForm(req, res, `Edit ${x.full_name}`, { ...x, editId: x.id }, {});
+    await renderForm(req, res, `Edit ${x.full_name}`, { ...x, editId: x.id, parent_email: x.parent_email || "" }, {});
   });
 
   router.post(`/${cfg.plural}/:id`, staff, async (req, res, next) => {
@@ -252,7 +318,8 @@ for (const [type, cfg] of Object.entries(PEOPLE)) {
       await movePerson(type, x.id, v.maktab_id, "Changed on the edit form", req.user.id, v.branch_id);
     }
     await log(req.user.id, type + ".update", `${v.code} ${v.full_name}`);
-    req.flash("ok", `${v.full_name} saved.`);
+    const parentNote = type === "student" ? await linkParent(req, x.id, x.parent_user_id, v) : "";
+    req.flash("ok", `${v.full_name} saved.${parentNote}`);
     res.redirect(`${base}/${x.id}`);
   });
 

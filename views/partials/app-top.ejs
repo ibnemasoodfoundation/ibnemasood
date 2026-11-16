@@ -1,34 +1,43 @@
 <%- include('head') %>
 <%
-const staffRole = user.role === 'admin' || user.role === 'manager';
-const teacherRole = user.role === 'teacher';
-const nav = [
-  { href: '/app', label: user.role === 'user' || teacherRole ? 'My dashboard' : 'Overview', icon: 'home' },
-];
-if (staffRole) nav.push(
-  { section: 'Institution' },
-  { href: '/app/branches', label: 'Branches', icon: 'branch' },
-  { href: '/app/makatib', label: 'Makatib', icon: 'maktab' },
-  { href: '/app/teachers', label: 'Teachers', icon: 'teacher' },
-  { href: '/app/students', label: 'Students', icon: 'student' },
-  { section: 'Attendance' },
-  { href: '/app/attendance', label: 'Student attendance', icon: 'list', exact: true },
-  { href: '/app/teacher-attendance', label: 'Teacher attendance', icon: 'teacher', exact: true },
-  { href: '/app/attendance/report', label: 'Reports', icon: 'file', also: ['/app/reports', '/app/attendance/monthly', '/app/teacher-attendance/monthly'] },
-  { section: 'Office' }
-);
-if (teacherRole) nav.push(
+const r = user.role;
+const officeRole = r === 'admin' || r === 'manager';          // admissions, messages
+const unitRole = officeRole || r === 'nazim' || r === 'principal'; // teachers, students, attendance, results
+const homeLabel = { admin: 'Overview', manager: 'Overview', nazim: 'Overview', principal: 'Overview', accountant: 'Overview' }[r] || 'My dashboard';
+const nav = [{ href: '/app', label: homeLabel, icon: 'home' }];
+if (unitRole) {
+  nav.push({ section: 'Institution' });
+  if (officeRole) nav.push({ href: '/app/branches', label: 'Branches', icon: 'branch' });
+  if (r !== 'principal') nav.push({ href: '/app/makatib', label: 'Makatib', icon: 'maktab' });
+  if (r !== 'nazim') nav.push({ href: '/app/schools', label: 'Schools', icon: 'branch' });
+  nav.push(
+    { href: '/app/teachers', label: 'Teachers', icon: 'teacher' },
+    { href: '/app/students', label: 'Students', icon: 'student' },
+    { section: 'Attendance' },
+    { href: '/app/attendance', label: 'Student attendance', icon: 'list', exact: true },
+    { href: '/app/teacher-attendance', label: 'Teacher attendance', icon: 'teacher', exact: true },
+    { href: '/app/attendance/report', label: 'Reports', icon: 'file', also: ['/app/reports', '/app/attendance/monthly', '/app/teacher-attendance/monthly'] },
+    { href: '/app/results', label: 'Exams and results', icon: 'file' },
+    { section: 'Office' }
+  );
+}
+if (r === 'teacher') nav.push(
   { href: '/app/students', label: 'My students', icon: 'student' },
   { href: '/app/attendance', label: 'Mark attendance', icon: 'list', exact: true },
-  { href: '/app/attendance/monthly', label: 'Monthly sheet', icon: 'file' }
+  { href: '/app/attendance/monthly', label: 'Monthly sheet', icon: 'file' },
+  { href: '/app/results', label: 'Exams and results', icon: 'file' }
 );
-if (!teacherRole) nav.push(
-  { href: '/app/admissions', label: staffRole ? 'Admissions' : 'My applications', icon: 'file' },
-  { href: '/app/donations', label: staffRole ? 'Donations' : 'My donations', icon: 'heart' }
-);
-if (staffRole) nav.push({ href: '/app/messages', label: 'Messages', icon: 'mail' });
+if (r === 'admin' || r === 'accountant') {
+  nav.push({ section: 'Accounts' },
+    { href: '/app/finance/entries', label: 'Income and expenses', icon: 'list', also: ['/app/finance/new'] },
+    { href: '/app/finance/report', label: 'Financial report', icon: 'file' });
+  if (r === 'admin') nav.push({ href: '/app/finance', label: 'Accounts', icon: 'heart', exact: true });
+}
+if (r === 'user' || officeRole) nav.push({ href: '/app/admissions', label: officeRole ? 'Admissions' : 'My applications', icon: 'file' });
+if (r === 'user' || officeRole || r === 'accountant') nav.push({ href: '/app/donations', label: r === 'user' ? 'My donations' : 'Donations', icon: 'heart' });
+if (officeRole) nav.push({ href: '/app/messages', label: 'Messages', icon: 'mail' });
 nav.push({ href: '/app/announcements', label: 'Announcements', icon: 'bell' });
-if (user.role === 'admin') {
+if (r === 'admin') {
   nav.push({ href: '/app/users', label: 'Users & roles', icon: 'users' });
   nav.push({ href: '/app/activity', label: 'Activity log', icon: 'list' });
 }
@@ -40,25 +49,25 @@ const isOn = (href, n) => {
 };
 %>
 <body class="app-body">
-<a class="skip" href="#app-main">Skip to content</a>
+<a class="skip" href="#app-main"><%= t('Skip to content') %></a>
 <div class="app">
   <aside class="side" id="side">
     <a class="side-brand" href="/">
       <img src="/assets/images/logo-sm.jpg" alt="" width="44" height="44">
       <span><strong>Jamia Arabia</strong><small>Abdullah Bin Masood</small></span>
     </a>
-    <div class="side-role role-<%= user.role %>"><%- include('icon', { name: 'shield' }) %><%= ROLE_LABELS[user.role] %> portal</div>
+    <div class="side-role role-<%= user.role %>"><%- include('icon', { name: 'shield' }) %><%= t(ROLE_LABELS[user.role]) %> <%= t('portal') %></div>
     <nav class="side-nav" aria-label="Dashboard">
       <% nav.forEach(function (n) { %>
-        <% if (n.section) { %><span class="side-section"><%= n.section %></span><% return; } %>
-        <a href="<%= n.href %>" <% if (isOn(n.href, n)) { %>aria-current="page"<% } %>><%- include('icon', { name: n.icon }) %><span><%= n.label %></span></a>
+        <% if (n.section) { %><span class="side-section"><%= t(n.section) %></span><% return; } %>
+        <a href="<%= n.href %>" <% if (isOn(n.href, n)) { %>aria-current="page"<% } %>><%- include('icon', { name: n.icon }) %><span><%= t(n.label) %></span></a>
       <% }) %>
     </nav>
     <div class="side-foot">
-      <a href="/"><%- include('icon', { name: 'globe' }) %><span>Public website</span></a>
+      <a href="/"><%- include('icon', { name: 'globe' }) %><span><%= t('Public website') %></span></a>
       <form method="post" action="/logout">
         <input type="hidden" name="_csrf" value="<%= csrf %>">
-        <button type="submit"><%- include('icon', { name: 'out' }) %><span>Sign out</span></button>
+        <button type="submit"><%- include('icon', { name: 'out' }) %><span><%= t('Sign out') %></span></button>
       </form>
     </div>
   </aside>
@@ -66,11 +75,15 @@ const isOn = (href, n) => {
 
   <div class="app-main">
     <header class="topnav">
-      <button class="side-toggle" type="button" aria-controls="side" aria-expanded="false" aria-label="Open menu"><%- include('icon', { name: 'menu' }) %></button>
-      <h1 class="topnav-title"><%= title %></h1>
+      <button class="side-toggle" type="button" aria-controls="side" aria-expanded="false" aria-label="<%= t('Open menu') %>"><%- include('icon', { name: 'menu' }) %></button>
+      <h1 class="topnav-title"><%= t(title) %></h1>
+      <nav class="lang-switch" aria-label="<%= t('Language') %>">
+        <%- include('icon', { name: 'globe' }) %>
+        <% Object.keys(LANGS).forEach(function (code) { %><a href="/lang/<%= code %>" lang="<%= code %>" <% if (lang === code) { %>aria-current="true"<% } %>><%= LANGS[code].name %></a><% }) %>
+      </nav>
       <a class="me" href="/app/profile" title="My profile">
         <span class="avatar"><%= initials(user.name) %></span>
-        <span class="me-text"><strong><%= user.name %></strong><small><%= ROLE_LABELS[user.role] %></small></span>
+        <span class="me-text"><strong><%= user.name %></strong><small><%= t(ROLE_LABELS[user.role]) %></small></span>
       </a>
     </header>
     <main id="app-main" class="content">

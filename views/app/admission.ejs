@@ -1,5 +1,5 @@
 <%- include('../partials/app-top') %>
-<% const staffView = user.role !== 'user'; %>
+<% const staffView = user.role === 'admin' || user.role === 'manager'; %>
 <p class="crumb"><a href="/app/admissions">← <%= staffView ? 'All admissions' : 'My applications' %></a></p>
 
 <div class="grid-2 grid-2--wide">

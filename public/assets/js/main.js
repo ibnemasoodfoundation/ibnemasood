@@ -143,4 +143,59 @@
 
   /* Footer year */
   document.querySelectorAll("[data-year]").forEach(function (el) { el.textContent = new Date().getFullYear(); });
+
+  /* Language switcher (public pages only). Uses Google's page translation, which reads the "googtrans" cookie.
+     Urdu and Arabic text, the founder's name and Quranic verses are marked translate="no" so they stay exactly as written. */
+  var LANGS = [["en", "English"], ["ur", "اردو"], ["sd", "سنڌي"], ["ar", "العربية"]];
+  var cookieLang = (document.cookie.match(/(?:^|;\s*)googtrans=\/en\/([a-z-]+)/) || [])[1] || "en";
+  document.querySelectorAll('[lang="ur"], [lang="ar"], .bismillah, .brand .name').forEach(function (el) {
+    el.classList.add("notranslate"); el.setAttribute("translate", "no");
+  });
+
+  function setLang(code) {
+    var host = location.hostname, past = "Thu, 01 Jan 1970 00:00:00 GMT";
+    // Clear on this host and on the parent domain (Google may set either)
+    ["", "; domain=" + host, "; domain=." + host.replace(/^www\./, "")].forEach(function (d) {
+      document.cookie = "googtrans=; expires=" + past + "; path=/" + d;
+    });
+    if (code !== "en") document.cookie = "googtrans=/en/" + code + "; path=/";
+    location.reload();
+  }
+
+  var headerWrap = document.querySelector(".site-header .wrap");
+  if (headerWrap) {
+    var pick = document.createElement("div");
+    pick.className = "lang-pick notranslate";
+    pick.setAttribute("translate", "no");
+    var current = LANGS.filter(function (l) { return l[0] === cookieLang; })[0] || LANGS[0];
+    pick.innerHTML =
+      '<button type="button" class="lang-btn" aria-haspopup="true" aria-expanded="false" aria-label="Language: ' + current[1] + '">' +
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"/><path d="M2.5 12h19M12 2.5c2.6 2.8 4 6 4 9.5s-1.4 6.7-4 9.5c-2.6-2.8-4-6-4-9.5s1.4-6.7 4-9.5z"/></svg>' +
+      '<span>' + current[1] + '</span></button>' +
+      '<ul class="lang-menu" hidden>' + LANGS.map(function (l) {
+        return '<li><button type="button" data-lang="' + l[0] + '" lang="' + l[0] + '"' + (l[0] === cookieLang ? ' aria-current="true"' : "") + ">" + l[1] + "</button></li>";
+      }).join("") + "</ul>";
+    headerWrap.insertBefore(pick, headerWrap.querySelector(".menu-toggle"));
+    var btn = pick.querySelector(".lang-btn"), menu = pick.querySelector(".lang-menu");
+    var openMenu = function (open) { menu.hidden = !open; btn.setAttribute("aria-expanded", open ? "true" : "false"); };
+    btn.addEventListener("click", function (e) { e.stopPropagation(); openMenu(menu.hidden); });
+    document.addEventListener("click", function () { openMenu(false); });
+    document.addEventListener("keydown", function (e) { if (e.key === "Escape") openMenu(false); });
+    menu.querySelectorAll("[data-lang]").forEach(function (b) {
+      b.addEventListener("click", function () { if (b.getAttribute("data-lang") !== cookieLang) setLang(b.getAttribute("data-lang")); else openMenu(false); });
+    });
+  }
+
+  if (cookieLang !== "en") {
+    var holder = document.createElement("div");
+    holder.id = "gt-holder"; holder.hidden = true;
+    document.body.appendChild(holder);
+    window.jaabmTranslateInit = function () {
+      new window.google.translate.TranslateElement({ pageLanguage: "en", autoDisplay: false }, "gt-holder");
+    };
+    var s = document.createElement("script");
+    s.src = "https://translate.google.com/translate_a/element.js?cb=jaabmTranslateInit";
+    s.async = true;
+    document.body.appendChild(s);
+  }
 })();

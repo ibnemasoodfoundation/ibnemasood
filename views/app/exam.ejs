@@ -1,0 +1,89 @@
+<%- include('../partials/app-top') %>
+<% const subjects = e.subjects || [], total = subjects.reduce((t, s) => t + s.total, 0); const qs = (o) => new URLSearchParams(Object.assign({ maktab: f.maktab || '', class: f.cls }, o)).toString(); %>
+<p class="crumb"><a href="/app/results">← All exams</a></p>
+
+<section class="card">
+  <div class="card-head">
+    <h2><%= e.title %> <%- include('../partials/badge', { s: e.status }) %></h2>
+    <div class="btn-row">
+      <a class="btn btn--line btn--sm" href="/app/results/<%= e.id %>/report?<%= qs({}) %>" target="_blank"><%- include('../partials/icon', { name: 'file' }) %>Result sheet</a>
+      <% if (canManage) { %>
+        <a class="btn btn--line btn--sm" href="/app/results/<%= e.id %>/edit"><%- include('../partials/icon', { name: 'edit' }) %>Edit exam</a>
+        <form method="post" action="/app/results/<%= e.id %>/publish" class="inline" <% if (e.status !== 'published') { %>data-confirm="Publish these results? Parents will see them and can print certificates."<% } %>>
+          <input type="hidden" name="_csrf" value="<%= csrf %>"><input type="hidden" name="publish" value="<%= e.status === 'published' ? '0' : '1' %>">
+          <button class="btn <%= e.status === 'published' ? 'btn--line' : 'btn--gold' %> btn--sm" type="submit"><%= e.status === 'published' ? 'Move back to draft' : 'Publish results' %></button>
+        </form>
+      <% } %>
+    </div>
+  </div>
+  <dl class="details details--2col">
+    <div><dt>Held at</dt><dd><%= coverage %></dd></div>
+    <div><dt>Type</dt><dd><%= EXAM_TYPES[e.exam_type] %><%= e.session_year ? ' · ' + e.session_year : '' %></dd></div>
+    <div><dt>Date</dt><dd><%= e.held_on ? fmtDate(e.held_on) : '—' %></dd></div>
+    <div><dt>Subjects</dt><dd><%= subjects.map(s => s.name + ' (' + s.total + ')').join(', ') %> · total <%= total %></dd></div>
+    <div><dt>Pass mark</dt><dd><%= e.pass_percent %>%</dd></div>
+    <div><dt>Created by</dt><dd><%= e.created_by_name || '—' %></dd></div>
+  </dl>
+  <% if (!canEdit) { %><p class="flash flash--err">These results are published, so they are read-only for teachers. Ask your manager to make changes.</p><% } %>
+</section>
+
+<% if (needsChoice) { %>
+  <section class="card card--flush">
+    <div class="card-head card-head--pad"><h2>Choose a Maktab to enter marks</h2></div>
+    <% if (!overview.length) { %><p class="empty">No Makatib in your area yet.</p><% } else { %>
+      <div class="table-wrap"><table class="table">
+        <thead><tr><th>Maktab</th><th>Branch</th><th class="t-right">Students</th><th class="t-right">Results entered</th><th></th></tr></thead>
+        <tbody><% overview.forEach(function (o) { %>
+          <tr><td><strong><%= o.name_en %></strong></td><td><%= o.branch || '—' %></td><td class="t-right num"><%= o.students %></td>
+            <td class="t-right num"><span class="badge <%= o.students && o.entered >= o.students ? 'badge--present' : o.entered ? 'badge--pending' : '' %>"><%= o.entered %> / <%= o.students %></span></td>
+            <td class="t-right"><a class="btn-sm" href="/app/results/<%= e.id %>?<%= qs({ maktab: o.id }) %>">Enter marks</a></td></tr>
+        <% }) %></tbody>
+      </table></div>
+    <% } %>
+  </section>
+<% } else { %>
+  <form class="filters" method="get">
+    <% if (makatib.length > 1) { %>
+      <select name="maktab" aria-label="Maktab"><option value="">Choose a Maktab</option><% makatib.forEach(function (m) { %><option value="<%= m.id %>" <%= f.maktab === m.id ? 'selected' : '' %>><%= m.name_en %></option><% }) %></select>
+    <% } else if (f.maktab) { %><input type="hidden" name="maktab" value="<%= f.maktab %>"><% } %>
+    <% if (classes.length) { %><select name="class" aria-label="Class"><option value="">All classes</option><% classes.forEach(function (c) { %><option <%= f.cls === c ? 'selected' : '' %>><%= c %></option><% }) %></select><% } %>
+    <button class="btn btn--line btn--sm" type="submit">Show</button>
+  </form>
+
+  <section class="card">
+    <div class="card-head"><h2>Marks (<%= Object.keys(byStudent).length %> of <%= students.length %> entered)</h2></div>
+    <% if (!students.length) { %>
+      <p class="empty">No students here<%= f.cls ? ' in this class' : '' %>.</p>
+    <% } else { %>
+      <form method="post" action="/app/results/<%= e.id %>">
+        <input type="hidden" name="_csrf" value="<%= csrf %>">
+        <input type="hidden" name="maktab" value="<%= f.maktab || '' %>"><input type="hidden" name="class" value="<%= f.cls %>">
+        <p class="hint">Leave a box empty for 0. Empty every box in a row to remove that student’s result. Marks can have one decimal place.</p>
+        <div class="table-wrap"><table class="table marks-table">
+          <thead><tr><th>Student</th><% subjects.forEach(function (s) { %><th class="t-center"><%= s.name %><small>out of <%= s.total %></small></th><% }) %><th class="t-right">Total</th><th>Grade</th><th>Remarks</th><th></th></tr></thead>
+          <tbody><% students.forEach(function (s) { const r = byStudent[s.id]; %>
+            <tr>
+              <td><strong><%= s.full_name %></strong><small><%= s.code %><%= s.class_name ? ' · ' + s.class_name : '' %><%= !e.maktab_id && !e.school_id && !f.maktab && s.unit ? ' · ' + s.unit : '' %></small></td>
+              <% subjects.forEach(function (sub, i) { %>
+                <td class="t-center"><input class="mark-input" name="m_<%= s.id %>_<%= i %>" value="<%= r && r.marks[i] != null ? r.marks[i] : '' %>" inputmode="decimal" maxlength="6" aria-label="<%= sub.name %> for <%= s.full_name %>, out of <%= sub.total %>" <%= canEdit ? '' : 'disabled' %>></td>
+              <% }) %>
+              <td class="t-right num"><%= r ? r.obtained + ' / ' + r.total : '—' %><% if (r) { %><small><%= Number(r.percentage).toFixed(1) %>%</small><% } %></td>
+              <td><% if (r) { %><span class="badge <%= r.grade === 'Fail' ? 'badge--absent' : 'badge--present' %>"><%= r.grade %></span><% } %></td>
+              <td><input class="note-input" name="remarks_<%= s.id %>" value="<%= r && r.remarks || '' %>" maxlength="200" aria-label="Remarks for <%= s.full_name %>" <%= canEdit ? '' : 'disabled' %>></td>
+              <td class="t-right"><% if (r) { %><a class="btn-sm" href="/app/results/<%= e.id %>/certificate/<%= s.id %>" target="_blank">Certificate</a><% } %></td>
+            </tr>
+          <% }) %></tbody>
+        </table></div>
+        <% if (canEdit) { %><div class="btn-row register-save"><button class="btn btn--gold" type="submit">Save marks</button></div><% } %>
+      </form>
+    <% } %>
+  </section>
+<% } %>
+
+<% if (canDelete) { %>
+  <form method="post" action="/app/results/<%= e.id %>/delete" data-confirm="Delete “<%= e.title %>” and all its results? This cannot be undone." class="danger-zone">
+    <input type="hidden" name="_csrf" value="<%= csrf %>">
+    <button class="btn btn--line btn--sm btn--danger-line" type="submit"><%- include('../partials/icon', { name: 'archive' }) %>Delete exam</button>
+  </form>
+<% } %>
+<%- include('../partials/app-bottom') %>

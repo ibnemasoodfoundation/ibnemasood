@@ -1,5 +1,5 @@
 <%- include('../partials/app-top') %>
-<% const staffView = user.role !== 'user'; %>
+<% const staffView = user.role === 'admin' || user.role === 'manager'; %>
 <div class="page-head">
   <p><%= staffView ? 'All admission applications across the three branches.' : 'Applications you have submitted to the Jamia.' %></p>
   <a class="btn btn--blue btn--sm" href="/app/admissions/new"><%- include('../partials/icon', { name: 'plus' }) %>New application</a>

@@ -1,0 +1,49 @@
+<%- include('../partials/print-top', { pdfName: 'Financial report ' + f.from + ' to ' + f.to }) %>
+<form class="print-filters" method="get" data-no-print>
+  <label>From <input type="date" name="from" value="<%= f.from %>"></label>
+  <label>To <input type="date" name="to" value="<%= f.to %>"></label>
+  <label><input type="checkbox" name="detail" value="1" <%= f.detail ? 'checked' : '' %>> List every entry</label>
+  <button type="submit" class="pt-btn">Show</button>
+</form>
+<%- include('../partials/print-letterhead', { docTitle: 'Financial Report' }) %>
+<p class="report-meta"><%= fmtDate(f.from) %> to <%= fmtDate(f.to) %></p>
+
+<div class="report-summary">
+  <div><small>Total income</small><strong><%= money(tot.income) %></strong></div>
+  <div><small>Total expenses</small><strong><%= money(tot.expense) %></strong></div>
+  <div><small>Balance</small><strong><%= tot.balance < 0 ? '− ' + money(-tot.balance) : money(tot.balance) %></strong></div>
+  <div><small>Of income, verified donations</small><strong><%= money(tot.donations) %></strong></div>
+</div>
+
+<% [['Income by category', income, tot.income], ['Expenses by category', expense, tot.expense]].forEach(function (g) { %>
+  <h2 class="report-h2"><%= g[0] %></h2>
+  <% if (!g[1].length) { %><p class="report-empty">Nothing recorded in this period.</p><% } else { %>
+    <table class="report-table">
+      <thead><tr><th>Category</th><th class="t-right">Entries</th><th class="t-right">Amount</th><th class="t-right">Share</th></tr></thead>
+      <tbody><% g[1].forEach(function (c) { %><tr><td><%= c.label %></td><td class="t-right"><%= c.n %></td><td class="t-right"><%= money(c.v) %></td><td class="t-right"><%= g[2] ? Math.round(c.v / g[2] * 100) : 0 %>%</td></tr><% }) %></tbody>
+      <tfoot><tr><th>Total</th><th></th><th class="t-right"><%= money(g[2]) %></th><th></th></tr></tfoot>
+    </table>
+  <% } %>
+<% }) %>
+
+<% if (byBranch.length) { %>
+  <h2 class="report-h2">By branch (recorded entries)</h2>
+  <table class="report-table">
+    <thead><tr><th>Branch</th><th class="t-right">Income</th><th class="t-right">Expenses</th><th class="t-right">Difference</th></tr></thead>
+    <tbody><% byBranch.forEach(function (b) { const d = Number(b.income) - Number(b.expense); %><tr><td><%= b.name %></td><td class="t-right"><%= money(b.income) %></td><td class="t-right"><%= money(b.expense) %></td><td class="t-right"><%= d < 0 ? '− ' + money(-d) : money(d) %></td></tr><% }) %></tbody>
+  </table>
+<% } %>
+
+<% if (f.detail) { %>
+  <h2 class="report-h2">All entries</h2>
+  <% if (!entries.length) { %><p class="report-empty">No entries in this period.</p><% } else { %>
+    <table class="report-table">
+      <thead><tr><th>Date</th><th>Type</th><th>Category</th><th>Details</th><th>Branch</th><th class="t-right">Amount</th></tr></thead>
+      <tbody><% entries.forEach(function (x) { %><tr><td><%= fmtDate(x.entry_date) %></td><td><%= x.entry_type === 'income' ? 'Income' : 'Expense' %></td><td><%= x.category %></td><td><%= x.description || '' %><small><%= [x.party, x.method, x.reference ? 'Ref ' + x.reference : ''].filter(Boolean).join(' · ') %></small></td><td><%= x.branch || '—' %></td><td class="t-right"><%= money(x.amount) %></td></tr><% }) %></tbody>
+    </table>
+  <% } %>
+<% } %>
+
+<div class="pp-sign"><div><span></span>Prepared by (Accountant)</div><div><span></span>Checked by</div><div><span></span>Approved by</div></div>
+<p class="report-foot">Printed <%= fmtDate(printedOn) %></p>
+<%- include('../partials/print-bottom') %>

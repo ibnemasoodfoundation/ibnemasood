@@ -1,0 +1,62 @@
+<%- include('../partials/app-top') %>
+<% const a = att; %>
+<p class="crumb"><a href="/app">← My dashboard</a></p>
+
+<section class="profile-head">
+  <div class="child-photo child-photo--lg"><% if (photo) { %><img src="/app/files/<%= photo.id %>" alt=""><% } else { %><span><%= initials(k.full_name) %></span><% } %></div>
+  <div class="profile-title">
+    <div class="unit-meta"><span class="code-chip"><%= k.code %></span><%- include('../partials/badge', { s: k.status }) %></div>
+    <h2><%= k.full_name %></h2>
+    <% if (k.name_ur) { %><p class="unit-ur" lang="ur" dir="rtl"><%= k.name_ur %></p><% } %>
+    <p class="unit-place"><%- include('../partials/icon', { name: 'maktab' }) %><span><%= k.maktab || k.school || 'Not placed yet' %><%= k.branch ? ' · ' + k.branch : '' %></span></p>
+  </div>
+  <div class="att-tiles">
+    <div class="stat"><small>Attendance this month</small><strong><%= a.month.pct === null ? '—' : a.month.pct + '%' %></strong><span><%= a.month.present %> present · <%= a.month.late %> late · <%= a.month.absent %> absent · <%= a.month.leave %> leave</span></div>
+    <div class="stat"><small>All time</small><strong><%= a.total.pct === null ? '—' : a.total.pct + '%' %></strong><span><%= a.total.present + a.total.late + a.total.absent + a.total.leave %> days marked</span></div>
+  </div>
+</section>
+
+<section class="card">
+  <div class="card-head"><h2>Details</h2></div>
+  <dl class="details details--2col">
+    <div><dt>Father’s name</dt><dd><%= k.father_name || '—' %></dd></div>
+    <div><dt>Date of birth</dt><dd><%= k.dob ? fmtDate(k.dob) : '—' %></dd></div>
+    <div><dt>Class</dt><dd><%= k.class_name || '—' %></dd></div>
+    <div><dt>Programme</dt><dd><%= k.programme || '—' %></dd></div>
+    <div><dt>Teacher</dt><dd><%= k.teacher || '—' %></dd></div>
+    <div><dt>Quran level</dt><dd><%= k.quran_level || '—' %></dd></div>
+    <div><dt>Hifz</dt><dd><%= HIFZ_STATUSES[k.hifz_status] || '—' %></dd></div>
+    <div><dt>Admission date</dt><dd><%= k.enrolled_on ? fmtDate(k.enrolled_on) : '—' %></dd></div>
+  </dl>
+</section>
+
+<section class="card" id="results">
+  <div class="card-head"><h2>Exam results</h2></div>
+  <% if (!results.length) { %><p class="empty">No published results yet.</p><% } else { %>
+    <div class="table-wrap"><table class="table">
+      <thead><tr><th>Exam</th><th class="t-right">Marks</th><th class="t-right">%</th><th>Grade</th><th></th></tr></thead>
+      <tbody><% results.forEach(function (r) { %>
+        <tr><td><strong><%= r.title %></strong><small><%= EXAM_TYPES[r.exam_type] %><%= r.session_year ? ' · ' + r.session_year : '' %><%= r.held_on ? ' · ' + fmtDate(r.held_on) : '' %></small></td>
+          <td class="t-right num"><%= r.obtained %> / <%= r.total %></td><td class="t-right num"><%= Number(r.percentage).toFixed(1) %></td>
+          <td><span class="badge <%= r.grade === 'Fail' ? 'badge--absent' : 'badge--present' %>"><%= r.grade %></span></td>
+          <td class="t-right"><a class="btn-sm" href="/app/results/<%= r.exam_id %>/certificate/<%= k.id %>" target="_blank">Certificate</a></td></tr>
+      <% }) %></tbody>
+    </table></div>
+  <% } %>
+</section>
+
+<div class="grid-2">
+  <section class="card">
+    <div class="card-head"><h2>Attendance, last 60 days</h2></div>
+    <% if (!attendance.length) { %><p class="empty">No attendance marked in the last 60 days.</p><% } else { %>
+      <ul class="rows"><% attendance.forEach(function (r) { %><li><span><strong><%= fmtDate(r.att_date) %></strong><small><%= SESSIONS[r.session] %><%= r.note ? ' · ' + r.note : '' %></small></span><%- include('../partials/badge', { s: r.status }) %></li><% }) %></ul>
+    <% } %>
+  </section>
+  <section class="card">
+    <div class="card-head"><h2>Lessons and progress</h2></div>
+    <% if (!progress.length) { %><p class="empty">No lessons recorded yet.</p><% } else { %>
+      <ul class="rows"><% progress.forEach(function (p) { %><li><span><strong><%= p.lesson || p.quran_level || 'Remark' %></strong><small><%= fmtDate(p.recorded_on) %><%= p.quran_level && p.lesson ? ' · ' + p.quran_level : '' %><%= p.remarks ? ' · ' + p.remarks : '' %></small></span></li><% }) %></ul>
+    <% } %>
+  </section>
+</div>
+<%- include('../partials/app-bottom') %>

@@ -1,5 +1,5 @@
 <%- include('../partials/app-top') %>
-<% const staffView = user.role !== 'user'; %>
+<% const staffView = ['admin', 'manager', 'nazim', 'principal'].includes(user.role); %>
 <div class="<%= staffView ? 'grid-2 grid-2--wide' : '' %>">
   <section class="card">
     <%- include('_announcement-list', { list: rows, canDelete: staffView ? (n) => user.role === 'admin' || n.author_id === user.id : null }) %>
@@ -13,8 +13,9 @@
         <div class="field <%= errors.body ? 'invalid' : '' %>"><label for="body">Message</label><textarea id="body" name="body" required><%= values.body || '' %></textarea><span class="err"><%= errors.body %></span></div>
         <fieldset class="choice">
           <legend>Who can see it</legend>
-          <label><input type="radio" name="audience" value="all" <%= values.audience !== 'staff' ? 'checked' : '' %>> Everyone with an account</label>
-          <label><input type="radio" name="audience" value="staff" <%= values.audience === 'staff' ? 'checked' : '' %>> Staff only (managers and admins)</label>
+          <label><input type="radio" name="audience" value="all" <%= !values.audience || values.audience === 'all' ? 'checked' : '' %>> Everyone with an account</label>
+          <label><input type="radio" name="audience" value="staff" <%= values.audience === 'staff' ? 'checked' : '' %>> Staff only</label>
+          <label><input type="radio" name="audience" value="parents" <%= values.audience === 'parents' ? 'checked' : '' %>> Parents (and staff)</label>
         </fieldset>
         <button class="btn btn--blue" type="submit">Post</button>
       </form>

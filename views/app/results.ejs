@@ -1,0 +1,26 @@
+<%- include('../partials/app-top') %>
+<div class="page-head">
+  <p>Create an exam, enter each student’s marks, then publish. Published results appear on parents’ dashboards with a printable result certificate.</p>
+  <% if (canCreate) { %><a class="btn btn--blue btn--sm" href="/app/results/new"><%- include('../partials/icon', { name: 'plus' }) %>New exam</a><% } %>
+</div>
+
+<section class="card card--flush">
+  <% if (!rows.length) { %>
+    <p class="empty">No exams yet.<% if (canCreate) { %> <a href="/app/results/new">Create the first exam</a>.<% } %></p>
+  <% } else { %>
+    <div class="table-wrap"><table class="table">
+      <thead><tr><th>Exam</th><th>Held at</th><th>Date</th><th class="t-right">Results entered</th><th>Status</th><th></th></tr></thead>
+      <tbody><% rows.forEach(function (e) { %>
+        <tr>
+          <td><a class="row-link" href="/app/results/<%= e.id %>"><strong><%= e.title %></strong></a><small><%= EXAM_TYPES[e.exam_type] %><%= e.session_year ? ' · ' + e.session_year : '' %> · <%= (e.subjects || []).length %> subjects</small></td>
+          <td><%= e.school || e.maktab || 'All Makatib' %></td>
+          <td><%= e.held_on ? fmtDate(e.held_on) : '—' %></td>
+          <td class="t-right num"><%= e.entered %></td>
+          <td><%- include('../partials/badge', { s: e.status }) %></td>
+          <td class="t-right nowrap"><a class="btn-sm" href="/app/results/<%= e.id %>">Enter marks</a> <a class="btn-sm" href="/app/results/<%= e.id %>/report" target="_blank">Result sheet</a></td>
+        </tr>
+      <% }) %></tbody>
+    </table></div>
+  <% } %>
+</section>
+<%- include('../partials/app-bottom') %>

@@ -1,0 +1,52 @@
+<%- include('../partials/app-top') %>
+<div class="welcome">
+  <div>
+    <span class="ar" lang="ar">السلام علیکم</span>
+    <h2><%= user.name %></h2>
+    <p><%= kids.length ? (kids.length === 1 ? 'Your child’s attendance, progress and results at the Jamia.' : 'Your children’s attendance, progress and results at the Jamia.') : 'No student is linked to your login yet. Please contact the Jamia office.' %></p>
+  </div>
+</div>
+
+<% kids.forEach(function (k) { const a = k.att; %>
+  <section class="card child-card">
+    <div class="child-head">
+      <div class="child-photo"><% if (k.photo) { %><img src="/app/files/<%= k.photo.id %>" alt=""><% } else { %><span><%= initials(k.full_name) %></span><% } %></div>
+      <div>
+        <h2><a href="/app/children/<%= k.id %>"><%= k.full_name %></a> <%- include('../partials/badge', { s: k.status }) %></h2>
+        <% if (k.name_ur) { %><p class="unit-ur" lang="ur" dir="rtl"><%= k.name_ur %></p><% } %>
+        <p class="muted"><%= k.code %> · <%= k.maktab || k.school || 'Not placed yet' %><%= k.class_name ? ' · ' + k.class_name : '' %><%= k.teacher ? ' · Teacher: ' + k.teacher : '' %></p>
+      </div>
+      <a class="btn btn--blue btn--sm" href="/app/children/<%= k.id %>">Full details</a>
+    </div>
+    <div class="stats">
+      <div class="stat"><small>Attendance this month</small><strong><%= a.month.pct === null ? '—' : a.month.pct + '%' %></strong><span><%= a.month.present %> present · <%= a.month.absent %> absent · <%= a.month.leave %> leave</span></div>
+      <div class="stat"><small>All-time attendance</small><strong><%= a.total.pct === null ? '—' : a.total.pct + '%' %></strong></div>
+      <div class="stat"><small>Quran level</small><strong class="stat-text"><%= k.quran_level || '—' %></strong></div>
+      <div class="stat stat--gold"><small>Latest result</small><strong class="stat-text"><%= k.results[0] ? Number(k.results[0].percentage).toFixed(0) + '% · ' + k.results[0].grade : '—' %></strong><span><%= k.results[0] ? k.results[0].title : 'No published results yet' %></span></div>
+    </div>
+    <div class="grid-2">
+      <div>
+        <h3 class="sub">Recent attendance</h3>
+        <% if (!k.recent.length) { %><p class="empty">No attendance marked yet.</p><% } else { %>
+          <ul class="rows"><% k.recent.forEach(function (r) { %><li><span><strong><%= fmtDate(r.att_date) %></strong><small><%= SESSIONS[r.session] %></small></span><%- include('../partials/badge', { s: r.status }) %></li><% }) %></ul>
+        <% } %>
+      </div>
+      <div>
+        <h3 class="sub">Results</h3>
+        <% if (!k.results.length) { %><p class="empty">No published results yet.</p><% } else { %>
+          <ul class="rows"><% k.results.forEach(function (r) { %><li><a href="/app/results/<%= r.exam_id %>/certificate/<%= k.id %>" target="_blank"><span><strong><%= r.title %></strong><small><%= r.obtained %> / <%= r.total %> · <%= Number(r.percentage).toFixed(1) %>% · Certificate</small></span><span class="badge <%= r.grade === 'Fail' ? 'badge--absent' : 'badge--present' %>"><%= r.grade %></span></a></li><% }) %></ul>
+        <% } %>
+        <h3 class="sub">Latest lessons</h3>
+        <% if (!k.progress.length) { %><p class="empty">No lessons recorded yet.</p><% } else { %>
+          <ul class="rows"><% k.progress.forEach(function (p) { %><li><span><strong><%= p.lesson || p.quran_level || 'Remark' %></strong><small><%= fmtDate(p.recorded_on) %><%= p.remarks ? ' · ' + p.remarks : '' %></small></span></li><% }) %></ul>
+        <% } %>
+      </div>
+    </div>
+  </section>
+<% }) %>
+
+<section class="card">
+  <div class="card-head"><h2>Announcements</h2><a href="/app/announcements">All</a></div>
+  <%- include('_announcement-list', { list: announcements }) %>
+</section>
+<%- include('../partials/app-bottom') %>

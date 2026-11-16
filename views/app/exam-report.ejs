@@ -1,0 +1,35 @@
+<%- include('../partials/print-top', { pdfName: 'Result sheet ' + e.title, pageClass: (e.subjects || []).length > 4 ? 'print-page--landscape' : '' }) %>
+<% const subjects = e.subjects || []; %>
+<%- include('../partials/print-letterhead', { docTitle: 'Result Sheet' }) %>
+<p class="report-meta">
+  <strong><%= e.title %></strong> · <%= EXAM_TYPES[e.exam_type] %><%= e.session_year ? ' · ' + e.session_year : '' %> · <%= coverage %><%= f.cls ? ' · ' + f.cls : '' %>
+  <% if (e.status !== 'published') { %> · <strong>DRAFT</strong><% } %>
+</p>
+<% if (!rows.length) { %>
+  <p class="report-empty">No results entered for this selection yet.</p>
+<% } else { %>
+  <div class="report-summary">
+    <div><small>Students</small><strong><%= rows.length %></strong></div>
+    <div><small>Passed</small><strong><%= passed %></strong></div>
+    <div><small>Failed</small><strong><%= rows.length - passed %></strong></div>
+    <div><small>Pass rate</small><strong><%= Math.round(passed / rows.length * 100) %>%</strong></div>
+  </div>
+  <table class="report-table">
+    <thead><tr><th>#</th><th>Student</th><th>Class</th><% subjects.forEach(function (s) { %><th class="t-right"><%= s.name %><small>/ <%= s.total %></small></th><% }) %><th class="t-right">Total</th><th class="t-right">%</th><th>Grade</th><th>Position</th></tr></thead>
+    <tbody><% rows.forEach(function (x, i) { %>
+      <tr>
+        <td><%= i + 1 %></td>
+        <td><strong><%= x.full_name %></strong><small><%= x.code %><%= x.father_name ? ' · ' + x.father_name : '' %><%= !f.maktab && x.unit ? ' · ' + x.unit : '' %></small></td>
+        <td><%= x.class_name || '—' %></td>
+        <% subjects.forEach(function (s, j) { %><td class="t-right"><%= x.r.marks[j] != null ? x.r.marks[j] : '—' %></td><% }) %>
+        <td class="t-right"><%= x.r.obtained %> / <%= x.r.total %></td>
+        <td class="t-right"><%= Number(x.r.percentage).toFixed(1) %></td>
+        <td><%= x.r.grade %></td>
+        <td><%= x.pos ? x.pos.rank + ' of ' + x.pos.of : '—' %></td>
+      </tr>
+    <% }) %></tbody>
+  </table>
+  <p class="report-note">Grades: A+ 90% and above · A 80% · B 70% · C 60% · D 50% · E below 50% · Fail below the pass mark of <%= e.pass_percent %>%. Positions are within each Maktab or school.</p>
+<% } %>
+<p class="report-foot">Printed <%= fmtDate(printedOn) %></p>
+<%- include('../partials/print-bottom') %>

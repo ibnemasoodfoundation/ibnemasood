@@ -13,6 +13,7 @@ const cookieSession = require("cookie-session");
 const { one, ready, health } = require("./src/db");
 const { csrfToken } = require("./src/auth");
 const helpers = require("./src/helpers");
+const { i18n, LANGS } = require("./src/i18n");
 
 const app = express();
 const isProd = process.env.NODE_ENV === "production";
@@ -101,6 +102,15 @@ app.use(async (req, res, next) => {
   req.flash = (type, msg) => { req.session.flash = { type, msg }; };
   next();
 });
+app.use(i18n);
+
+/* Portal language: /lang/ur or /lang/en, then back to the page the switch was clicked on */
+app.get("/lang/:code", (req, res) => {
+  if (LANGS[req.params.code]) req.session.lang = req.params.code;
+  let back = "/app";
+  try { const ref = new URL(req.get("referer") || ""); if (ref.host === req.get("host")) back = ref.pathname + ref.search; } catch { /* keep /app */ }
+  res.redirect(back);
+});
 
 app.use("/", require("./src/routes/auth"));
 app.use("/api", require("./src/routes/api"));
@@ -108,6 +118,10 @@ app.use("/", require("./src/routes/public"));
 app.use("/app", require("./src/routes/institution"));
 app.use("/app", require("./src/routes/people"));
 app.use("/app", require("./src/routes/attendance"));
+app.use("/app", require("./src/routes/schools"));
+app.use("/app", require("./src/routes/results"));
+app.use("/app", require("./src/routes/finance"));
+app.use("/app", require("./src/routes/parent"));
 app.use("/app", require("./src/routes/app"));
 
 

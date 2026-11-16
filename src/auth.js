@@ -2,7 +2,9 @@
 "use strict";
 const crypto = require("node:crypto");
 
-const ROLES = ["admin", "manager", "teacher", "user"];
+const ROLES = ["admin", "manager", "nazim", "principal", "accountant", "teacher", "parent", "user"];
+// Roles that manage institution records (teachers, students, attendance, results) within their own scope
+const STAFF_ROLES = ["admin", "manager", "nazim", "principal"];
 
 function hashPassword(password) {
   const salt = crypto.randomBytes(16);
@@ -63,6 +65,6 @@ function recordFailure(key) {
 function clearFailures(key) { attempts.delete(key); }
 
 module.exports = {
-  ROLES, hashPassword, verifyPassword, csrfToken, checkCsrf,
+  ROLES, STAFF_ROLES, hashPassword, verifyPassword, csrfToken, checkCsrf,
   requireLogin, requireRole, tooManyAttempts, recordFailure, clearFailures,
 };

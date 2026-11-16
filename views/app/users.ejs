@@ -1,6 +1,8 @@
 <%- include('../partials/app-top') %>
 <div class="page-head">
-  <p>Give people the right access. <strong>Managers</strong> review admissions, donations and messages. <strong>Admins</strong> can also manage users.</p>
+  <p>Give people the right access. Each role has its own dashboard:
+    <strong>Branch Manager</strong> (their branches), <strong>Makatib Nazim</strong> (all Makatib), <strong>School Principal</strong> (their school),
+    <strong>Accountant</strong> (accounts and donations), <strong>Teacher</strong> and <strong>Parent</strong>. <strong>Super Admins</strong> can do everything.</p>
   <button class="btn btn--blue btn--sm" type="button" data-toggle="new-user"><%- include('../partials/icon', { name: 'plus' }) %>Add user</button>
 </div>
 
@@ -13,7 +15,7 @@
       <div class="field <%= errors.email ? 'invalid' : '' %>"><label for="nu-email">Email</label><input id="nu-email" name="email" type="email" value="<%= values.email || '' %>" required><span class="err"><%= errors.email %></span></div>
       <div class="field"><label for="nu-phone">Phone <span class="opt">optional</span></label><input id="nu-phone" name="phone" type="tel" value="<%= values.phone || '' %>"></div>
       <div class="field"><label for="nu-role">Role</label>
-        <select id="nu-role" name="role"><% ['user','teacher','manager','admin'].forEach(function (r) { %><option value="<%= r %>" <%= values.role === r ? 'selected' : '' %>><%= ROLE_LABELS[r] %></option><% }) %></select>
+        <select id="nu-role" name="role"><% ROLE_ORDER.forEach(function (r) { %><option value="<%= r %>" <%= values.role === r ? 'selected' : '' %>><%= ROLE_LABELS[r] %></option><% }) %></select>
       </div>
     </div>
     <p class="hint">A temporary password is generated and shown once. Share it with the person and ask them to change it from My profile.</p>
@@ -25,7 +27,7 @@
   <input type="search" name="q" placeholder="Search name, email or phone" value="<%= filters.q || '' %>" aria-label="Search">
   <select name="role" aria-label="Role">
     <option value="">All roles</option>
-    <% ['admin','manager','user'].forEach(function (r) { %><option value="<%= r %>" <%= filters.role === r ? 'selected' : '' %>><%= ROLE_LABELS[r] %></option><% }) %>
+    <% ROLE_ORDER.forEach(function (r) { %><option value="<%= r %>" <%= filters.role === r ? 'selected' : '' %>><%= ROLE_LABELS[r] %></option><% }) %>
   </select>
   <button class="btn btn--line btn--sm" type="submit">Filter</button>
 </form>
@@ -46,7 +48,7 @@
           <% } else { %>
             <form class="role-form" method="post" action="/app/users/<%= p.id %>">
               <input type="hidden" name="_csrf" value="<%= csrf %>">
-              <select name="role" aria-label="Role for <%= p.name %>"><% ['user','teacher','manager','admin'].forEach(function (r) { %><option value="<%= r %>" <%= p.role === r ? 'selected' : '' %>><%= ROLE_LABELS[r] %></option><% }) %></select>
+              <select name="role" aria-label="Role for <%= p.name %>"><% ROLE_ORDER.forEach(function (r) { %><option value="<%= r %>" <%= p.role === r ? 'selected' : '' %>><%= ROLE_LABELS[r] %></option><% }) %></select>
               <select name="status" aria-label="Status for <%= p.name %>"><option value="active" <%= p.status === 'active' ? 'selected' : '' %>>Active</option><option value="suspended" <%= p.status === 'suspended' ? 'selected' : '' %>>Suspended</option></select>
               <button class="btn-sm" type="submit">Save</button>
             </form>

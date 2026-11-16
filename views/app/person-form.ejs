@@ -102,8 +102,18 @@
           </select>
           <span class="err"><%= errors.maktab_id %></span>
         </div>
+        <% if (schools.length) { %>
+        <div class="field <%= f('school_id') %>">
+          <label for="f-school_id">Assigned school <span class="opt">or a Maktab</span></label>
+          <select id="f-school_id" name="school_id">
+            <option value="">Not in a school</option>
+            <% schools.forEach(function (sc) { %><option value="<%= sc.id %>" <%= Number(values.school_id) === sc.id ? 'selected' : '' %>><%= sc.name_en %> (<%= sc.code %>)</option><% }) %>
+          </select>
+          <span class="err"><%= errors.school_id %></span>
+        </div>
+        <% } %>
         <div class="field <%= f('branch_id') %>">
-          <label for="f-branch_id">Assigned branch <span class="opt">set by the Maktab</span></label>
+          <label for="f-branch_id">Assigned branch <span class="opt">set by the Maktab or school</span></label>
           <select id="f-branch_id" name="branch_id">
             <option value="">No branch</option>
             <% branches.forEach(function (b) { %><option value="<%= b.id %>" <%= Number(values.branch_id) === b.id ? 'selected' : '' %>><%= b.name_en %></option><% }) %>
@@ -144,6 +154,27 @@
       </fieldset>
       <%- field('notes', 'Notes', { textarea: true }) %>
     </fieldset>
+
+    <% if (!isT) { %>
+      <fieldset class="form-section" id="parent-access">
+        <legend>Parent portal access <span class="legend-ur" lang="ur">والدین کا لاگ اِن</span></legend>
+        <p class="hint">With a login, the parent sees this child’s attendance, progress, published results and the Jamia’s announcements. Brothers and sisters can share one parent login: enter the same email on each child’s form.</p>
+        <div class="field-row">
+          <div class="field <%= f('parent_email') %>">
+            <label for="f-parent_email">Parent’s email <span class="opt">optional</span></label>
+            <input id="f-parent_email" name="parent_email" type="email" value="<%= values.parent_email || '' %>" autocomplete="off" placeholder="parent@example.com">
+            <span class="err"><%= errors.parent_email %></span>
+          </div>
+          <div class="field <%= f('parent_password') %>">
+            <label for="f-parent_password"><%= values.parent_email && editing ? 'New password for the parent' : 'Password for the parent' %> <span class="opt">optional</span></label>
+            <input id="f-parent_password" name="parent_password" type="password" value="" autocomplete="new-password" minlength="8">
+            <span class="err"><%= errors.parent_password %></span>
+          </div>
+        </div>
+        <p class="hint">Leave the password empty to have one generated and shown once after saving<%= editing ? ', or to keep the current password' : '' %>. At least 8 characters.</p>
+        <% if (editing && values.parent_email) { %><label class="check"><input type="checkbox" name="parent_remove" value="1"> Remove this parent’s access to this student</label><% } %>
+      </fieldset>
+    <% } %>
 
     <div class="btn-row">
       <button class="btn btn--gold" type="submit"><%= editing ? 'Save changes' : 'Register ' + cfg.label.toLowerCase() %></button>

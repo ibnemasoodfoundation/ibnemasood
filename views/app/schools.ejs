@@ -1,0 +1,46 @@
+<%- include('../partials/app-top') %>
+<div class="page-head">
+  <p>Schools of the Jamia’s branches. Each school is run by its School Principal, who manages its teachers, students, attendance and results.</p>
+  <% if (canAdd) { %><a class="btn btn--blue btn--sm" href="/app/schools/new"><%- include('../partials/icon', { name: 'plus' }) %>Add school</a><% } %>
+</div>
+
+<form class="filters" method="get">
+  <input type="search" name="q" placeholder="Search name, code or town" value="<%= filters.q %>" aria-label="Search schools">
+  <% if (branches.length > 1) { %>
+    <select name="branch" aria-label="Branch">
+      <option value="">All branches</option>
+      <% branches.forEach(function (b) { %><option value="<%= b.id %>" <%= filters.branch === b.id ? 'selected' : '' %>><%= b.name_en %></option><% }) %>
+    </select>
+  <% } %>
+  <select name="status" aria-label="Status">
+    <option value="">Active and inactive</option>
+    <% ['active','inactive','archived','all'].forEach(function (s) { %><option value="<%= s %>" <%= filters.status === s ? 'selected' : '' %>><%= s === 'all' ? 'Everything' : cap(s) %></option><% }) %>
+  </select>
+  <button class="btn btn--line btn--sm" type="submit">Filter</button>
+</form>
+
+<p class="result-count"><%= rows.length %> <%= rows.length === 1 ? 'school' : 'schools' %></p>
+<section class="card card--flush">
+  <% if (!rows.length) { %>
+    <p class="empty"><%= filters.q || filters.branch || filters.status ? 'No schools match these filters.' : 'No schools added yet.' %><% if (canAdd) { %> <a href="/app/schools/new">Add a school</a>.<% } %></p>
+  <% } else { %>
+    <div class="table-wrap"><table class="table">
+      <thead><tr><th>School</th><th>Location</th><th>Branch</th><th>Principal</th><th class="t-right">Teachers</th><th class="t-right">Students</th><th>Status</th><th></th></tr></thead>
+      <tbody>
+      <% rows.forEach(function (sc) { %>
+        <tr class="<%= sc.status === 'archived' ? 'row-muted' : '' %>">
+          <td><a class="row-link" href="/app/schools/<%= sc.id %>"><strong><%= sc.name_en %></strong></a><small><%= sc.code %><% if (sc.name_ur) { %> · <span class="ur-inline" lang="ur"><%= sc.name_ur %></span><% } %></small></td>
+          <td><%= sc.town || '—' %><small><%= sc.district %></small></td>
+          <td><%= sc.branch || '—' %></td>
+          <td><%= sc.principal || 'Not assigned' %></td>
+          <td class="t-right num"><%= sc.teachers %></td>
+          <td class="t-right num"><%= sc.students %></td>
+          <td><%- include('../partials/badge', { s: sc.status }) %></td>
+          <td class="t-right nowrap"><a class="btn-sm" href="/app/schools/<%= sc.id %>">Open</a> <a class="btn-sm" href="/app/schools/<%= sc.id %>/edit">Edit</a></td>
+        </tr>
+      <% }) %>
+      </tbody>
+    </table></div>
+  <% } %>
+</section>
+<%- include('../partials/app-bottom') %>

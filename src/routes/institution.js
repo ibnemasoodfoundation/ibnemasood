@@ -3,7 +3,7 @@
 "use strict";
 const express = require("express");
 const { one, all, run, log } = require("../db");
-const { checkCsrf, requireRole } = require("../auth");
+const { checkCsrf, requireRole, STAFF_ROLES } = require("../auth");
 const { acceptUpload, sendStored, removeFile } = require("../uploads");
 const { withScope, branchSql, maktabSql, personSql, inMaktab, inBranch, canSeePerson, canSeeBranch } = require("../scope");
 const { movePerson } = require("../transfers");
@@ -13,7 +13,7 @@ const router = express.Router();
 
 // Guards are applied per route: this router is mounted on /app ahead of the member routes,
 // so a router-wide guard would lock members out of their own dashboard.
-const staff = [requireRole("admin", "manager"), withScope, checkCsrf];
+const staff = [requireRole(...STAFF_ROLES), withScope, checkCsrf];
 const admin = [requireRole("admin"), withScope, checkCsrf];
 
 const str = (v, max = 200) => String(v ?? "").trim().slice(0, max);
@@ -239,8 +239,8 @@ router.get("/makatib", staff, async (req, res) => {
 async function maktabForm(req, res, title, values, errors, status = 200) {
   res.status(status).render("app/maktab-form", {
     title, values, errors, managers: await staffUsers(), locations: await locationOptions(),
-    // Managers can only place a Maktab in a branch they manage
-    branches: req.scope.all ? await branchList(req.scope)
+    // Managers can only place a Maktab in a branch they manage; the Makatib Nazim can use any branch
+    branches: req.scope.all || req.scope.allMakatib ? await branchList({ all: true })
       : await all(`SELECT id, code, name_en FROM branches WHERE status <> 'archived' AND id IN (${req.scope.branchIds.join(",") || "NULL"}) ORDER BY name_en`),
     teachers: await all(`SELECT t.id, t.code, t.full_name, m.name_en AS maktab FROM teachers t LEFT JOIN makatib m ON m.id = t.maktab_id
                          WHERE t.status = 'active' AND ${personSql(req.scope, "t", "teacher")} ORDER BY t.full_name`),
@@ -256,9 +256,9 @@ async function maktabFields(req) {
   });
   if (str(body.classrooms, 4) !== "" && (v.classrooms === null || v.classrooms > 200)) e.classrooms = "Enter a number from 0 to 200.";
   if (v.branch_id && !(await one("SELECT id FROM branches WHERE id = ?", v.branch_id))) e.branch_id = "Choose a branch.";
-  if (!req.scope.all && !inBranch(req.scope, v.branch_id)) e.branch_id = "Choose one of the branches you manage.";
+  if (!req.scope.all && !req.scope.allMakatib && !inBranch(req.scope, v.branch_id)) e.branch_id = "Choose one of the branches you manage.";
   if (v.primary_teacher_id) {
-    const t = await one("SELECT id, maktab_id, branch_id FROM teachers WHERE id = ?", v.primary_teacher_id);
+    const t = await one("SELECT id, maktab_id, school_id, branch_id FROM teachers WHERE id = ?", v.primary_teacher_id);
     if (!t || !canSeePerson(req.scope, t, "teacher")) e.primary_teacher_id = "Choose a teacher.";
   }
   return [v, e];
@@ -275,12 +275,12 @@ async function loadMaktab(req) {
 }
 
 router.get("/makatib/new", staff, async (req, res) => {
-  if (!req.scope.all && !req.scope.branchIds.length) return forbidden(res);
+  if (!req.scope.all && !req.scope.allMakatib && !req.scope.branchIds.length) return forbidden(res);
   await maktabForm(req, res, "Register Maktab", { code: await nextCode("makatib", "MK"), status: "active", public_listing: true, branch_id: int(req.query.branch) }, {});
 });
 
 router.post("/makatib", staff, async (req, res) => {
-  if (!req.scope.all && !req.scope.branchIds.length) return forbidden(res);
+  if (!req.scope.all && !req.scope.allMakatib && !req.scope.branchIds.length) return forbidden(res);
   const [v, e] = await maktabFields(req);
   if (Object.keys(e).length) return maktabForm(req, res, "Register Maktab", v, e, 400);
   let r;
@@ -393,7 +393,7 @@ for (const type of ["teacher", "student"]) {
     if (missing) return next();
     if (denied) return forbidden(res);
     const table = type === "teacher" ? "teachers" : "students";
-    const person = int(req.body.person_id) && await one(`SELECT id, maktab_id, branch_id, teacher_id FROM ${table} WHERE id = ?`, int(req.body.person_id));
+    const person = int(req.body.person_id) && await one(`SELECT id, maktab_id, school_id, branch_id, teacher_id FROM ${table} WHERE id = ?`, int(req.body.person_id));
     if (!person || !canSeePerson(req.scope, person, type)) return forbidden(res);
     const r = await movePerson(type, person.id, m.id, str(req.body.note, 300), req.user.id);
     req.flash(r.error ? "err" : "ok", r.error || r.ok);
@@ -411,16 +411,18 @@ const ENTITIES = {
 
 /* Can this user see (or, with manage = true, change) the record a file belongs to? */
 async function canAccessEntity(req, type, id, manage) {
+  // Parents may only view their own children's photographs (checked again in /files/:id)
+  if (req.scope.role === "parent") return !manage && type === "student" && req.scope.childIds.includes(Number(id));
   if (manage && !req.scope.canManage) return false;
   if (type === "branch") return canSeeBranch(req.scope, id);
   if (type === "maktab") return inMaktab(req.scope, id);
-  const rec = await one(`SELECT id, maktab_id, branch_id${type === "student" ? ", teacher_id" : ""} FROM ${type}s WHERE id = ?`, id);
+  const rec = await one(`SELECT id, maktab_id, school_id, branch_id${type === "student" ? ", teacher_id" : ""} FROM ${type}s WHERE id = ?`, id);
   return canSeePerson(req.scope, rec, type);
 }
 
 for (const [route, cfg] of Object.entries(ENTITIES)) {
   // multer must parse the multipart body before the CSRF token in it can be checked
-  router.post(`/${route}/:id/files`, requireRole("admin", "manager"), withScope, acceptUpload, checkCsrf, async (req, res, next) => {
+  router.post(`/${route}/:id/files`, requireRole(...STAFF_ROLES), withScope, acceptUpload, checkCsrf, async (req, res, next) => {
     const id = int(req.params.id);
     const exists = id && await one(`SELECT id FROM ${cfg.table} WHERE id = ?`, id);
     const fail = (status, msg) => {
@@ -451,9 +453,10 @@ for (const [route, cfg] of Object.entries(ENTITIES)) {
   });
 }
 
-router.get("/files/:id", requireRole("admin", "manager", "teacher"), withScope, async (req, res, next) => {
+router.get("/files/:id", requireRole(...STAFF_ROLES, "teacher", "parent"), withScope, async (req, res, next) => {
   const f = int(req.params.id) && await one("SELECT * FROM attachments WHERE id = ?", int(req.params.id));
   if (!f) return next();
+  if (req.scope.role === "parent" && f.kind !== "photo") return forbidden(res);
   if (!(await canAccessEntity(req, f.entity_type, f.entity_id, false))) return forbidden(res);
   const inline = /^image\/|^application\/pdf$/.test(f.mime) && req.query.download !== "1";
   res.set("Cache-Control", "private, max-age=3600");

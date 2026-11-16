@@ -1,0 +1,81 @@
+<%- include('../partials/app-top') %>
+<p class="crumb"><a href="/app/schools">← All schools</a></p>
+
+<section class="profile-head">
+  <div class="profile-title">
+    <div class="unit-meta"><span class="code-chip"><%= sc.code %></span><%- include('../partials/badge', { s: sc.status }) %></div>
+    <h2><%= sc.name_en %></h2>
+    <% if (sc.name_ur) { %><p class="unit-ur" lang="ur" dir="rtl"><%= sc.name_ur %></p><% } %>
+    <p class="unit-place"><%- include('../partials/icon', { name: 'branch' }) %><span><%= sc.town ? sc.town + ', ' : '' %><%= sc.district %><%= sc.branch ? ' · ' + sc.branch : '' %></span></p>
+    <div class="btn-row profile-actions">
+      <% if (canEdit) { %><a class="btn btn--blue btn--sm" href="/app/schools/<%= sc.id %>/edit"><%- include('../partials/icon', { name: 'edit' }) %>Edit</a><% } %>
+      <a class="btn btn--line btn--sm" href="/app/students/new?school=<%= sc.id %>"><%- include('../partials/icon', { name: 'student' }) %>Register student</a>
+      <a class="btn btn--line btn--sm" href="/app/teachers/new?school=<%= sc.id %>"><%- include('../partials/icon', { name: 'teacher' }) %>Register teacher</a>
+      <a class="btn btn--line btn--sm" href="/app/attendance?school=<%= sc.id %>"><%- include('../partials/icon', { name: 'list' }) %>Attendance</a>
+      <a class="btn btn--line btn--sm" href="/app/results/new?school=<%= sc.id %>"><%- include('../partials/icon', { name: 'file' }) %>New exam</a>
+      <% if (canArchive) { %>
+        <form method="post" action="/app/schools/<%= sc.id %>/archive" <% if (sc.status !== 'archived') { %>data-confirm="Archive <%= sc.name_en %>? Its teachers and students keep their records."<% } %>>
+          <input type="hidden" name="_csrf" value="<%= csrf %>">
+          <% if (sc.status === 'archived') { %><input type="hidden" name="restore" value="1"><button class="btn btn--line btn--sm" type="submit">Restore</button>
+          <% } else { %><button class="btn btn--line btn--sm btn--danger-line" type="submit"><%- include('../partials/icon', { name: 'archive' }) %>Archive</button><% } %>
+        </form>
+      <% } %>
+    </div>
+  </div>
+</section>
+
+<div class="stats">
+  <a class="stat" href="#teachers"><small>Active teachers</small><strong><%= teachers.filter(t => t.status === 'active').length %></strong></a>
+  <a class="stat" href="#students"><small>Active students</small><strong><%= students.filter(s => s.status === 'active').length %></strong></a>
+  <div class="stat"><small>Boys / girls</small><strong><%= students.filter(s => s.status === 'active' && s.gender === 'male').length %> / <%= students.filter(s => s.status === 'active' && s.gender === 'female').length %></strong></div>
+  <div class="stat"><small>Classes</small><strong><%= classes.length %></strong></div>
+</div>
+
+<div class="grid-2">
+  <section class="card">
+    <div class="card-head"><h2>Details</h2></div>
+    <dl class="details details--2col">
+      <div><dt>Principal</dt><dd><%= sc.principal || 'Not assigned' %><% if (sc.principal_email) { %><small><%= sc.principal_email %></small><% } %></dd></div>
+      <div><dt>Branch</dt><dd><%= sc.branch || 'No branch' %></dd></div>
+      <div><dt>Levels / classes</dt><dd><%= sc.levels || '—' %></dd></div>
+      <div><dt>Contact</dt><dd><% if (sc.phone) { %><a href="tel:<%= sc.phone %>"><%= sc.phone %></a><% } else { %>—<% } %></dd></div>
+      <div><dt>Address</dt><dd><%= sc.address || '—' %></dd></div>
+      <div><dt>Established</dt><dd><%= sc.established_on ? fmtDate(sc.established_on) : '—' %></dd></div>
+    </dl>
+    <% if (sc.notes) { %><h3 class="sub">Notes</h3><p class="pre"><%= sc.notes %></p><% } %>
+  </section>
+  <section class="card">
+    <div class="card-head"><h2>Students by class</h2></div>
+    <% if (!classes.length) { %><p class="empty">No active students yet.</p><% } else { %>
+      <ul class="rows"><% classes.forEach(function (c) { %>
+        <li><a href="/app/students?school=<%= sc.id %>&class=<%= encodeURIComponent(c[0] === 'No class' ? '' : c[0]) %>"><span><strong><%= c[0] %></strong></span><span class="num"><%= c[1] %></span></a></li>
+      <% }) %></ul>
+    <% } %>
+    <h3 class="sub">Exams</h3>
+    <% if (!exams.length) { %><p class="empty">No exams yet. <a href="/app/results/new?school=<%= sc.id %>">Create one</a>.</p><% } else { %>
+      <ul class="rows"><% exams.forEach(function (e) { %>
+        <li><a href="/app/results/<%= e.id %>"><span><strong><%= e.title %></strong><small><%= EXAM_TYPES[e.exam_type] %><%= e.held_on ? ' · ' + fmtDate(e.held_on) : '' %></small></span><%- include('../partials/badge', { s: e.status }) %></a></li>
+      <% }) %></ul>
+    <% } %>
+  </section>
+</div>
+
+<% [['teacher', 'Teachers', teachers], ['student', 'Students', students]].forEach(function (g) { const type = g[0], list = g[2]; %>
+  <section class="card" id="<%= type %>s">
+    <div class="card-head"><h2><%= g[1] %> (<%= list.length %>)</h2><a href="/app/<%= type %>s/new?school=<%= sc.id %>">Register new</a></div>
+    <% if (!list.length) { %><p class="empty">No <%= type %>s in this school yet.</p><% } else { %>
+      <div class="table-wrap"><table class="table">
+        <thead><tr><th>Name</th><th>Gender</th><th><%= type === 'teacher' ? 'Designation' : 'Class' %></th><th>Status</th></tr></thead>
+        <tbody><% list.forEach(function (x) { %>
+          <tr class="<%= x.status !== 'active' ? 'row-muted' : '' %>">
+            <td><a class="row-link" href="/app/<%= type %>s/<%= x.id %>"><strong><%= x.full_name %></strong></a><small><%= x.code %><%= x.father_name ? ' · s/o, d/o ' + x.father_name : '' %></small></td>
+            <td><%= GENDERS[x.gender] %></td>
+            <td><%= (type === 'teacher' ? x.designation : x.class_name) || '—' %></td>
+            <td><%- include('../partials/badge', { s: x.status }) %></td>
+          </tr>
+        <% }) %></tbody>
+      </table></div>
+    <% } %>
+  </section>
+<% }) %>
+<%- include('../partials/app-bottom') %>

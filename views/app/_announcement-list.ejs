@@ -4,7 +4,7 @@
   <ul class="notes">
     <% list.forEach(function (n) { %>
       <li>
-        <div class="notes-meta"><%= fmtDate(n.created_at) %><% if (n.author) { %> · <%= n.author %><% } %><% if (n.audience === 'staff') { %> <span class="badge badge--staff">Staff only</span><% } %></div>
+        <div class="notes-meta"><%= fmtDate(n.created_at) %><% if (n.author) { %> · <%= n.author %><% } %><% if (n.audience === 'staff') { %> <span class="badge badge--staff">Staff only</span><% } else if (n.audience === 'parents') { %> <span class="badge badge--staff">Parents</span><% } %></div>
         <h3><%= n.title %></h3>
         <p><%= n.body %></p>
         <% if (typeof canDelete === 'function' && canDelete(n)) { %>

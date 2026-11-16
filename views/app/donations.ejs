@@ -1,5 +1,5 @@
 <%- include('../partials/app-top') %>
-<% const staffView = user.role !== 'user'; %>
+<% const staffView = typeof canVerify !== 'undefined' && canVerify; %>
 <div class="page-head">
   <p><%= staffView ? 'Confirm donations once they appear in the bank or wallet account.' : 'Donations you have told the office about.' %></p>
   <a class="btn btn--gold btn--sm" href="/app/donations/new"><%- include('../partials/icon', { name: 'plus' }) %>Record a donation</a>

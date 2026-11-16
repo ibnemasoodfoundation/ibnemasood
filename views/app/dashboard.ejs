@@ -6,6 +6,7 @@
     { title: 'Institution overview', tiles: [
       tile('Branches', s.branches, '/app/branches'),
       tile('Makatib', s.makatib, '/app/makatib'),
+      tile('Schools', s.schools, '/app/schools'),
       tile('Teachers', s.teachers, '/app/teachers', s.active_teachers + ' active'),
       tile('Students', s.students, '/app/students', s.active_students + ' active'),
       tile('Male students', s.male_students, '/app/students?gender=male'),
@@ -24,7 +25,10 @@
       tile('Total verified donations', money(s.donations_total), '/app/donations?status=verified'),
       tile('Pending verification', s.donations_pending, '/app/donations?status=pending'),
       tile('Verified this month', money(s.donations_month), '/app/donations?status=verified'),
-    ]},
+    ].concat(isAdmin ? [
+      tile('Other income this month', money(s.income_month), '/app/finance/entries?type=income'),
+      tile('Expenses this month', money(s.expenses_month), '/app/finance/entries?type=expense'),
+    ] : [])},
   ];
   if (isAdmin) groups.push({ title: 'Administration', tiles: [
     tile('Administrators', s.admins, '/app/users?role=admin'),
@@ -43,16 +47,19 @@
     { id: 'donationsMonthly', title: 'Verified donations per month', kind: 'bar', empty: 'No verified donations in the last 12 months.' },
   ];
   const quick = [
-    ['/app/makatib/new', 'Add Maktab', 'maktab'], ['/app/branches/new', 'Add Branch', 'branch'],
+    ['/app/makatib/new', 'Add Maktab', 'maktab'], ['/app/branches/new', 'Add Branch', 'branch'], ['/app/schools/new', 'Add School', 'branch'],
     ['/app/teachers/new', 'Register Teacher', 'teacher'], ['/app/students/new', 'Register Student', 'student'],
     ['/app/admissions/new', 'Create Admission', 'file'], ['/app/donations/new', 'Add Donation', 'heart'],
+    ['/app/results/new', 'New Exam', 'file'],
   ];
+  if (isAdmin) quick.push(['/app/finance/new?type=expense', 'Record Expense', 'heart']);
+  if (!isAdmin) quick.splice(1, 1); // only admins add branches
 %>
 <div class="welcome">
   <div>
     <span class="ar" lang="ar">السلام علیکم</span>
     <h2><%= isAdmin ? 'Admin overview' : user.name.split(' ')[0] + ', here is the Jamia today' %></h2>
-    <p><%= s.branches %> branches, <%= s.makatib %> Makatib, <%= s.active_teachers %> active teachers and <%= s.active_students %> active students.</p>
+    <p><%= s.branches %> branches, <%= s.makatib %> Makatib, <%= s.schools %> schools, <%= s.active_teachers %> active teachers and <%= s.active_students %> active students.</p>
   </div>
 </div>
 

@@ -1,0 +1,68 @@
+<%- include('../partials/app-top') %>
+<%
+  const editing = !!values.editId;
+  const f = (k) => errors[k] ? 'invalid' : '';
+  const val = (k) => values[k] ?? '';
+%>
+<p class="crumb"><a href="<%= editing ? '/app/schools/' + values.editId : '/app/schools' %>">← <%= editing ? 'Back to school' : 'All schools' %></a></p>
+<section class="card card--form card--wide">
+  <form method="post" action="<%= editing ? '/app/schools/' + values.editId : '/app/schools' %>" novalidate>
+    <input type="hidden" name="_csrf" value="<%= csrf %>">
+    <fieldset class="form-section">
+      <legend>School <span class="legend-ur" lang="ur">اسکول</span></legend>
+      <div class="field-row field-row--3">
+        <div class="field <%= f('code') %>"><label for="s-code">School code</label><input id="s-code" name="code" value="<%= val('code') %>" required autocapitalize="characters" spellcheck="false"><span class="err"><%= errors.code %></span></div>
+        <div class="field <%= f('name_en') %>"><label for="s-name">Name (English)</label><input id="s-name" name="name_en" value="<%= val('name_en') %>" required><span class="err"><%= errors.name_en %></span></div>
+        <div class="field"><label for="s-ur">Name (Urdu) <span class="opt">optional</span></label><input id="s-ur" name="name_ur" value="<%= val('name_ur') %>" class="ur-input" dir="rtl" lang="ur"></div>
+      </div>
+      <div class="field-row field-row--3">
+        <div class="field <%= f('district') %>"><label for="s-district">District</label><input id="s-district" name="district" value="<%= val('district') %>" required><span class="err"><%= errors.district %></span></div>
+        <div class="field"><label for="s-town">Town / village <span class="opt">optional</span></label><input id="s-town" name="town" value="<%= val('town') %>"></div>
+        <div class="field <%= f('phone') %>"><label for="s-phone">Contact number <span class="opt">optional</span></label><input id="s-phone" name="phone" type="tel" value="<%= val('phone') %>"><span class="err"><%= errors.phone %></span></div>
+      </div>
+      <div class="field"><label for="s-address">Address <span class="opt">optional</span></label><input id="s-address" name="address" value="<%= val('address') %>"></div>
+      <div class="field-row">
+        <div class="field"><label for="s-levels">Levels / classes taught <span class="opt">optional</span></label><input id="s-levels" name="levels" value="<%= val('levels') %>" placeholder="e.g. Nursery to Class 8"></div>
+        <div class="field <%= f('established_on') %>"><label for="s-est">Established <span class="opt">optional</span></label><input id="s-est" name="established_on" type="date" value="<%= val('established_on') %>"><span class="err"><%= errors.established_on %></span></div>
+      </div>
+    </fieldset>
+
+    <fieldset class="form-section">
+      <legend>Branch and principal <span class="legend-ur" lang="ur">شاخ اور پرنسپل</span></legend>
+      <% if (canAssign) { %>
+        <div class="field-row">
+          <div class="field <%= f('branch_id') %>">
+            <label for="s-branch">Branch</label>
+            <select id="s-branch" name="branch_id">
+              <option value="">No branch</option>
+              <% branches.forEach(function (b) { %><option value="<%= b.id %>" <%= Number(values.branch_id) === b.id ? 'selected' : '' %>><%= b.name_en %></option><% }) %>
+            </select>
+            <span class="err"><%= errors.branch_id %></span>
+          </div>
+          <div class="field <%= f('principal_id') %>">
+            <label for="s-principal">School Principal <span class="opt">optional</span></label>
+            <select id="s-principal" name="principal_id">
+              <option value="">Not assigned</option>
+              <% principals.forEach(function (p) { %><option value="<%= p.id %>" <%= Number(values.principal_id) === p.id ? 'selected' : '' %>><%= p.name %> (<%= p.email %>)</option><% }) %>
+            </select>
+            <span class="err"><%= errors.principal_id %></span>
+          </div>
+        </div>
+        <p class="hint">A principal needs a portal account with the <strong>School Principal</strong> role. An admin creates one under <a href="/app/users">Users &amp; roles</a>.</p>
+      <% } else { %>
+        <p class="hint">The branch and principal are set by the branch manager or an admin.</p>
+      <% } %>
+      <fieldset class="choice">
+        <legend>Status</legend>
+        <% ['active', 'inactive'].forEach(function (s) { %><label><input type="radio" name="status" value="<%= s %>" <%= (values.status || 'active') === s ? 'checked' : '' %>> <%= cap(s) %></label><% }) %>
+      </fieldset>
+      <div class="field"><label for="s-notes">Notes <span class="opt">optional</span></label><textarea id="s-notes" name="notes"><%= val('notes') %></textarea></div>
+    </fieldset>
+
+    <div class="btn-row">
+      <button class="btn btn--gold" type="submit"><%= editing ? 'Save changes' : 'Add school' %></button>
+      <a class="btn btn--line" href="<%= editing ? '/app/schools/' + values.editId : '/app/schools' %>">Cancel</a>
+    </div>
+  </form>
+</section>
+<%- include('../partials/app-bottom') %>
