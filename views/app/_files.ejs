@@ -12,7 +12,7 @@
               <a href="/app/files/<%= p.id %>" target="_blank" rel="noopener"><img src="/app/files/<%= p.id %>" alt="<%= p.file_name %>" loading="lazy"></a>
               <figcaption>
                 <span><%= fmtDate(p.created_at) %><% if (p.is_public) { %> · <span class="badge badge--present">On website</span><% } %></span>
-                <form method="post" action="/app/files/<%= p.id %>/delete" data-confirm="Remove this photo?"><input type="hidden" name="_csrf" value="<%= csrf %>"><button class="link-danger" type="submit">Remove</button></form>
+                <% if (['admin', 'manager'].includes(user.role)) { %><form method="post" action="/app/files/<%= p.id %>/delete" data-confirm="Remove this photo?"><input type="hidden" name="_csrf" value="<%= csrf %>"><button class="link-danger" type="submit">Remove</button></form><% } %>
               </figcaption>
               <form class="publish-form" method="post" action="/app/files/<%= p.id %>/public">
                 <input type="hidden" name="_csrf" value="<%= csrf %>">
@@ -38,7 +38,7 @@
             <li>
               <%- include('../partials/icon', { name: 'file' }) %>
               <span><a href="/app/files/<%= d.id %>" target="_blank" rel="noopener"><%= d.file_name %></a><small><%= fileSize(d.size_bytes) %> · <%= fmtDate(d.created_at) %><%= d.uploader ? ' · ' + d.uploader : '' %></small></span>
-              <form method="post" action="/app/files/<%= d.id %>/delete" data-confirm="Remove <%= d.file_name %>?"><input type="hidden" name="_csrf" value="<%= csrf %>"><button class="link-danger" type="submit">Remove</button></form>
+              <% if (['admin', 'manager'].includes(user.role)) { %><form method="post" action="/app/files/<%= d.id %>/delete" data-confirm="Remove <%= d.file_name %>?"><input type="hidden" name="_csrf" value="<%= csrf %>"><button class="link-danger" type="submit">Remove</button></form><% } %>
             </li>
           <% }) %>
         </ul>

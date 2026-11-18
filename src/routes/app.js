@@ -270,14 +270,10 @@ router.post("/announcements", announcers, async (req, res) => {
   res.redirect("/app/announcements");
 });
 
-router.post("/announcements/:id/delete", announcers, async (req, res, next) => {
+router.post("/announcements/:id/delete", staff, async (req, res, next) => {
   const id = Number(req.params.id);
   const a = Number.isInteger(id) && await one("SELECT * FROM announcements WHERE id = ?", id);
   if (!a) return next();
-  if (req.user.role !== "admin" && a.author_id !== req.user.id) {
-    req.flash("err", "Only the author or an admin can remove this announcement.");
-    return res.redirect("/app/announcements");
-  }
   await run("DELETE FROM announcements WHERE id = ?", a.id);
   await log(req.user.id, "announcement.delete", a.title);
   req.flash("ok", "Announcement removed.");

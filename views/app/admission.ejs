@@ -4,7 +4,7 @@
 
 <div class="grid-2 grid-2--wide">
   <section class="card">
-    <div class="card-head"><h2><%= a.student_name %></h2><%- include('../partials/badge', { s: a.status }) %></div>
+    <div class="card-head"><h2><%= a.student_name %></h2><span class="btn-row"><%- include('../partials/badge', { s: a.status }) %><% if (['admin', 'manager'].includes(user.role)) { %><form class="inline" method="post" action="/app/admissions/<%= a.id %>/delete" data-confirm="Delete application #<%= a.id %> for <%= a.student_name %>? This cannot be undone."><input type="hidden" name="_csrf" value="<%= csrf %>"><button class="btn btn--line btn--sm btn--danger-line" type="submit">Delete</button></form><% } %></span></div>
     <dl class="details">
       <div><dt>Father / guardian</dt><dd><%= a.father_name %></dd></div>
       <div><dt>Date of birth</dt><dd><%= a.dob ? fmtDate(a.dob) : '—' %></dd></div>

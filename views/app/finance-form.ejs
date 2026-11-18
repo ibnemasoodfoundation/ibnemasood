@@ -51,7 +51,7 @@
       <a class="btn btn--line" href="/app/finance/entries">Cancel</a>
     </div>
   </form>
-  <% if (editing) { %>
+  <% if (editing && user.role === 'admin') { %>
     <form method="post" action="/app/finance/<%= values.editId %>/delete" data-confirm="Delete this entry? This cannot be undone." class="danger-zone">
       <input type="hidden" name="_csrf" value="<%= csrf %>">
       <button class="btn btn--line btn--sm btn--danger-line" type="submit">Delete entry</button>

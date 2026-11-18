@@ -198,7 +198,7 @@ router.post("/results/:id/publish", staff, async (req, res, next) => {
   res.redirect("/app/results/" + e.id);
 });
 
-router.post("/results/:id/delete", staff, async (req, res, next) => {
+router.post("/results/:id/delete", [requireRole("admin", "manager"), withScope, checkCsrf], async (req, res, next) => {
   const { e, missing, denied } = await loadExam(req);
   if (missing) return next();
   if (denied) return forbidden(res);
@@ -237,7 +237,7 @@ router.get("/results/:id", markers, async (req, res, next) => {
     title: e.title, e, f, students, overview, needsChoice, classes, coverage: coverage(e),
     byStudent: Object.fromEntries(results.map((r) => [r.student_id, r])),
     canEdit: req.scope.canManage || e.status === "draft", canManage: req.scope.canManage,
-    canDelete: req.scope.canManage && (e.maktab_id || e.school_id || e.branch_id || canCoverAllMakatib(req.scope)),
+    canDelete: ["admin", "manager"].includes(req.user.role) && (e.maktab_id || e.school_id || e.branch_id || canCoverAllMakatib(req.scope)),
     makatib: allMakatib ? await h.maktabList(req.scope) : [],
   });
 });

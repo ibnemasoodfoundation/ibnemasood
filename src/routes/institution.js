@@ -484,7 +484,7 @@ router.post("/files/:id/public", staff, async (req, res, next) => {
   res.redirect(back && new URL(back).host === req.get("host") ? back : "/app");
 });
 
-router.post("/files/:id/delete", staff, async (req, res, next) => {
+router.post("/files/:id/delete", [requireRole("admin", "manager"), withScope, checkCsrf], async (req, res, next) => {
   const f = int(req.params.id) && await one("SELECT * FROM attachments WHERE id = ?", int(req.params.id));
   if (!f) return next();
   if (!(await canAccessEntity(req, f.entity_type, f.entity_id, true))) return forbidden(res);

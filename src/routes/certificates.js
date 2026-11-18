@@ -234,9 +234,10 @@ router.post("/certificates/:id", staff, async (req, res, next) => {
   res.redirect("/app/certificates/" + c.id);
 });
 
-router.post("/certificates/:id/delete", [requireRole("admin"), withScope, checkCsrf], async (req, res, next) => {
-  const { c, missing } = await loadCert(req);
+router.post("/certificates/:id/delete", [requireRole("admin", "manager"), withScope, checkCsrf], async (req, res, next) => {
+  const { c, missing, denied } = await loadCert(req);
   if (missing) return next();
+  if (denied) return forbidden(res);
   await run("DELETE FROM certificates WHERE id = ?", c.id);
   await log(req.user.id, "certificate.delete", `#${c.id} ${c.kind}`);
   req.flash("ok", "Certificate deleted.");

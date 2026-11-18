@@ -51,6 +51,9 @@
         <% } else { %>
           <a class="btn btn--line btn--sm" href="/app/students/<%= x.id %>/certificates/new?kind=alimiyyah"><%- include('../partials/icon', { name: 'file' }) %>Alimiyyah certificate</a>
         <% } %><% } %>
+      <% if (['admin', 'manager'].includes(user.role)) { %>
+        <form class="inline" method="post" action="<%= base %>/<%= x.id %>/delete" data-confirm="Permanently delete <%= x.full_name %>? This cannot be undone. Their attendance, <%= isT ? '' : 'results, progress, ' %>photos and documents are deleted too."><input type="hidden" name="_csrf" value="<%= csrf %>"><button class="btn btn--line btn--sm btn--danger-line" type="submit">Delete</button></form>
+      <% } %>
       <% if (isT && canManage) { %>
         <form method="post" action="/app/teachers/<%= x.id %>/archive" <% if (x.status !== 'archived') { %>data-confirm="Archive <%= x.full_name %>?<%= x.user_id ? ' Their login will be suspended.' : '' %>"<% } %>>
           <input type="hidden" name="_csrf" value="<%= csrf %>">
@@ -202,7 +205,7 @@
             <li>
               <%- include('../partials/icon', { name: 'file' }) %>
               <span><a href="/app/files/<%= d.id %>" target="_blank" rel="noopener"><%= d.file_name %></a><small><%= fileSize(d.size_bytes) %> · <%= fmtDate(d.created_at) %></small></span>
-              <% if (canManage) { %><form method="post" action="/app/files/<%= d.id %>/delete" data-confirm="Remove <%= d.file_name %>?"><input type="hidden" name="_csrf" value="<%= csrf %>"><button class="link-danger" type="submit">Remove</button></form><% } %>
+              <% if (['admin', 'manager'].includes(user.role)) { %><form method="post" action="/app/files/<%= d.id %>/delete" data-confirm="Remove <%= d.file_name %>?"><input type="hidden" name="_csrf" value="<%= csrf %>"><button class="link-danger" type="submit">Remove</button></form><% } %>
             </li>
           <% }) %></ul>
         <% } %>

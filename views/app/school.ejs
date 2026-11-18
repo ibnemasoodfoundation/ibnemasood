@@ -15,6 +15,9 @@
       <a class="btn btn--line btn--sm" href="/app/teachers/new?school=<%= sc.id %>"><%- include('../partials/icon', { name: 'teacher' }) %>Register teacher</a>
       <a class="btn btn--line btn--sm" href="/app/attendance?school=<%= sc.id %>"><%- include('../partials/icon', { name: 'list' }) %>Attendance</a>
       <a class="btn btn--line btn--sm" href="/app/results/new?school=<%= sc.id %>"><%- include('../partials/icon', { name: 'file' }) %>New exam</a>
+      <% if (['admin', 'manager'].includes(user.role)) { %>
+        <form class="inline" method="post" action="/app/schools/<%= sc.id %>/delete" data-confirm="Permanently delete <%= sc.name_en %>? This cannot be undone. Its exams are deleted; its teachers and students are kept but left unassigned."><input type="hidden" name="_csrf" value="<%= csrf %>"><button class="btn btn--line btn--sm btn--danger-line" type="submit">Delete</button></form>
+      <% } %>
       <% if (canArchive) { %>
         <form method="post" action="/app/schools/<%= sc.id %>/archive" <% if (sc.status !== 'archived') { %>data-confirm="Archive <%= sc.name_en %>? Its teachers and students keep their records."<% } %>>
           <input type="hidden" name="_csrf" value="<%= csrf %>">

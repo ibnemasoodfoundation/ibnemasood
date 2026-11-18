@@ -162,7 +162,7 @@ router.post("/finance/:id", finance, async (req, res, next) => {
   res.redirect("/app/finance/entries");
 });
 
-router.post("/finance/:id/delete", finance, async (req, res, next) => {
+router.post("/finance/:id/delete", [requireRole("admin"), checkCsrf], async (req, res, next) => {
   const x = await loadEntry(req);
   if (!x) return next();
   await run("DELETE FROM finance_entries WHERE id = ?", x.id);

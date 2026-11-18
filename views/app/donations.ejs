@@ -40,6 +40,7 @@
                 <form class="inline" method="post" action="/app/donations/<%= d.id %>/status"><input type="hidden" name="_csrf" value="<%= csrf %>"><input type="hidden" name="status" value="verified"><button class="btn-sm btn-sm--ok" type="submit">Verify</button></form>
               <% } %>
               <% if (d.status !== 'rejected') { %>
+                <% if (['admin', 'manager'].includes(user.role)) { %><form class="inline" method="post" action="/app/donations/<%= d.id %>/delete" data-confirm="Delete donation #<%= d.id %> (<%= d.donor_name %>, <%= money(d.amount) %>)? This cannot be undone."><input type="hidden" name="_csrf" value="<%= csrf %>"><button class="btn-sm btn-sm--danger" type="submit">Delete</button></form><% } %>
                 <form class="inline" method="post" action="/app/donations/<%= d.id %>/status" data-confirm="Mark this donation as rejected?"><input type="hidden" name="_csrf" value="<%= csrf %>"><input type="hidden" name="status" value="rejected"><button class="btn-sm btn-sm--danger" type="submit">Reject</button></form>
               <% } %>
             </td>

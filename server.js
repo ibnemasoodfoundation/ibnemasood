@@ -143,6 +143,7 @@ app.use("/app", require("./src/routes/parent"));
 app.use("/app", require("./src/routes/certificates"));
 app.use("/app", require("./src/routes/school-admissions"));
 app.use("/app", require("./src/routes/jamia"));
+app.use("/app", require("./src/routes/deletes"));
 app.use("/app", require("./src/routes/backup"));
 app.use("/app", require("./src/routes/app"));
 

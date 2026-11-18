@@ -22,6 +22,7 @@
         <p class="pre"><%= m.message %></p>
         <div class="msg-actions">
           <a class="btn-sm" href="https://wa.me/<%= m.phone.replace(/\D/g, '').replace(/^0/, '92') %>" target="_blank" rel="noopener">Reply on WhatsApp</a>
+          <form class="inline" method="post" action="/app/messages/<%= m.id %>/delete" data-confirm="Delete this message from <%= m.name %>? This cannot be undone."><input type="hidden" name="_csrf" value="<%= csrf %>"><button class="btn-sm btn-sm--danger" type="submit">Delete</button></form>
           <% ['new','read','closed'].filter(s => s !== m.status).forEach(function (s) { %>
             <form class="inline" method="post" action="/app/messages/<%= m.id %>/status"><input type="hidden" name="_csrf" value="<%= csrf %>"><input type="hidden" name="status" value="<%= s %>"><button class="btn-sm" type="submit">Mark <%= s %></button></form>
           <% }) %>
