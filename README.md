@@ -103,6 +103,22 @@ Every branch is marked as belonging to one of them (Branch → Edit → Main bra
 the portal header then shows only that main branch everywhere: branches, Makatib, schools, teachers, students,
 attendance, results and dashboards. Both main branches are created automatically if they do not exist.
 
+## The two Jamias (Baneen and Banaat)
+
+Menu → **Jamia**: each Jamia has its own pages, and Baneen and Banaat records never mix.
+
+| | Jamia Arabia Abdullah Bin Masood (Baneen) | Jamia Arabia Aisha Siddiqa (Banaat) |
+|---|---|---|
+| Darjat | Darja-e-Ula, Saniya, Salisa, Rabia, Khamisa, Sadisa, Mauqoof Alaih, Daura-e-Hadith | Khasa Awwal, Khasa Dom, Aalia Awwal, Aalia Dom, Aalamiya Awwal, Aalamiya Dom |
+
+- **Dashboard**: students per darja, today's attendance per darja, teachers, graduates, exams.
+- **Students** (filter by darja), **Register** (choose the darja; Baneen students are recorded male, Banaat female),
+  **Attendance** darja by darja, **Exams & results** (an exam can cover a whole Jamia; marks are entered darja by darja),
+  **Promotion** at the end of the year (to the next darja; the final year is marked graduated), **Teachers**, and a
+  printable **Darja report**.
+- A Jamia's students are the ones placed directly in its main branch (not in one of its Makatib or schools).
+- The Super Admin manages both Jamias. A Branch Manager set as manager of a main branch (Branch → Edit) manages only that Jamia.
+
 ## Printed documents
 
 - **Admission form** (Iqra Islamia Public School): blank from Certificates → Blank admission form, or filled in from a

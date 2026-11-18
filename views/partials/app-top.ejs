@@ -5,6 +5,10 @@ const officeRole = r === 'admin' || r === 'manager';          // admissions, mes
 const unitRole = officeRole || r === 'nazim' || r === 'principal'; // teachers, students, attendance, results
 const homeLabel = { admin: 'Overview', manager: 'Overview', nazim: 'Overview', principal: 'Overview', accountant: 'Overview' }[r] || 'My dashboard';
 const nav = [{ href: '/app', label: homeLabel, icon: 'home' }];
+if (typeof jamiaNav !== 'undefined' && jamiaNav.length) {
+  nav.push({ section: 'Jamia' });
+  jamiaNav.forEach((sec) => nav.push({ href: '/app/jamia/' + sec, label: sec === 'boys' ? 'Jamia Abdullah Bin Masood (Baneen)' : 'Jamia Aisha Siddiqa (Banaat)', icon: sec === 'boys' ? 'student' : 'student' }));
+}
 if (unitRole) {
   nav.push({ section: 'Institution' });
   if (officeRole) nav.push({ href: '/app/branches', label: 'Branches', icon: 'branch' });

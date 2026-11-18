@@ -1,0 +1,12 @@
+<%# Tabs shared by every page of one Jamia %>
+<% const tb = '/app/jamia/' + sec; %>
+<nav class="tabs-inline jamia-tabs" aria-label="<%= J.name %>">
+  <a href="<%= tb %>" <% if (active === 'dashboard') { %>aria-current="page"<% } %>>Dashboard</a>
+  <a href="<%= tb %>/students" <% if (active === 'students') { %>aria-current="page"<% } %>>Students</a>
+  <a href="<%= tb %>/register" <% if (active === 'register') { %>aria-current="page"<% } %>>Register</a>
+  <a href="<%= tb %>/attendance" <% if (active === 'attendance') { %>aria-current="page"<% } %>>Attendance</a>
+  <a href="/app/results?jamia=<%= b.id %>">Exams &amp; results</a>
+  <a href="<%= tb %>/promote" <% if (active === 'promote') { %>aria-current="page"<% } %>>Promotion</a>
+  <a href="<%= tb %>/teachers" <% if (active === 'teachers') { %>aria-current="page"<% } %>>Teachers</a>
+  <a href="<%= tb %>/report" target="_blank">Darja report</a>
+</nav>

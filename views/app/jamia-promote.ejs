@@ -1,0 +1,31 @@
+<%- include('../partials/app-top') %>
+<% const fromName = darjat.find(d => d[0] === from)[1]; %>
+<%- include('_jamia-tabs', { active: 'promote' }) %>
+<div class="page-head"><p>At the end of the year, move students who passed to the next darja. Students in the final year (<%= darjat[darjat.length - 1][1] %>) are marked <strong>graduated</strong>. Each move is noted in the student’s progress record.</p></div>
+<form class="filters" method="get">
+  <label class="filter-label">From darja
+    <select name="darja" data-autosubmit-select><% darjat.forEach(function (d) { %><option value="<%= d[0] %>" <%= from === d[0] ? 'selected' : '' %>><%= d[1] %></option><% }) %></select>
+  </label>
+  <button class="btn btn--line btn--sm" type="submit">Show</button>
+</form>
+<section class="card">
+  <div class="card-head"><h2><%= fromName %> → <%= next ? next[1] : 'Graduated' %></h2></div>
+  <% if (!students.length) { %><p class="empty">No active students in <%= fromName %>.</p><% } else { %>
+    <form method="post" action="/app/jamia/<%= sec %>/promote" data-confirm="<%= next ? 'Promote the ticked students to ' + next[1] + '?' : 'Mark the ticked students as graduated?' %>">
+      <input type="hidden" name="_csrf" value="<%= csrf %>"><input type="hidden" name="from" value="<%= from %>">
+      <div class="register-tools"><label class="check"><input type="checkbox" data-check-all> Tick everyone</label><span class="muted small-inline">Untick students who stay in <%= fromName %>.</span></div>
+      <ul class="rows promote-list"><% students.forEach(function (s) { %>
+        <li><label class="check"><input type="checkbox" name="student" value="<%= s.id %>" checked> <span><strong><%= s.full_name %></strong><small><%= s.code %><%= s.father_name ? ' · ' + s.father_name : '' %></small></span></label></li>
+      <% }) %></ul>
+      <div class="btn-row"><button class="btn btn--gold" type="submit"><%= next ? 'Promote to ' + next[1] : 'Mark as graduated' %></button></div>
+    </form>
+  <% } %>
+</section>
+<script>
+  document.querySelectorAll("[data-check-all]").forEach(function (all) {
+    all.checked = true;
+    all.addEventListener("change", function () { document.querySelectorAll("input[name=student]").forEach(function (c) { c.checked = all.checked; }); });
+  });
+  document.querySelectorAll("[data-autosubmit-select]").forEach(function (s) { s.addEventListener("change", function () { s.form.submit(); }); });
+</script>
+<%- include('../partials/app-bottom') %>

@@ -15,7 +15,7 @@ const UR = {
   "My profile": "میری پروفائل", "Accounts": "حسابات", "Income and expenses": "آمدن اور اخراجات", "Financial report": "مالیاتی رپورٹ",
   "My students": "میرے طلبہ", "Mark attendance": "حاضری لگائیں", "Monthly sheet": "ماہانہ شیٹ", "My children": "میرے بچے",
   "Public website": "ویب سائٹ", "Sign out": "لاگ آؤٹ", "portal": "پورٹل", "Language": "زبان", "Open menu": "مینو کھولیں",
-  "Skip to content": "مواد پر جائیں", "Main branch": "مرکزی شاخ", "All": "سب", "Boys": "بنین", "Girls": "بنات",
+  "Skip to content": "مواد پر جائیں", "Main branch": "مرکزی شاخ", "Jamia": "جامعہ", "Jamia Abdullah Bin Masood (Baneen)": "جامعہ عبداللہ بن مسعود (بنین)", "Jamia Aisha Siddiqa (Banaat)": "جامعہ عائشہ صدیقہ (بنات)", "All": "سب", "Boys": "بنین", "Girls": "بنات",
   "Certificates": "اسناد", "Register student": "طالب علم کا اندراج", "Leaving certificates": "اسکول چھوڑنے کے سرٹیفکیٹ", "Backup": "بیک اپ", "Admission form": "داخلہ فارم",
   // Roles
   "Super Admin": "سپر ایڈمن", "Branch Manager": "برانچ منیجر", "Makatib Nazim": "ناظمِ مکاتب", "School Principal": "اسکول پرنسپل",

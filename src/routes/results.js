@@ -6,7 +6,7 @@
 const express = require("express");
 const { one, all, run, log } = require("../db");
 const { checkCsrf, requireRole, STAFF_ROLES } = require("../auth");
-const { withScope, maktabSql, schoolSql, personSql, inMaktab, inSchool, canSeePerson, ids } = require("../scope");
+const { withScope, maktabSql, schoolSql, personSql, inMaktab, inSchool, inBranch, canSeePerson, ids } = require("../scope");
 const { EXAM_TYPES, MAKTAB_SUBJECTS, gradeFor, todayPk } = require("../helpers");
 const { helpers: h } = require("./institution");
 
@@ -19,12 +19,13 @@ const { str, int, DATE_RE, forbidden } = h;
 /* ---------- Who sees which exam ---------- */
 function examSql(scope, alias = "e") {
   if (scope.all) return "TRUE";
-  const parts = [`${alias}.maktab_id IN (${ids(scope.maktabIds)})`, `${alias}.school_id IN (${ids(scope.schoolIds)})`];
-  if (scope.maktabIds.length) parts.push(`(${alias}.maktab_id IS NULL AND ${alias}.school_id IS NULL)`);
+  const parts = [`${alias}.maktab_id IN (${ids(scope.maktabIds)})`, `${alias}.school_id IN (${ids(scope.schoolIds)})`, `${alias}.branch_id IN (${ids(scope.branchIds)})`];
+  if (scope.maktabIds.length) parts.push(`(${alias}.maktab_id IS NULL AND ${alias}.school_id IS NULL AND ${alias}.branch_id IS NULL)`);
   return `(${parts.join(" OR ")})`;
 }
 function canSeeExam(scope, e) {
   if (scope.all) return true;
+  if (e.branch_id) return inBranch(scope, e.branch_id);
   if (e.school_id) return inSchool(scope, e.school_id);
   if (e.maktab_id) return inMaktab(scope, e.maktab_id);
   return scope.maktabIds.length > 0;
@@ -34,19 +35,21 @@ const canCoverAllMakatib = (scope) => scope.all || scope.allMakatib || scope.was
 
 async function loadExam(req) {
   const id = int(req.params.id);
-  const e = id && await one(`SELECT e.*, m.name_en AS maktab, sc.name_en AS school, u.name AS created_by_name FROM exams e
+  const e = id && await one(`SELECT e.*, m.name_en AS maktab, sc.name_en AS school, jb.name_en AS jamia, u.name AS created_by_name FROM exams e
     LEFT JOIN makatib m ON m.id = e.maktab_id LEFT JOIN schools sc ON sc.id = e.school_id LEFT JOIN users u ON u.id = e.created_by
+    LEFT JOIN branches jb ON jb.id = e.branch_id
     WHERE e.id = ?`, id);
   if (!e) return { missing: true };
   if (!canSeeExam(req.scope, e)) return { e, denied: true }; // the certificate route still needs it for parents
   return { e };
 }
-const coverage = (e) => e.school || e.maktab || "All Makatib";
+const coverage = (e) => e.jamia || e.school || e.maktab || "All Makatib";
 
 /* Students who sit this exam, within the signed-in user's scope */
 function examStudents(scope, e, f = {}) {
   const where = [personSql(scope, "s", "student"), `(s.status = 'active' OR s.id IN (SELECT student_id FROM results WHERE exam_id = ${Number(e.id)}))`], p = [];
-  if (e.school_id) { where.push("s.school_id = ?"); p.push(e.school_id); }
+  if (e.branch_id) { where.push("s.branch_id = ? AND s.maktab_id IS NULL AND s.school_id IS NULL"); p.push(e.branch_id); }
+  else if (e.school_id) { where.push("s.school_id = ?"); p.push(e.school_id); }
   else if (e.maktab_id) { where.push("s.maktab_id = ?"); p.push(e.maktab_id); }
   else where.push("s.maktab_id IS NOT NULL");
   if (f.maktab) { where.push("s.maktab_id = ?"); p.push(f.maktab); }
@@ -71,7 +74,7 @@ const subjectsText = (subjects) => (subjects || []).map((s) => `${s.name} | ${s.
 
 /* Positions within the same Maktab or school, highest percentage first; ties share a position */
 async function positions(examId) {
-  const rows = await all(`SELECT r.student_id, r.percentage, COALESCE('m' || s.maktab_id, 's' || s.school_id, 'x') AS grp
+  const rows = await all(`SELECT r.student_id, r.percentage, COALESCE('m' || s.maktab_id, 's' || s.school_id, 'd' || s.darja, 'x') AS grp
     FROM results r JOIN students s ON s.id = r.student_id WHERE r.exam_id = ? ORDER BY grp, r.percentage DESC`, examId);
   const pos = {}, sizes = {};
   let grp = null, rank = 0, seen = 0, last = null;
@@ -88,10 +91,10 @@ async function positions(examId) {
 
 /* ================= Exams list ================= */
 router.get("/results", markers, async (req, res) => {
-  const rows = await all(`SELECT e.*, m.name_en AS maktab, sc.name_en AS school,
+  const rows = await all(`SELECT e.*, m.name_en AS maktab, sc.name_en AS school, jb.name_en AS jamia,
       (SELECT COUNT(*) FROM results r JOIN students s ON s.id = r.student_id WHERE r.exam_id = e.id AND ${personSql(req.scope, "s", "student")}) AS entered
-    FROM exams e LEFT JOIN makatib m ON m.id = e.maktab_id LEFT JOIN schools sc ON sc.id = e.school_id
-    WHERE ${examSql(req.scope, "e")} ORDER BY e.held_on DESC NULLS LAST, e.id DESC LIMIT 300`);
+    FROM exams e LEFT JOIN makatib m ON m.id = e.maktab_id LEFT JOIN schools sc ON sc.id = e.school_id LEFT JOIN branches jb ON jb.id = e.branch_id
+    WHERE ${examSql(req.scope, "e")} ${int(req.query.jamia) ? `AND e.branch_id = ${int(req.query.jamia)}` : ""} ORDER BY e.held_on DESC NULLS LAST, e.id DESC LIMIT 300`);
   res.render("app/results", { title: "Exams and results", rows, canCreate: req.scope.canManage });
 });
 
@@ -101,6 +104,8 @@ async function examTargets(scope) {
     allMakatib: canCoverAllMakatib(scope),
     makatib: await h.maktabList(scope),
     schools: await all(`SELECT sc.id, sc.code, sc.name_en FROM schools sc WHERE sc.status <> 'archived' AND ${schoolSql(scope, "sc")} ORDER BY sc.name_en`),
+    jamias: await all(`SELECT b.id, b.name_en FROM branches b WHERE b.section IS NOT NULL AND b.status <> 'archived'
+      ${scope.all ? "" : `AND b.id IN (${ids(scope.branchIds)})`} ORDER BY b.id`),
   };
 }
 async function examForm(req, res, title, values, errors, status = 200) {
@@ -123,8 +128,9 @@ function examFields(req, current) {
   if (bad.length) e.subjects = `Write each subject as "Name | total marks". Check: ${bad[0]}`;
   else if (!subjects.length) e.subjects = "Add at least one subject.";
   // Where the exam applies: "all", "m:<maktab id>" or "s:<school id>"
-  v.maktab_id = null; v.school_id = null;
-  if (current) { v.maktab_id = current.maktab_id; v.school_id = current.school_id; }
+  v.maktab_id = null; v.school_id = null; v.branch_id = null;
+  if (current) { v.maktab_id = current.maktab_id; v.school_id = current.school_id; v.branch_id = current.branch_id; }
+  else if (/^b:\d{1,9}$/.test(v.target)) { v.branch_id = Number(v.target.slice(2)); if (!inBranch(req.scope, v.branch_id)) e.target = "Choose a Jamia you manage."; }
   else if (v.target === "all") { if (!canCoverAllMakatib(req.scope)) e.target = "Choose one of your Makatib or schools."; }
   else if (/^m:\d{1,9}$/.test(v.target)) { v.maktab_id = Number(v.target.slice(2)); if (!inMaktab(req.scope, v.maktab_id)) e.target = "Choose a Maktab you manage."; }
   else if (/^s:\d{1,9}$/.test(v.target)) { v.school_id = Number(v.target.slice(2)); if (!inSchool(req.scope, v.school_id)) e.target = "Choose a school you manage."; }
@@ -133,20 +139,20 @@ function examFields(req, current) {
 }
 
 router.get("/results/new", staff, async (req, res) => {
-  const school = int(req.query.school), maktab = int(req.query.maktab);
-  const target = school ? "s:" + school : maktab ? "m:" + maktab : canCoverAllMakatib(req.scope) ? "all" : "";
+  const school = int(req.query.school), maktab = int(req.query.maktab), jamia = int(req.query.jamia);
+  const target = jamia ? "b:" + jamia : school ? "s:" + school : maktab ? "m:" + maktab : canCoverAllMakatib(req.scope) ? "all" : "";
   await examForm(req, res, "New exam", {
     exam_type: "annual", session_year: todayPk().slice(0, 4), pass_percent: 40, target,
-    subjects_text: school ? "" : MAKTAB_SUBJECTS,
+    subjects_text: school || jamia ? "" : MAKTAB_SUBJECTS,
   }, {});
 });
 
 router.post("/results", staff, async (req, res) => {
   const [v, e] = examFields(req, null);
   if (Object.keys(e).length) return examForm(req, res, "New exam", v, e, 400);
-  const r = await one(`INSERT INTO exams (title, exam_type, session_year, held_on, maktab_id, school_id, subjects, pass_percent, created_by)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`,
-    v.title, v.exam_type, v.session_year || null, v.held_on || null, v.maktab_id, v.school_id, JSON.stringify(v.subjects), v.pass_percent, req.user.id);
+  const r = await one(`INSERT INTO exams (title, exam_type, session_year, held_on, maktab_id, school_id, branch_id, subjects, pass_percent, created_by)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`,
+    v.title, v.exam_type, v.session_year || null, v.held_on || null, v.maktab_id, v.school_id, v.branch_id, JSON.stringify(v.subjects), v.pass_percent, req.user.id);
   await log(req.user.id, "exam.create", v.title);
   req.flash("ok", "Exam created. Enter the marks below.");
   res.redirect("/app/results/" + r.id);
@@ -198,7 +204,7 @@ router.post("/results/:id/delete", staff, async (req, res, next) => {
   if (denied) return forbidden(res);
   if (e.status === "published" && !req.scope.all) { req.flash("err", "Move the results back to draft before deleting this exam."); return res.redirect("/app/results/" + e.id); }
   // An exam covering all Makatib holds results from every branch, so only its owners delete it
-  if (!e.maktab_id && !e.school_id && !canCoverAllMakatib(req.scope)) return forbidden(res);
+  if (!e.maktab_id && !e.school_id && !e.branch_id && !canCoverAllMakatib(req.scope)) return forbidden(res);
   await run("DELETE FROM exams WHERE id = ?", e.id);
   await log(req.user.id, "exam.delete", e.title);
   req.flash("ok", `Exam “${e.title}” and its results were deleted.`);
@@ -213,8 +219,9 @@ router.get("/results/:id", markers, async (req, res, next) => {
   const f = { maktab: int(req.query.maktab), cls: str(req.query.class, 60) };
   if (f.maktab && !inMaktab(req.scope, f.maktab)) return forbidden(res);
   // An all-Makatib exam with many Makatib: choose one first, like the attendance register
-  if (!e.maktab_id && !e.school_id && !f.maktab && req.scope.teacherId && req.scope.maktabIds.length) f.maktab = req.scope.maktabIds[0];
-  const needsChoice = !e.maktab_id && !e.school_id && !f.maktab;
+  const allMakatib = !e.maktab_id && !e.school_id && !e.branch_id;
+  if (allMakatib && !f.maktab && req.scope.teacherId && req.scope.maktabIds.length) f.maktab = req.scope.maktabIds[0];
+  const needsChoice = allMakatib && !f.maktab;
   let overview = [];
   if (needsChoice) {
     overview = await all(`SELECT m.id, m.name_en, b.name_en AS branch,
@@ -230,8 +237,8 @@ router.get("/results/:id", markers, async (req, res, next) => {
     title: e.title, e, f, students, overview, needsChoice, classes, coverage: coverage(e),
     byStudent: Object.fromEntries(results.map((r) => [r.student_id, r])),
     canEdit: req.scope.canManage || e.status === "draft", canManage: req.scope.canManage,
-    canDelete: req.scope.canManage && (e.maktab_id || e.school_id || canCoverAllMakatib(req.scope)),
-    makatib: !e.maktab_id && !e.school_id ? await h.maktabList(req.scope) : [],
+    canDelete: req.scope.canManage && (e.maktab_id || e.school_id || e.branch_id || canCoverAllMakatib(req.scope)),
+    makatib: allMakatib ? await h.maktabList(req.scope) : [],
   });
 });
 

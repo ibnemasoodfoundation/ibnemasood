@@ -10,7 +10,7 @@ const { withScope, branchSql, maktabSql, schoolSql, personSql, inMaktab, inSchoo
 const { movePerson } = require("../transfers");
 const {
   GENDERS, TEACHER_STATUSES, STUDENT_STATUSES, HIFZ_STATUSES, TAJWEED_STATUSES, EMPLOYMENT_TYPES,
-  DESIGNATIONS, EDUCATION_LEVELS, QURAN_LEVELS, PROGRAMMES, DOC_CATEGORIES, STUDENT_EXTRA, todayPk,
+  DESIGNATIONS, EDUCATION_LEVELS, QURAN_LEVELS, PROGRAMMES, DOC_CATEGORIES, STUDENT_EXTRA, DARJAT, todayPk,
 } = require("../helpers");
 const { helpers: h } = require("./institution");
 
@@ -33,7 +33,7 @@ const PEOPLE = {
     table: "students", plural: "students", prefix: "ST", statuses: STUDENT_STATUSES, label: "Student", labelPlural: "Students",
     cols: ["code", "full_name", "name_ur", "father_name", "mother_name", "gender", "dob", "cnic_bform", "phone", "guardian_phone", "address",
       "education_level", "quran_level", "previous_institution", "hifz_status", "tajweed_status", "enrolled_on", "programme", "class_name",
-      "teacher_id", "status", "notes", "branch_id", "maktab_id", "school_id", "admission_id", "extra"],
+      "teacher_id", "status", "notes", "branch_id", "maktab_id", "school_id", "admission_id", "extra", "darja"],
   },
 };
 
@@ -110,6 +110,16 @@ async function personFields(req, type) {
     else v.branch_id = m.branch_id; // a Maktab's branch always wins
   } else if (v.branch_id && !(await one("SELECT id FROM branches WHERE id = ?", v.branch_id))) e.branch_id = "Choose a branch.";
   if (!req.scope.all && !v.maktab_id && !v.school_id && !inBranch(req.scope, v.branch_id)) e.maktab_id = "Choose a Maktab, school or branch you manage.";
+  // A Jamia student's darja: only for students placed directly in a Jamia (main branch), from that Jamia's list
+  if (type === "student") {
+    v.darja = str(b.darja, 20);
+    if (v.darja) {
+      const sec = !v.maktab_id && !v.school_id && v.branch_id ? (await one("SELECT section FROM branches WHERE id = ?", v.branch_id) || {}).section : null;
+      const d = sec && DARJAT[sec].find((x) => x[0] === v.darja);
+      if (!d) e.darja = "A darja is only for students of a Jamia: choose the Jamia as the branch (no Maktab or school) and one of its darjat.";
+      else v.class_name = d[1];
+    }
+  }
   return [v, e];
 }
 
@@ -232,7 +242,7 @@ for (const [type, cfg] of Object.entries(PEOPLE)) {
 
   /* ---------- Register ---------- */
   router.get(`/${cfg.plural}/new`, staff, async (req, res) => {
-    const values = { code: await h.nextCode(cfg.table, cfg.prefix), status: "active", maktab_id: int(req.query.maktab), school_id: int(req.query.school) };
+    const values = { code: await h.nextCode(cfg.table, cfg.prefix), status: "active", maktab_id: int(req.query.maktab), school_id: int(req.query.school), branch_id: int(req.query.branch) };
     // Registering an approved applicant: start from their admission details
     const adm = type === "student" && int(req.query.admission) && await one("SELECT * FROM admissions WHERE id = ?", int(req.query.admission));
     if (adm) Object.assign(values, {

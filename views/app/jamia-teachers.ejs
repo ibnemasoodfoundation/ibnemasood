@@ -1,0 +1,21 @@
+<%- include('../partials/app-top') %>
+<%- include('_jamia-tabs', { active: 'teachers' }) %>
+<div class="page-head">
+  <p>Teachers of <%= J.name %> (not those of its Makatib or schools). Their attendance is on the Teacher attendance page.</p>
+  <a class="btn btn--blue btn--sm" href="/app/teachers/new?branch=<%= b.id %>"><%- include('../partials/icon', { name: 'plus' }) %>Register teacher</a>
+</div>
+<section class="card card--flush">
+  <% if (!rows.length) { %><p class="empty">No teachers yet. <a href="/app/teachers/new?branch=<%= b.id %>">Register a teacher</a> and choose this Jamia as the branch.</p><% } else { %>
+    <div class="table-wrap"><table class="table">
+      <thead><tr><th>Teacher</th><th>Designation</th><th>Qualification</th><th>Phone</th><th>Status</th></tr></thead>
+      <tbody><% rows.forEach(function (t) { %>
+        <tr>
+          <td><a class="row-link" href="/app/teachers/<%= t.id %>"><strong><%= t.full_name %></strong></a><small><%= t.code %><% if (t.name_ur) { %> · <span class="ur-inline" lang="ur"><%= t.name_ur %></span><% } %></small></td>
+          <td><%= t.designation || '—' %></td><td><%= t.qualification || '—' %></td><td><%= t.phone || '—' %></td>
+          <td><%- include('../partials/badge', { s: t.status }) %></td>
+        </tr>
+      <% }) %></tbody>
+    </table></div>
+  <% } %>
+</section>
+<%- include('../partials/app-bottom') %>

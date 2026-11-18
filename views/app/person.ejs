@@ -25,7 +25,7 @@
     row('Appointment date', x.joined_on ? fmtDate(x.joined_on) : ''), row('Employment type', EMPLOYMENT_TYPES[x.employment_type]),
     row('Monthly salary', canManage && x.salary != null ? money(x.salary) : (x.salary != null ? 'Recorded' : '')),
   ] : [
-    row('Student ID', x.code), row('Branch', x.branch), row('Maktab', x.maktab), row('School', x.school), row('Teacher', x.teacher),
+    row('Student ID', x.code), row('Branch', x.branch), row('Maktab', x.maktab), row('School', x.school), row('Darja', darjaLabel(x.darja)), row('Teacher', x.teacher),
     row('Parent login', canManage ? x.parent_email : (x.parent_email ? 'Yes' : '')),
     row('Class / department', x.class_name), row('Programme', x.programme),
   ];

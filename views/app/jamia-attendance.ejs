@@ -1,0 +1,37 @@
+<%- include('../partials/app-top') %>
+<% const dName = darjat.find(d => d[0] === f.darja)[1]; %>
+<%- include('_jamia-tabs', { active: 'attendance' }) %>
+<form class="filters" method="get">
+  <label class="filter-label">Date <input type="date" name="date" value="<%= f.date %>" max="<%= today %>"></label>
+  <select name="session" aria-label="Session"><% Object.keys(SESSIONS).forEach(function (s) { %><option value="<%= s %>" <%= f.session === s ? 'selected' : '' %>><%= SESSIONS[s] %> session</option><% }) %></select>
+  <select name="darja" aria-label="Darja"><% darjat.forEach(function (d) { %><option value="<%= d[0] %>" <%= f.darja === d[0] ? 'selected' : '' %>><%= d[1] %></option><% }) %></select>
+  <button class="btn btn--line btn--sm" type="submit">Show</button>
+</form>
+<section class="card">
+  <div class="card-head">
+    <h2><%= dName %> · <%= fmtDate(f.date) %></h2>
+    <span class="att-counts"><% Object.keys(ATTENDANCE).forEach(function (k) { %><span class="att-dot att-dot--<%= k %>"><%= ATTENDANCE[k] %> <strong><%= counts[k] %></strong></span><% }) %></span>
+  </div>
+  <% if (!students.length) { %><p class="empty">No active students in <%= dName %>. <a href="/app/jamia/<%= sec %>/register?darja=<%= f.darja %>">Register a student</a>.</p><% } else { %>
+    <form method="post" action="/app/jamia/<%= sec %>/attendance" class="register" data-register>
+      <input type="hidden" name="_csrf" value="<%= csrf %>">
+      <input type="hidden" name="date" value="<%= f.date %>"><input type="hidden" name="session" value="<%= f.session %>"><input type="hidden" name="darja" value="<%= f.darja %>">
+      <div class="register-tools"><button class="btn-sm" type="button" data-mark-all="present">Mark all present</button><span class="muted small-inline">Saving again updates the marks; it never creates duplicates.</span></div>
+      <div class="table-wrap"><table class="table register-table">
+        <thead><tr><th>#</th><th>Student</th><% Object.keys(ATTENDANCE).forEach(function (k) { %><th class="t-center"><%= ATTENDANCE[k] %></th><% }) %><th>Note</th></tr></thead>
+        <tbody><% students.forEach(function (s, i) { %>
+          <tr>
+            <td class="muted"><%= i + 1 %></td>
+            <td><strong><%= s.full_name %></strong><small><%= s.code %><%= s.father_name ? ' · ' + s.father_name : '' %></small></td>
+            <% Object.keys(ATTENDANCE).forEach(function (k) { %>
+              <td class="t-center"><label class="att-radio att-radio--<%= k %>"><input type="radio" name="status_<%= s.id %>" value="<%= k %>" <%= s.mark === k ? 'checked' : '' %> aria-label="<%= ATTENDANCE[k] %>: <%= s.full_name %>"><span><%= ATTENDANCE[k][0] %></span></label></td>
+            <% }) %>
+            <td><input class="note-input" name="note_<%= s.id %>" value="<%= s.note || '' %>" maxlength="200" aria-label="Note for <%= s.full_name %>"></td>
+          </tr>
+        <% }) %></tbody>
+      </table></div>
+      <div class="btn-row register-save"><button class="btn btn--gold" type="submit">Save attendance</button></div>
+    </form>
+  <% } %>
+</section>
+<%- include('../partials/app-bottom') %>

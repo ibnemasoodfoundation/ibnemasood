@@ -39,6 +39,25 @@ const INCOME_CATEGORIES = [
   "Donation (cash/bank)", "Zakat", "Sadaqah", "Fitrana", "Student fees", "School fees", "Grant", "Other income",
 ];
 const PAYMENT_METHODS = ["Cash", "Bank transfer", "Cheque", "JazzCash", "EasyPaisa", "Other"];
+// The two Jamias (main branches) and their academic levels, in order; the last darja is the final year
+const JAMIAS = {
+  boys: { name: "Jamia Arabia Abdullah Bin Masood", ur: "جامعہ عربیہ عبداللہ بن مسعود", group: "Baneen", groupUr: "بنین", gender: "male", span: "Darja-e-Ula to Daura-e-Hadith" },
+  girls: { name: "Jamia Arabia Aisha Siddiqa", ur: "جامعہ عربیہ عائشہ صدیقہ", group: "Banaat", groupUr: "بنات", gender: "female", span: "Khasa Awwal to Aalamiya Dom" },
+};
+const DARJAT = {
+  boys: [
+    ["ula", "Darja-e-Ula", "First year"], ["saniya", "Darja-e-Saniya", "Second year"], ["salisa", "Darja-e-Salisa", "Third year"],
+    ["rabia", "Darja-e-Rabia", "Fourth year"], ["khamisa", "Darja-e-Khamisa", "Fifth year"], ["sadisa", "Darja-e-Sadisa", "Sixth year"],
+    ["mauqoof", "Mauqoof Alaih", "Seventh year"], ["daura", "Daura-e-Hadith", "Final year"],
+  ],
+  girls: [
+    ["khasa_awwal", "Khasa Awwal", "Thanviya Khasa, first year"], ["khasa_dom", "Khasa Dom", "Thanviya Khasa, second year"],
+    ["aalia_awwal", "Aalia Awwal", "Aalia, first year"], ["aalia_dom", "Aalia Dom", "Aalia, second year"],
+    ["aalamiya_awwal", "Aalamiya Awwal", "Aalamiya, first year"], ["aalamiya_dom", "Aalamiya Dom", "Final year"],
+  ],
+};
+const darjaLabel = (key) => { for (const list of Object.values(DARJAT)) { const d = list.find((x) => x[0] === key); if (d) return d[1]; } return ""; };
+
 const EXAM_TYPES = { monthly: "Monthly test", quarterly: "Quarterly exam", half_yearly: "Half-yearly exam", annual: "Annual exam", other: "Other" };
 // Suggested subjects for a Makatib exam; every exam's subjects can be changed when it is created
 const MAKTAB_SUBJECTS = [
@@ -126,7 +145,7 @@ function cap(s) { return s ? s[0].toUpperCase() + s.slice(1) : ""; }
 
 module.exports = {
   BRANCHES, PROGRAMMES, DONATION_KINDS, DONATION_METHODS, ROLE_LABELS, ROLE_ORDER,
-  STUDENT_EXTRA, EXPENSE_CATEGORIES, INCOME_CATEGORIES, PAYMENT_METHODS, EXAM_TYPES, MAKTAB_SUBJECTS, gradeFor,
+  STUDENT_EXTRA, JAMIAS, DARJAT, darjaLabel, EXPENSE_CATEGORIES, INCOME_CATEGORIES, PAYMENT_METHODS, EXAM_TYPES, MAKTAB_SUBJECTS, gradeFor,
   REPORTED_TOWNS, UNIT_STATUSES, TEACHER_STATUSES, STUDENT_STATUSES, GENDERS, fileSize,
   HIFZ_STATUSES, TAJWEED_STATUSES, EMPLOYMENT_TYPES, DESIGNATIONS, EDUCATION_LEVELS, QURAN_LEVELS,
   ATTENDANCE, SESSIONS, DOC_CATEGORIES, label, todayPk,

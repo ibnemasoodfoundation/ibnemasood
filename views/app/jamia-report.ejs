@@ -1,0 +1,26 @@
+<%- include('../partials/print-top', { pdfName: J.name + ' darja report ' + month }) %>
+<% const dn = Object.fromEntries(darjat.map(d => [d[0], d[1]])); const total = lines.reduce((t, l) => t + l.students, 0); %>
+<form class="print-filters" method="get" data-no-print>
+  <input type="month" name="month" value="<%= month %>" max="<%= printedOn.slice(0, 7) %>" aria-label="Month">
+  <label><input type="checkbox" name="list" value="1" <%= withList ? 'checked' : '' %>> List every student</label>
+  <button type="submit" class="pt-btn">Show</button>
+</form>
+<%- include('../partials/print-letterhead', { docTitle: J.name + ' (' + J.group + ') · Darja Report' }) %>
+<p class="report-meta"><span lang="ur"><%= J.ur %></span> · <%= new Date(month + '-01T00:00:00Z').toLocaleDateString('en-GB', { month: 'long', year: 'numeric', timeZone: 'UTC' }) %> · <%= total %> active students</p>
+<table class="report-table">
+  <thead><tr><th>Darja</th><th>Year</th><th class="t-right">Students</th><th class="t-right">Present</th><th class="t-right">Late</th><th class="t-right">Absent</th><th class="t-right">Leave</th><th class="t-right">Attendance</th></tr></thead>
+  <tbody><% lines.forEach(function (l) { %>
+    <tr><td><strong><%= l.name %></strong></td><td><%= l.year %></td><td class="t-right"><%= l.students %></td><td class="t-right"><%= l.present %></td><td class="t-right"><%= l.late %></td><td class="t-right"><%= l.absent %></td><td class="t-right"><%= l.leave %></td><td class="t-right"><%= l.pct === null ? '—' : l.pct + '%' %></td></tr>
+  <% }) %></tbody>
+  <tfoot><tr><th colspan="2">Total</th><th class="t-right"><%= total %></th><th colspan="5"></th></tr></tfoot>
+</table>
+<% if (withList) { %>
+  <h2 class="report-h2">Students</h2>
+  <table class="report-table">
+    <thead><tr><th>#</th><th>Student</th><th>Father</th><th>Darja</th><th>Guardian</th></tr></thead>
+    <tbody><% students.forEach(function (s, i) { %><tr><td><%= i + 1 %></td><td><%= s.full_name %><small><%= s.code %></small></td><td><%= s.father_name || '' %></td><td><%= dn[s.darja] || '—' %></td><td><%= s.guardian_phone || '' %></td></tr><% }) %></tbody>
+  </table>
+<% } %>
+<div class="pp-sign"><div><span></span>Prepared by</div><div><span></span>Head of the Jamia</div></div>
+<p class="report-foot">Printed <%= fmtDate(printedOn) %></p>
+<%- include('../partials/print-bottom') %>

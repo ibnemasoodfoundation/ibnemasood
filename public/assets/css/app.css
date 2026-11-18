@@ -567,3 +567,21 @@ section[id] { scroll-margin-top: 130px; }
 .school-reg-head img { border-radius: 50%; flex: none; }
 .school-reg-head h2 { margin: 0; font-family: "Times New Roman", Georgia, serif; font-size: clamp(1.3rem, 2.6vw, 1.9rem); letter-spacing: .01em; color: var(--ink); }
 .school-reg-head p { margin: .2rem 0 0; color: var(--muted); }
+
+/* The two Jamias */
+.jamia-card { display: block; text-decoration: none; color: inherit; border-top: 5px solid var(--lapis); transition: box-shadow .2s; }
+.jamia-card--girls { border-top-color: #8A3B6B; }
+.jamia-card:hover { box-shadow: var(--shadow); }
+.jamia-card h2 { margin: .1rem 0 .2rem; font-size: clamp(1.35rem, 2.2vw, 1.75rem); line-height: 1.2; }
+.jamia-card-ur { display: block; font-family: var(--f-urdu); color: var(--gold); font-size: 1.2rem; line-height: 2; }
+.jamia-tabs { margin-bottom: 1rem; }
+.darja-pick { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: .5rem; }
+.darja-opt { display: flex; gap: .55rem; align-items: flex-start; border: 1px solid var(--line); border-radius: 12px; padding: .65rem .75rem; cursor: pointer; background: #fff; }
+.darja-opt:has(input:checked) { border-color: var(--gold); background: #FBF5E4; box-shadow: inset 0 0 0 1px var(--gold); }
+.darja-opt strong { display: block; font-size: .95rem; }
+.darja-opt small { color: var(--muted); }
+.promote-list .check { margin: 0; width: 100%; }
+.promote-list .check small { display: block; color: var(--muted); }
+.darja-opt input[type="radio"] { width: auto; flex: none; margin: .25rem 0 0; accent-color: var(--gold); }
+.darja-opt span { min-width: 0; }
+.jamia-darjat td:first-child strong { white-space: nowrap; }

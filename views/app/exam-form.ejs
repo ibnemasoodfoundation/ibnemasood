@@ -27,6 +27,7 @@
           <% } else { %>
             <select id="e-target" name="target" required>
               <option value="">Choose…</option>
+              <% if (jamias.length) { %><optgroup label="A whole Jamia"><% jamias.forEach(function (j) { %><option value="b:<%= j.id %>" <%= val('target') === 'b:' + j.id ? 'selected' : '' %>><%= j.name_en %></option><% }) %></optgroup><% } %>
               <% if (allMakatib) { %><option value="all" <%= val('target') === 'all' ? 'selected' : '' %>>All Makatib</option><% } %>
               <% if (makatib.length) { %><optgroup label="One Maktab"><% makatib.forEach(function (m) { %><option value="m:<%= m.id %>" <%= val('target') === 'm:' + m.id ? 'selected' : '' %>><%= m.name_en %></option><% }) %></optgroup><% } %>
               <% if (schools.length) { %><optgroup label="One school"><% schools.forEach(function (sc) { %><option value="s:<%= sc.id %>" <%= val('target') === 's:' + sc.id ? 'selected' : '' %>><%= sc.name_en %></option><% }) %></optgroup><% } %>

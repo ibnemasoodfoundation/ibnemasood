@@ -1,0 +1,37 @@
+<%- include('../partials/app-top') %>
+<% const base = '/app/jamia/' + sec; const dn = Object.fromEntries(darjat.map(d => [d[0], d[1]])); %>
+<%- include('_jamia-tabs', { active: 'students' }) %>
+<div class="page-head">
+  <p><%= J.name %> · <%= J.group %> only. <%= rows.length %> student<%= rows.length === 1 ? '' : 's' %> shown.</p>
+  <a class="btn btn--blue btn--sm" href="<%= base %>/register<%= f.darja && f.darja !== 'none' ? '?darja=' + f.darja : '' %>"><%- include('../partials/icon', { name: 'plus' }) %>Register student</a>
+</div>
+<form class="filters" method="get">
+  <input type="search" name="q" placeholder="Search name, ID or father" value="<%= f.q %>" aria-label="Search">
+  <select name="darja" aria-label="Darja">
+    <option value="">All darjat</option>
+    <% darjat.forEach(function (d) { %><option value="<%= d[0] %>" <%= f.darja === d[0] ? 'selected' : '' %>><%= d[1] %></option><% }) %>
+    <option value="none" <%= f.darja === 'none' ? 'selected' : '' %>>No darja yet</option>
+  </select>
+  <select name="status" aria-label="Status">
+    <% [['active', 'Active'], ['graduated', 'Graduated'], ['inactive', 'Inactive'], ['left', 'Left'], ['all', 'Everyone']].forEach(function (o) { %><option value="<%= o[0] %>" <%= f.status === o[0] ? 'selected' : '' %>><%= o[1] %></option><% }) %>
+  </select>
+  <button class="btn btn--line btn--sm" type="submit">Filter</button>
+</form>
+<section class="card card--flush">
+  <% if (!rows.length) { %><p class="empty">No students here yet. <a href="<%= base %>/register">Register a student</a>.</p><% } else { %>
+    <div class="table-wrap"><table class="table">
+      <thead><tr><th>Student</th><th>Darja</th><th>Guardian</th><th>Admission</th><th>Residence</th><th>Status</th></tr></thead>
+      <tbody><% rows.forEach(function (s) { const x = s.extra || {}; %>
+        <tr>
+          <td><a class="row-link" href="/app/students/<%= s.id %>"><strong><%= s.full_name %></strong></a><small><%= s.code %><% if (s.name_ur) { %> · <span class="ur-inline" lang="ur"><%= s.name_ur %></span><% } %><%= s.father_name ? ' · ' + s.father_name : '' %></small></td>
+          <td><%= dn[s.darja] || '—' %></td>
+          <td><%= s.guardian_phone || '—' %></td>
+          <td><%= s.enrolled_on ? fmtDate(s.enrolled_on) : '—' %></td>
+          <td><%= x.residence === 'hostel' ? 'Hostel' : x.residence === 'day' ? 'Day scholar' : '—' %></td>
+          <td><%- include('../partials/badge', { s: s.status }) %></td>
+        </tr>
+      <% }) %></tbody>
+    </table></div>
+  <% } %>
+</section>
+<%- include('../partials/app-bottom') %>

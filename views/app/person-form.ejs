@@ -141,7 +141,15 @@
             </select>
             <span class="err"><%= errors.teacher_id %></span>
           </div>
-          <%- field('class_name', 'Class or department', { list: 'dl-class', placeholder: 'e.g. Hifz A, Nazra 2' }) %>
+          <div class="field <%= f('darja') %>">
+            <label for="f-darja">Darja <span class="opt">Jamia students only</span></label>
+            <select id="f-darja" name="darja">
+              <option value="">No darja</option>
+              <% Object.keys(DARJAT).forEach(function (sec) { %><optgroup label="<%= JAMIAS[sec].name %> (<%= JAMIAS[sec].group %>)"><% DARJAT[sec].forEach(function (d) { %><option value="<%= d[0] %>" <%= values.darja === d[0] ? 'selected' : '' %>><%= d[1] %></option><% }) %></optgroup><% }) %>
+            </select>
+            <span class="err"><%= errors.darja %></span>
+          </div>
+          <%- field('class_name', 'Class or department', { list: 'dl-class', placeholder: 'e.g. Hifz A, Nazra 2 (set by the darja)' }) %>
           <%- field('programme', 'Programme', { list: 'dl-programmes' }) %>
         </div>
         <datalist id="dl-class"><% classes.forEach(function (c) { %><option value="<%= c %>"><% }) %></datalist>

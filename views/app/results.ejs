@@ -13,7 +13,7 @@
       <tbody><% rows.forEach(function (e) { %>
         <tr>
           <td><a class="row-link" href="/app/results/<%= e.id %>"><strong><%= e.title %></strong></a><small><%= EXAM_TYPES[e.exam_type] %><%= e.session_year ? ' · ' + e.session_year : '' %> · <%= (e.subjects || []).length %> subjects</small></td>
-          <td><%= e.school || e.maktab || 'All Makatib' %></td>
+          <td><%= e.jamia || e.school || e.maktab || 'All Makatib' %></td>
           <td><%= e.held_on ? fmtDate(e.held_on) : '—' %></td>
           <td class="t-right num"><%= e.entered %></td>
           <td><%- include('../partials/badge', { s: e.status }) %></td>

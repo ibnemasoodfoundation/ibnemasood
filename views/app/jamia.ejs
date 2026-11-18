@@ -1,0 +1,66 @@
+<%- include('../partials/app-top') %>
+<% const base = '/app/jamia/' + sec; %>
+<%- include('_jamia-tabs', { active: 'dashboard' }) %>
+<div class="welcome jamia-welcome">
+  <div>
+    <span class="ar" lang="ur"><%= J.ur %></span>
+    <h2><%= J.name %></h2>
+    <p><%= J.group %> (<span lang="ur"><%= J.groupUr %></span>) · <%= J.span %> · <%= total %> active students in <%= rows.filter(r => r.n).length %> darjat</p>
+  </div>
+  <a class="btn btn--gold" href="<%= base %>/register"><%- include('../partials/icon', { name: 'plus' }) %>Register student</a>
+</div>
+
+<% if (wrongGender) { %><p class="flash flash--err"><%= wrongGender %> active student<%= wrongGender === 1 ? ' is' : 's are' %> recorded with the other gender. <%= J.group %> students should all be <%= J.gender %>; check them in the student list.</p><% } %>
+
+<section class="card quick-card" aria-label="Quick actions">
+  <div class="quick-grid">
+    <a class="quick-action" href="<%= base %>/register"><span class="action-icon"><%- include('../partials/icon', { name: 'student' }) %></span><span>Register student</span></a>
+    <a class="quick-action" href="<%= base %>/attendance"><span class="action-icon"><%- include('../partials/icon', { name: 'list' }) %></span><span>Darja attendance</span></a>
+    <a class="quick-action" href="/app/results/new?jamia=<%= b.id %>"><span class="action-icon"><%- include('../partials/icon', { name: 'file' }) %></span><span>New exam</span></a>
+    <a class="quick-action" href="<%= base %>/promote"><span class="action-icon"><%- include('../partials/icon', { name: 'swap' }) %></span><span>Promote students</span></a>
+    <a class="quick-action" href="/app/teachers/new?branch=<%= b.id %>"><span class="action-icon"><%- include('../partials/icon', { name: 'teacher' }) %></span><span>Register teacher</span></a>
+    <a class="quick-action" href="<%= base %>/report" target="_blank"><span class="action-icon"><%- include('../partials/icon', { name: 'file' }) %></span><span>Darja report</span></a>
+  </div>
+</section>
+
+<div class="stats">
+  <a class="stat" href="<%= base %>/students"><small>Active students</small><strong><%= total %></strong></a>
+  <a class="stat <%= marked < total ? 'stat--gold' : '' %>" href="<%= base %>/attendance"><small>Marked today (morning)</small><strong><%= marked %> / <%= total %></strong><span><%= absent %> absent</span></a>
+  <a class="stat" href="<%= base %>/teachers"><small>Teachers</small><strong><%= teachers %></strong></a>
+  <a class="stat" href="<%= base %>/students?status=graduated"><small>Graduated</small><strong><%= graduated %></strong></a>
+</div>
+
+<div class="grid-2">
+  <section class="card card--flush">
+    <div class="card-head card-head--pad"><h2>Darjat</h2><a href="<%= base %>/students">All students</a></div>
+    <div class="table-wrap"><table class="table jamia-darjat">
+      <thead><tr><th>Darja</th><th class="t-right">Students</th><th class="t-right">Marked today</th><th></th></tr></thead>
+      <tbody><% rows.forEach(function (r) { %>
+        <tr>
+          <td><strong><%= r.name %></strong><small><%= r.year %></small></td>
+          <td class="t-right num"><a href="<%= base %>/students?darja=<%= r.key %>"><%= r.n %></a></td>
+          <td class="t-right num"><% if (r.n) { %><span class="badge <%= r.marked >= r.n ? 'badge--present' : r.marked ? 'badge--pending' : 'badge--absent' %>"><%= r.marked %> / <%= r.n %></span><% } else { %>—<% } %></td>
+          <td class="t-right nowrap"><a class="btn-sm" href="<%= base %>/attendance?darja=<%= r.key %>">Attendance</a></td>
+        </tr>
+      <% }) %>
+      <% if (noDarja) { %><tr><td><strong>No darja yet</strong><small>Set it on the student’s form</small></td><td class="t-right num"><a href="<%= base %>/students?darja=none"><%= noDarja.n %></a></td><td></td><td></td></tr><% } %>
+      </tbody>
+    </table></div>
+  </section>
+  <section class="card">
+    <div class="card-head"><h2>Students by darja</h2></div>
+    <% if (!chart.values.some(v => v > 0)) { %><p class="empty chart-empty">No students registered yet. <a href="<%= base %>/register">Register the first student</a>.</p><% } else { %>
+      <div class="chart-box chart-box--h" style="height:<%= Math.max(180, chart.labels.length * 34 + 40) %>px"><canvas data-chart="darjat" data-kind="bar-h" role="img" aria-label="Students by darja"></canvas></div>
+    <% } %>
+    <h3 class="sub">Exams</h3>
+    <% if (!exams.length) { %><p class="empty">No exams yet. <a href="/app/results/new?jamia=<%= b.id %>">Create one</a>.</p><% } else { %>
+      <ul class="rows"><% exams.forEach(function (e) { %>
+        <li><a href="/app/results/<%= e.id %>"><span><strong><%= e.title %></strong><small><%= EXAM_TYPES[e.exam_type] %><%= e.held_on ? ' · ' + fmtDate(e.held_on) : '' %></small></span><%- include('../partials/badge', { s: e.status }) %></a></li>
+      <% }) %></ul>
+    <% } %>
+  </section>
+</div>
+<script type="application/json" id="chart-data"><%- JSON.stringify({ darjat: chart }).replace(/</g, '\\u003c') %></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
+<script src="/assets/js/dashboard.js" defer></script>
+<%- include('../partials/app-bottom') %>

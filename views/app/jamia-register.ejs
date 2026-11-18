@@ -1,0 +1,58 @@
+<%- include('../partials/app-top') %>
+<%
+  const bad = (k) => errors[k] ? 'invalid' : '';
+  const val = (k) => String(values[k] ?? '').replace(/&/g, '&amp;').replace(/"/g, '&quot;');
+  const fld = (name, labelText, o = {}) => `<div class="field ${bad(name)}"><label for="j-${name}">${labelText}${o.required ? '' : ' <span class="opt">optional</span>'}</label><input id="j-${name}" name="${name}" type="${o.type || 'text'}" value="${val(name)}"${o.extra || ''}${o.required ? ' required' : ''}><span class="err">${errors[name] || ''}</span></div>`;
+%>
+<%- include('_jamia-tabs', { active: 'register' }) %>
+<section class="card card--form card--wide">
+  <div class="card-head"><h2>Register a student <span class="legend-ur" lang="ur"><%= J.ur %></span></h2></div>
+  <p class="hint">For <%= J.name %> (<%= J.group %>): every student registered here is recorded as <%= J.gender %> and stays in this Jamia’s records only. A photograph, documents and a parent login can be added on the student’s page after saving.</p>
+  <form method="post" action="/app/jamia/<%= sec %>/register" novalidate>
+    <input type="hidden" name="_csrf" value="<%= csrf %>">
+    <fieldset class="form-section">
+      <legend>Darja <span class="legend-ur" lang="ur">درجہ</span></legend>
+      <div class="field <%= bad('darja') %>">
+        <div class="darja-pick">
+          <% darjat.forEach(function (d) { %>
+            <label class="darja-opt"><input type="radio" name="darja" value="<%= d[0] %>" <%= values.darja === d[0] ? 'checked' : '' %> required><span><strong><%= d[1] %></strong><small><%= d[2] %></small></span></label>
+          <% }) %>
+        </div>
+        <span class="err"><%= errors.darja || '' %></span>
+      </div>
+    </fieldset>
+    <fieldset class="form-section">
+      <legend>Student <span class="legend-ur" lang="ur">طالب علم</span></legend>
+      <div class="field-row field-row--3">
+        <%- fld('full_name', 'Full name (English)', { required: true }) %>
+        <%- fld('name_ur', 'Name (Urdu)', { extra: ' class="ur-input" dir="rtl" lang="ur"' }) %>
+        <%- fld('father_name', 'Father’s name') %>
+      </div>
+      <div class="field-row field-row--3">
+        <%- fld('dob', 'Date of birth', { type: 'date', extra: ` max="${new Date().toISOString().slice(0, 10)}"` }) %>
+        <%- fld('cnic_bform', 'B-Form / CNIC number', { extra: ' inputmode="numeric" placeholder="45101-1234567-1"' }) %>
+        <%- fld('district', 'District') %>
+      </div>
+      <div class="field-row field-row--3">
+        <%- fld('phone', 'Contact number', { type: 'tel' }) %>
+        <%- fld('guardian_phone', 'Guardian contact number', { type: 'tel', extra: ' placeholder="03XX XXXXXXX"' }) %>
+        <%- fld('enrolled_on', 'Date of admission', { type: 'date' }) %>
+      </div>
+      <%- fld('address', 'Residential address') %>
+      <div class="field-row">
+        <%- fld('previous_institution', 'Previous madrasa / school') %>
+        <fieldset class="choice">
+          <legend>Residence <span class="opt">optional</span></legend>
+          <label><input type="radio" name="residence" value="hostel" <%= values.residence === 'hostel' ? 'checked' : '' %>> Hostel</label>
+          <label><input type="radio" name="residence" value="day" <%= values.residence === 'day' ? 'checked' : '' %>> Day scholar</label>
+        </fieldset>
+      </div>
+      <div class="field"><label for="j-notes">Notes <span class="opt">optional</span></label><textarea id="j-notes" name="notes"><%= values.notes || '' %></textarea></div>
+    </fieldset>
+    <div class="btn-row">
+      <button class="btn btn--gold" type="submit">Register student</button>
+      <a class="btn btn--line" href="/app/jamia/<%= sec %>">Cancel</a>
+    </div>
+  </form>
+</section>
+<%- include('../partials/app-bottom') %>

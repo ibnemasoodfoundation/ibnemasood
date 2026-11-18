@@ -1,0 +1,18 @@
+<%- include('../partials/app-top') %>
+<div class="page-head"><p>The two Jamias are managed separately. Open one to see only its students (Baneen or Banaat), darjat, attendance and results.</p></div>
+<div class="grid-2">
+  <% cards.forEach(function (c) { %>
+    <a class="card jamia-card jamia-card--<%= c.sec %>" href="/app/jamia/<%= c.sec %>">
+      <span class="jamia-card-ur" lang="ur" dir="rtl"><%= c.J.ur %></span>
+      <h2><%= c.J.name %></h2>
+      <p class="muted"><%= c.J.group %> (<span lang="ur"><%= c.J.groupUr %></span>) · <%= c.J.span %></p>
+      <div class="stats">
+        <div class="stat"><small>Active students</small><strong><%= c.students %></strong></div>
+        <div class="stat"><small>Teachers</small><strong><%= c.teachers %></strong></div>
+        <div class="stat"><small>Darjat</small><strong><%= c.darjat %></strong></div>
+        <div class="stat"><small>Graduated</small><strong><%= c.graduated %></strong></div>
+      </div>
+    </a>
+  <% }) %>
+</div>
+<%- include('../partials/app-bottom') %>

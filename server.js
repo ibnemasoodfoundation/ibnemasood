@@ -10,7 +10,7 @@ if (!process.env.VERCEL && fs.existsSync(path.join(__dirname, ".env"))) process.
 
 const express = require("express");
 const cookieSession = require("cookie-session");
-const { one, ready, health } = require("./src/db");
+const { one, all, ready, health } = require("./src/db");
 const { csrfToken } = require("./src/auth");
 const helpers = require("./src/helpers");
 const { i18n, LANGS } = require("./src/i18n");
@@ -103,7 +103,16 @@ app.use(async (req, res, next) => {
   next();
 });
 app.use(i18n);
-app.use((req, res, next) => { res.locals.section = req.session.section || ""; next(); });
+app.use(async (req, res, next) => {
+  res.locals.section = req.session.section || "";
+  // Which Jamias appear in the menu: both for the Super Admin, the ones a Branch Manager manages
+  res.locals.jamiaNav = [];
+  if (req.user && req.user.role === "admin") res.locals.jamiaNav = ["boys", "girls"];
+  else if (req.user && req.user.role === "manager") {
+    res.locals.jamiaNav = [...new Set((await all("SELECT section FROM branches WHERE manager_id = ? AND section IS NOT NULL", req.user.id)).map((r) => r.section))];
+  }
+  next();
+});
 
 /* Main branch switch: /section/boys, /section/girls or /section/all, then back to the same page */
 app.get("/section/:code", (req, res) => {
@@ -133,6 +142,7 @@ app.use("/app", require("./src/routes/finance"));
 app.use("/app", require("./src/routes/parent"));
 app.use("/app", require("./src/routes/certificates"));
 app.use("/app", require("./src/routes/school-admissions"));
+app.use("/app", require("./src/routes/jamia"));
 app.use("/app", require("./src/routes/backup"));
 app.use("/app", require("./src/routes/app"));
 

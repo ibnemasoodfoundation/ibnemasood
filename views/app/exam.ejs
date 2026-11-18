@@ -46,7 +46,7 @@
     <% if (makatib.length > 1) { %>
       <select name="maktab" aria-label="Maktab"><option value="">Choose a Maktab</option><% makatib.forEach(function (m) { %><option value="<%= m.id %>" <%= f.maktab === m.id ? 'selected' : '' %>><%= m.name_en %></option><% }) %></select>
     <% } else if (f.maktab) { %><input type="hidden" name="maktab" value="<%= f.maktab %>"><% } %>
-    <% if (classes.length) { %><select name="class" aria-label="Class"><option value="">All classes</option><% classes.forEach(function (c) { %><option <%= f.cls === c ? 'selected' : '' %>><%= c %></option><% }) %></select><% } %>
+    <% if (classes.length) { %><select name="class" aria-label="Class"><option value=""><%= e.branch_id ? 'All darjat' : 'All classes' %></option><% classes.forEach(function (c) { %><option <%= f.cls === c ? 'selected' : '' %>><%= c %></option><% }) %></select><% } %>
     <button class="btn btn--line btn--sm" type="submit">Show</button>
   </form>
 
@@ -63,7 +63,7 @@
           <thead><tr><th>Student</th><% subjects.forEach(function (s) { %><th class="t-center"><%= s.name %><small>out of <%= s.total %></small></th><% }) %><th class="t-right">Total</th><th>Grade</th><th>Remarks</th><th></th></tr></thead>
           <tbody><% students.forEach(function (s) { const r = byStudent[s.id]; %>
             <tr>
-              <td><strong><%= s.full_name %></strong><small><%= s.code %><%= s.class_name ? ' · ' + s.class_name : '' %><%= !e.maktab_id && !e.school_id && !f.maktab && s.unit ? ' · ' + s.unit : '' %></small></td>
+              <td><strong><%= s.full_name %></strong><small><%= s.code %><%= s.class_name ? ' · ' + s.class_name : '' %><%= !e.maktab_id && !e.school_id && !e.branch_id && !f.maktab && s.unit ? ' · ' + s.unit : '' %></small></td>
               <% subjects.forEach(function (sub, i) { %>
                 <td class="t-center"><input class="mark-input" name="m_<%= s.id %>_<%= i %>" value="<%= r && r.marks[i] != null ? r.marks[i] : '' %>" inputmode="decimal" maxlength="6" aria-label="<%= sub.name %> for <%= s.full_name %>, out of <%= sub.total %>" <%= canEdit ? '' : 'disabled' %>></td>
               <% }) %>
