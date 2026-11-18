@@ -1,7 +1,13 @@
 <%- include('../partials/app-top') %>
 <div class="page-head">
-  <p>School Leaving Certificates and Shahadat al-Alamiyyah certificates issued so far. To issue one, open a student’s profile and choose <strong>Certificates</strong>; Alimiyyah certificates can take the marks and grade from an exam result.</p>
-  <a class="btn btn--line btn--sm" href="/app/forms/admission" target="_blank"><%- include('../partials/icon', { name: 'file' }) %>Blank admission form</a>
+  <% if (only === 'leaving') { %>
+    <p>School Leaving Certificates of Iqra Islamia Public School. To issue one, open a school student’s profile and choose <strong>Leaving certificate</strong>.</p>
+  <% } else if (only === 'alimiyyah') { %>
+    <p>Shahadat al-Alamiyyah certificates of the Jamia. To issue one, open a student’s profile and choose <strong>Alimiyyah certificate</strong>; the marks and grade can come from an exam result.</p>
+  <% } else { %>
+    <p>School Leaving Certificates (Iqra Islamia Public School students) and Shahadat al-Alamiyyah certificates (Jamia students). To issue one, open the student’s profile.</p>
+  <% } %>
+  <% if (only !== 'alimiyyah') { %><a class="btn btn--line btn--sm" href="/app/forms/admission" target="_blank"><%- include('../partials/icon', { name: 'file' }) %>Blank admission form</a><% } %>
 </div>
 <section class="card card--flush">
   <% if (!rows.length) { %><p class="empty">No certificates issued yet.</p><% } else { %>

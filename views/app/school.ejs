@@ -9,7 +9,8 @@
     <p class="unit-place"><%- include('../partials/icon', { name: 'branch' }) %><span><%= sc.town ? sc.town + ', ' : '' %><%= sc.district %><%= sc.branch ? ' · ' + sc.branch : '' %></span></p>
     <div class="btn-row profile-actions">
       <% if (canEdit) { %><a class="btn btn--blue btn--sm" href="/app/schools/<%= sc.id %>/edit"><%- include('../partials/icon', { name: 'edit' }) %>Edit</a><% } %>
-      <a class="btn btn--line btn--sm" href="/app/students/new?school=<%= sc.id %>"><%- include('../partials/icon', { name: 'student' }) %>Register student</a>
+      <a class="btn btn--gold btn--sm" href="/app/schools/<%= sc.id %>/register"><%- include('../partials/icon', { name: 'student' }) %>Register student</a>
+      <a class="btn btn--line btn--sm" href="/app/forms/admission" target="_blank"><%- include('../partials/icon', { name: 'file' }) %>Blank admission form</a>
       <a class="btn btn--line btn--sm" href="/app/teachers/new?school=<%= sc.id %>"><%- include('../partials/icon', { name: 'teacher' }) %>Register teacher</a>
       <a class="btn btn--line btn--sm" href="/app/attendance?school=<%= sc.id %>"><%- include('../partials/icon', { name: 'list' }) %>Attendance</a>
       <a class="btn btn--line btn--sm" href="/app/results/new?school=<%= sc.id %>"><%- include('../partials/icon', { name: 'file' }) %>New exam</a>
@@ -62,7 +63,7 @@
 
 <% [['teacher', 'Teachers', teachers], ['student', 'Students', students]].forEach(function (g) { const type = g[0], list = g[2]; %>
   <section class="card" id="<%= type %>s">
-    <div class="card-head"><h2><%= g[1] %> (<%= list.length %>)</h2><a href="/app/<%= type %>s/new?school=<%= sc.id %>">Register new</a></div>
+    <div class="card-head"><h2><%= g[1] %> (<%= list.length %>)</h2><a href="<%= type === 'student' ? '/app/schools/' + sc.id + '/register' : '/app/teachers/new?school=' + sc.id %>">Register new</a></div>
     <% if (!list.length) { %><p class="empty">No <%= type %>s in this school yet.</p><% } else { %>
       <div class="table-wrap"><table class="table">
         <thead><tr><th>Name</th><th>Gender</th><th><%= type === 'teacher' ? 'Designation' : 'Class' %></th><th>Status</th></tr></thead>

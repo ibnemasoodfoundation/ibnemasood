@@ -446,3 +446,4 @@ router.get("/reports/teachers", staff, async (req, res) => {
 
 module.exports = router;
 module.exports.attendanceSummary = attendanceSummary;
+module.exports.linkParent = linkParent;

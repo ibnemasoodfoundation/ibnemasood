@@ -18,9 +18,19 @@ if (unitRole) {
     { href: '/app/teacher-attendance', label: 'Teacher attendance', icon: 'teacher', exact: true },
     { href: '/app/attendance/report', label: 'Reports', icon: 'file', also: ['/app/reports', '/app/attendance/monthly', '/app/teacher-attendance/monthly'] },
     { href: '/app/results', label: 'Exams and results', icon: 'file' },
-    { href: '/app/certificates', label: 'Certificates', icon: 'file', also: ['/app/forms'] },
+    r === 'principal'
+      ? { section: 'Iqra Islamia Public School' }
+      : { href: '/app/certificates', label: 'Certificates', icon: 'file', also: ['/app/forms'] },
     { section: 'Office' }
   );
+}
+if (r === 'principal') {
+  // School documents sit in their own section, right after "Exams and results"
+  const at = nav.findIndex((n) => n.section === 'Iqra Islamia Public School') + 1;
+  nav.splice(at, 0,
+    { href: '/app/school/register', label: 'Register student', icon: 'student' },
+    { href: '/app/forms/admission', label: 'Admission form', icon: 'file' },
+    { href: '/app/certificates', label: 'Leaving certificates', icon: 'file' });
 }
 if (r === 'teacher') nav.push(
   { href: '/app/students', label: 'My students', icon: 'student' },

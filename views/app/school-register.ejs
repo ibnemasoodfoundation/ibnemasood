@@ -1,0 +1,100 @@
+<%- include('../partials/app-top') %>
+<%
+  const x = values.x || {};
+  const bad = (k) => errors[k] ? 'invalid' : '';
+  const val = (k) => values[k] ?? '';
+  // One field of the admission form; "x_" names are the admission-form details kept with the student
+  function fld(name, labelText, o = {}) {
+    const isX = name.startsWith('x_'), current = isX ? (x[name.slice(2)] || '') : val(name);
+    const id = 'r-' + name;
+    const control = o.select
+      ? `<select id="${id}" name="${name}"${o.required ? ' required' : ''}><option value="">Choose</option>${Object.entries(o.select).map(([k, l]) => `<option value="${k}"${current === k ? ' selected' : ''}>${l}</option>`).join('')}</select>`
+      : `<input id="${id}" name="${name}" type="${o.type || 'text'}" value="${String(current).replace(/&/g, '&amp;').replace(/"/g, '&quot;')}"${o.required ? ' required' : ''}${o.extra || ''}${o.placeholder ? ` placeholder="${o.placeholder}"` : ''}>`;
+    return `<div class="field ${bad(name)}"><label for="${id}">${labelText}</label>${control}<span class="err">${errors[name] || ''}</span></div>`;
+  }
+%>
+<p class="crumb"><a href="/app/schools/<%= sc.id %>">← <%= sc.name_en %></a> · <a href="/app/forms/admission" target="_blank">Blank admission form</a></p>
+
+<section class="card card--form card--wide school-reg">
+  <header class="school-reg-head">
+    <img src="/assets/images/iips-logo.png" alt="" width="64" height="61">
+    <div>
+      <h2>IQRA ISLAMIA PUBLIC SCHOOL</h2>
+      <p>Bhiria Road Distt: Naushahro Feroze, Sindh · <strong>ADMISSION FORM</strong></p>
+    </div>
+  </header>
+  <p class="hint">Fill this in from the student’s admission form. Only the name and gender are required. After saving, add the photograph on the student’s page and print the filled admission form.</p>
+
+  <form method="post" action="/app/schools/<%= sc.id %>/register" novalidate>
+    <input type="hidden" name="_csrf" value="<%= csrf %>">
+    <fieldset class="form-section">
+      <legend>Student <span class="legend-ur" lang="ur">طالب علم</span></legend>
+      <div class="field-row field-row--3">
+        <%- fld('x_gr_no', 'Gr. No') %>
+        <%- fld('enrolled_on', 'Date of Admission', { type: 'date' }) %>
+        <%- fld('cnic_bform', 'National Identity Card No (B-Form / CNIC)', { placeholder: '45101-1234567-1', extra: ' inputmode="numeric"' }) %>
+      </div>
+      <div class="field-row">
+        <%- fld('full_name', 'Name of Student', { required: true, extra: ' style="text-transform:uppercase"' }) %>
+        <%- fld('father_name', 'Father’s Name', { extra: ' style="text-transform:uppercase"' }) %>
+      </div>
+      <div class="field-row field-row--3">
+        <%- fld('x_surname', 'Surname') %>
+        <%- fld('gender', 'Gender', { required: true, select: { male: 'Male', female: 'Female' } }) %>
+        <%- fld('x_father_occupation', 'Father’s Occupation / Designation') %>
+      </div>
+      <div class="field-row">
+        <%- fld('x_guardian_name', 'Guardian’s Name') %>
+        <%- fld('x_guardian_relation', 'Relationship') %>
+      </div>
+      <div class="field-row field-row--3">
+        <%- fld('x_religion', 'Religion') %>
+        <%- fld('x_nationality', 'Nationality') %>
+        <%- fld('dob', 'Date of Birth (written in words on the form automatically)', { type: 'date', extra: ` max="${new Date().toISOString().slice(0, 10)}"` }) %>
+      </div>
+      <div class="field-row field-row--3">
+        <%- fld('x_place_of_birth', 'Place of Birth') %>
+        <%- fld('x_taluka', 'Taluka') %>
+        <%- fld('x_district', 'District') %>
+      </div>
+      <div class="field-row field-row--3">
+        <%- fld('x_admission_class', 'Class in which admission is sought') %>
+        <%- fld('x_prev_marks', 'Marks in X-XI Class') %>
+        <%- fld('previous_institution', 'Last School Attended') %>
+      </div>
+      <%- fld('address', 'Address') %>
+      <div class="field-row field-row--3">
+        <%- fld('phone', 'Ph', { type: 'tel' }) %>
+        <%- fld('guardian_phone', 'Mob', { type: 'tel', placeholder: '03XX XXXXXXX' }) %>
+      </div>
+    </fieldset>
+
+    <fieldset class="form-section">
+      <legend>For office use only <span class="legend-ur" lang="ur">دفتری استعمال</span></legend>
+      <div class="field-row field-row--3">
+        <%- fld('class_name', 'Admitted in Class') %>
+        <%- fld('x_admission_fee', 'Admission fee (Rs)', { extra: ' inputmode="numeric"' }) %>
+        <%- fld('x_tuition_fee', 'Tution Fee (Rs)', { extra: ' inputmode="numeric"' }) %>
+      </div>
+      <div class="field-row field-row--3">
+        <%- fld('x_security_fee', 'Security fee (Rs)', { extra: ' inputmode="numeric"' }) %>
+        <%- fld('x_form_fee', 'Form fee (Rs)', { extra: ' inputmode="numeric"' }) %>
+      </div>
+    </fieldset>
+
+    <fieldset class="form-section">
+      <legend>Parent portal login <span class="legend-ur" lang="ur">والدین کا لاگ اِن</span></legend>
+      <p class="hint">Optional. The parent then sees this child’s attendance, results and announcements.</p>
+      <div class="field-row">
+        <%- fld('parent_email', 'Parent’s email', { type: 'email', extra: ' autocomplete="off"' }) %>
+        <div class="field <%= bad('parent_password') %>"><label for="r-parent_password">Password for the parent (leave empty to generate one)</label><input id="r-parent_password" name="parent_password" type="password" autocomplete="new-password"><span class="err"><%= errors.parent_password || '' %></span></div>
+      </div>
+    </fieldset>
+
+    <div class="btn-row">
+      <button class="btn btn--gold" type="submit">Register student</button>
+      <a class="btn btn--line" href="/app/schools/<%= sc.id %>">Cancel</a>
+    </div>
+  </form>
+</section>
+<%- include('../partials/app-bottom') %>

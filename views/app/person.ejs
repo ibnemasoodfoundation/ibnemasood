@@ -45,8 +45,12 @@
       <% if (canManage) { %><a class="btn btn--blue btn--sm" href="<%= base %>/<%= x.id %>/edit"><%- include('../partials/icon', { name: 'edit' }) %>Edit</a><% } %>
       <a class="btn btn--line btn--sm" href="<%= base %>/<%= x.id %>/print" target="_blank"><%- include('../partials/icon', { name: 'file' }) %>Print profile</a>
       <% if (!isT && canManage) { %><a class="btn btn--gold btn--sm" href="<%= base %>/<%= x.id %>/card" target="_blank"><%- include('../partials/icon', { name: 'user' }) %>ID card</a>
-        <a class="btn btn--line btn--sm" href="/app/students/<%= x.id %>/admission-form" target="_blank"><%- include('../partials/icon', { name: 'file' }) %>Admission form</a>
-        <a class="btn btn--line btn--sm" href="/app/students/<%= x.id %>/certificates/new"><%- include('../partials/icon', { name: 'file' }) %>Certificates</a><% } %>
+        <% if (x.school_id) { %>
+          <a class="btn btn--line btn--sm" href="/app/students/<%= x.id %>/admission-form" target="_blank"><%- include('../partials/icon', { name: 'file' }) %>Admission form</a>
+          <a class="btn btn--line btn--sm" href="/app/students/<%= x.id %>/certificates/new?kind=leaving"><%- include('../partials/icon', { name: 'file' }) %>Leaving certificate</a>
+        <% } else { %>
+          <a class="btn btn--line btn--sm" href="/app/students/<%= x.id %>/certificates/new?kind=alimiyyah"><%- include('../partials/icon', { name: 'file' }) %>Alimiyyah certificate</a>
+        <% } %><% } %>
       <% if (isT && canManage) { %>
         <form method="post" action="/app/teachers/<%= x.id %>/archive" <% if (x.status !== 'archived') { %>data-confirm="Archive <%= x.full_name %>?<%= x.user_id ? ' Their login will be suspended.' : '' %>"<% } %>>
           <input type="hidden" name="_csrf" value="<%= csrf %>">

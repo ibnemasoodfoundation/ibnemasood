@@ -561,3 +561,9 @@ section[id] { scroll-margin-top: 130px; }
 .net-status--ok { background: #1F6B4A; color: #fff; }
 .net-status--warn { background: #8A1F1F; color: #fff; }
 .section-switch a { font-weight: 500; }
+
+/* School student registration (laid out like the Iqra Islamia Public School admission form) */
+.school-reg-head { display: flex; align-items: center; gap: 1rem; padding-bottom: 1rem; margin-bottom: .6rem; border-bottom: 2px solid var(--ink); }
+.school-reg-head img { border-radius: 50%; flex: none; }
+.school-reg-head h2 { margin: 0; font-family: "Times New Roman", Georgia, serif; font-size: clamp(1.3rem, 2.6vw, 1.9rem); letter-spacing: .01em; color: var(--ink); }
+.school-reg-head p { margin: .2rem 0 0; color: var(--muted); }

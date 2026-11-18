@@ -2,9 +2,9 @@
 <% const isAlim = kind === 'alimiyyah'; %>
 <p class="crumb"><% if (s) { %><a href="/app/students/<%= s.id %>">← <%= s.full_name %></a> · <% } %><a href="/app/certificates">All certificates</a></p>
 <section class="card card--form card--wide">
-  <% if (!locals.editing) { %>
+  <% if (!locals.editing && kinds.length > 1) { %>
     <nav class="tabs-inline" aria-label="Certificate type">
-      <% Object.keys(KINDS).forEach(function (k) { %><a href="/app/students/<%= s.id %>/certificates/new?kind=<%= k %>" <% if (k === kind) { %>aria-current="page"<% } %>><%= KINDS[k] %></a><% }) %>
+      <% kinds.forEach(function (k) { %><a href="/app/students/<%= s.id %>/certificates/new?kind=<%= k %>" <% if (k === kind) { %>aria-current="page"<% } %>><%= KINDS[k] %></a><% }) %>
     </nav>
   <% } %>
   <% if (isAlim && !locals.editing && exams.length) { %>

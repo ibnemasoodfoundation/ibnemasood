@@ -28,6 +28,8 @@ const ALIMIYYAH_FIELDS = [
   ["marks", "Marks out of 600 — الدرجات"], ["issue_date", "Date of issue — تاريخ الاصدار"],
 ];
 const FIELDS = { leaving: LEAVING_FIELDS, alimiyyah: ALIMIYYAH_FIELDS };
+// Iqra Islamia Public School documents are for school students; the Alimiyyah is for the Jamia's (Makatib) students
+const kindsFor = (s) => (s.school_id ? ["leaving"] : ["alimiyyah"]);
 const ARABIC_GRADES = ["ممتاز", "جيد جدا", "جيد", "مقبول", "راسب"];
 
 /* ---------- Formatting ---------- */
@@ -116,9 +118,11 @@ function readFields(kind, body) {
 
 /* ================= List ================= */
 router.get("/certificates", staff, async (req, res) => {
+  // A principal sees the school's leaving certificates; the Makatib Nazim sees Alimiyyah certificates
+  const only = req.user.role === "principal" ? "leaving" : req.user.role === "nazim" ? "alimiyyah" : KINDS[req.query.kind] ? req.query.kind : "";
   const rows = await all(`SELECT c.*, s.full_name, s.code FROM certificates c LEFT JOIN students s ON s.id = c.student_id
-    WHERE c.student_id IS NULL OR ${personSql(req.scope, "s", "student")} ORDER BY c.id DESC LIMIT 300`);
-  res.render("app/certificates", { title: "Certificates", rows, KINDS });
+    WHERE (c.student_id IS NULL OR ${personSql(req.scope, "s", "student")}) ${only ? "AND c.kind = ?" : ""} ORDER BY c.id DESC LIMIT 300`, ...(only ? [only] : []));
+  res.render("app/certificates", { title: only === "leaving" ? "School leaving certificates" : "Certificates", rows, KINDS, only });
 });
 
 /* ================= Admission form ================= */
@@ -130,30 +134,33 @@ router.get("/students/:id/admission-form", staff, async (req, res, next) => {
   const { s, missing, denied } = await loadStudent(req, int(req.params.id));
   if (missing) return next();
   if (denied) return forbidden(res);
+  if (!s.school_id) { req.flash("err", "The admission form is for Iqra Islamia Public School students."); return res.redirect("/app/students/" + s.id); }
   const photo = await one("SELECT id FROM attachments WHERE entity_type = 'student' AND entity_id = ? AND kind = 'photo' ORDER BY id DESC LIMIT 1", s.id);
   res.render("app/print-admission", { title: "Admission form: " + s.full_name, s, x: s.extra, photo, dobWords: dateInWords(s.dob), dmy });
 });
 
 /* ================= Issue a certificate ================= */
 router.get("/students/:id/certificates/new", staff, async (req, res, next) => {
-  const kind = KINDS[req.query.kind] ? req.query.kind : "leaving";
   const { s, missing, denied } = await loadStudent(req, int(req.params.id));
   if (missing) return next();
   if (denied) return forbidden(res);
+  const kinds = kindsFor(s);
+  const kind = kinds.includes(req.query.kind) ? req.query.kind : kinds[0];
   const exams = await all(`SELECT e.id, e.title, r.obtained, r.total, r.grade FROM results r JOIN exams e ON e.id = r.exam_id
     WHERE r.student_id = ? ORDER BY e.id DESC`, s.id);
   const examId = int(req.query.exam) || (kind === "alimiyyah" && exams[0] ? exams[0].id : null);
   res.render("app/certificate-form", {
-    title: "Issue " + KINDS[kind], kind, s, values: await prefill(kind, s, examId), fields: FIELDS[kind], KINDS, exams, examId,
+    title: "Issue " + KINDS[kind], kind, kinds, s, values: await prefill(kind, s, examId), fields: FIELDS[kind], KINDS, exams, examId,
     issued_on: todayPk(), ARABIC_GRADES, action: `/app/students/${s.id}/certificates?kind=${kind}`,
   });
 });
 
 router.post("/students/:id/certificates", staff, async (req, res, next) => {
-  const kind = KINDS[req.query.kind] ? req.query.kind : "leaving";
   const { s, missing, denied } = await loadStudent(req, int(req.params.id));
   if (missing) return next();
   if (denied) return forbidden(res);
+  const kind = kindsFor(s).includes(req.query.kind) ? req.query.kind : null;
+  if (!kind) return forbidden(res);
   const v = readFields(kind, req.body);
   const issued = DATE_RE.test(str(req.body.issued_on, 10)) ? str(req.body.issued_on, 10) : todayPk();
   if (!v.name) { req.flash("err", "Enter the student's name."); return res.redirect(`/app/students/${s.id}/certificates/new?kind=${kind}`); }
@@ -189,7 +196,7 @@ router.get("/certificates/:id/edit", staff, async (req, res, next) => {
   if (denied) return forbidden(res);
   const s = c.student_id ? await one("SELECT id, code, full_name FROM students WHERE id = ?", c.student_id) : null;
   res.render("app/certificate-form", {
-    title: "Edit " + KINDS[c.kind], kind: c.kind, s, values: c.data || {}, fields: FIELDS[c.kind], KINDS, exams: [], examId: c.exam_id,
+    title: "Edit " + KINDS[c.kind], kind: c.kind, kinds: [c.kind], s, values: c.data || {}, fields: FIELDS[c.kind], KINDS, exams: [], examId: c.exam_id,
     issued_on: c.issued_on, ARABIC_GRADES, action: `/app/certificates/${c.id}`, editing: true,
   });
 });
