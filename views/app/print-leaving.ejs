@@ -1,0 +1,62 @@
+<%- include('../partials/print-top', { pdfName: 'School Leaving Certificate ' + (d.name || ''), pageClass: 'print-page--slc' }) %>
+<%
+  // One line on the certificate: a bold label followed by the written value on a rule
+  const ln = (labelText, key, grow) => `<span class="slc-item" style="flex:${grow || 1}"><b>${labelText}</b><i>${String(d[key] || '').replace(/&/g, '&amp;').replace(/</g, '&lt;')}</i></span>`;
+%>
+<article class="slc">
+  <%# Ornamental frame: double blue rule with scroll flourishes in the corners %>
+  <svg class="slc-frame" viewBox="0 0 1000 1080" preserveAspectRatio="none" aria-hidden="true">
+    <rect x="22" y="22" width="956" height="1036" rx="14" fill="none" stroke="#25439b" stroke-width="7"/>
+    <rect x="40" y="40" width="920" height="1000" rx="8" fill="none" stroke="#25439b" stroke-width="2"/>
+  </svg>
+  <% ['tl', 'tr', 'bl', 'br'].forEach(function (pos) { %>
+    <svg class="slc-corner slc-corner--<%= pos %>" viewBox="0 0 120 120" aria-hidden="true">
+      <g fill="none" stroke="#25439b" stroke-width="5" stroke-linecap="round">
+        <path d="M14 106C14 60 30 30 62 18c22-8 40 2 40 18 0 14-14 20-24 14-8-5-6-16 2-17"/>
+        <path d="M14 106c18-2 30-14 32-30 2-14-8-22-18-18-8 3-8 13-1 15"/>
+        <path d="M70 52c10 4 22 0 30-10"/>
+      </g>
+      <path d="M8 112c6-14 18-20 30-18-10 4-16 10-18 20z" fill="#25439b"/>
+      <circle cx="104" cy="40" r="5" fill="#25439b"/>
+    </svg>
+  <% }) %>
+
+  <p class="slc-serial"><%= d.certificate_no || '' %></p>
+  <header class="slc-head">
+    <svg class="slc-arch" viewBox="0 0 640 250" aria-hidden="true">
+      <defs><path id="slc-arc" d="M40 236A280 214 0 0 1 600 236"/></defs>
+      <text font-family="'Arial Black', 'Archivo Black', Impact, Arial, sans-serif" font-weight="900" font-size="54" fill="#fff" stroke="#25439b" stroke-width="3.2" paint-order="stroke" letter-spacing="1">
+        <textPath href="#slc-arc" startOffset="50%" text-anchor="middle">IQRA ISLAMIA PUBLIC SCHOOL</textPath>
+      </text>
+    </svg>
+    <%- include('../partials/iips-seal', { cls: 'slc-seal', sid: 'slc' }) %>
+    <p class="slc-place">BHIRIA ROAD DISTT: NAUSHAHRO FEROZE</p>
+    <p class="slc-pill"><span>SCHOOL LEAVING CERTIFICATE</span></p>
+  </header>
+
+  <div class="slc-body">
+    <div class="slc-row"><%- ln('G.R . No:', 'gr_no') %><%- ln('Certificate No:', 'certificate_no', 1.4) %><span class="slc-item" style="flex:1.3"><b>Date of Issue</b><i><%= dmy(c.issued_on) %></i></span></div>
+    <div class="slc-row"><%- ln('Name of Pupil', 'name') %></div>
+    <div class="slc-row"><%- ln('Father’s Name', 'father_name') %></div>
+    <div class="slc-row"><%- ln('Caste', 'caste') %><%- ln('Religion', 'religion', 1.1) %><%- ln('Place of Birth', 'place_of_birth', 1.3) %></div>
+    <div class="slc-row"><%- ln('Date of Birth(In figure)', 'dob') %></div>
+    <div class="slc-row"><%- ln('Date of Birth(In words)', 'dob_words') %></div>
+    <div class="slc-row"><%- ln('Last school attended', 'last_school') %></div>
+    <div class="slc-row"><%- ln('Date of admission', 'admission_date') %><%- ln('Class in which admitted', 'class_admitted') %></div>
+    <div class="slc-row"><%- ln('Class in which studying', 'class_studying', 1.6) %><%- ln('Since when', 'since_when') %></div>
+    <div class="slc-row"><%- ln('Date of leaving school', 'leaving_date') %></div>
+    <div class="slc-row"><%- ln('Progress', 'progress', 1.6) %><%- ln('Conduct', 'conduct') %></div>
+    <div class="slc-row"><%- ln('Reason of leaving school', 'reason') %></div>
+    <div class="slc-row"><%- ln('Remarks', 'remarks') %></div>
+    <hr class="slc-dash">
+    <p class="slc-cert">Certified that the above information is in accordance with the school General Register.</p>
+  </div>
+
+  <footer class="slc-signs">
+    <div>Class Teacher</div>
+    <div>Incharge<br>General Register</div>
+    <div>Principal<br>Iqra Islamia Public School<br>Bhiria Road</div>
+  </footer>
+</article>
+<p class="print-hint" data-no-print><a href="/app/certificates/<%= c.id %>/edit">Edit the details</a> · <a href="/app/certificates">All certificates</a></p>
+<%- include('../partials/print-bottom') %>

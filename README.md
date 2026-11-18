@@ -96,6 +96,35 @@ subjects are filled in and can be changed). Enter marks per student, then **Publ
 can print the **result certificate**. The result sheet and certificates print or download as PDF. Grades: A+ 90%,
 A 80%, B 70%, C 60%, D 50%, E below 50%, Fail below the exam's pass mark (40% unless changed).
 
+## Main branches: Boys and Girls
+
+The Jamia has two main branches: **Jamia Arabia Abdullah Bin Masood (Boys)** and **Jamia Arabia Aisha Siddiqa (Girls)**.
+Every branch is marked as belonging to one of them (Branch → Edit → Main branch). The **All · Boys · Girls** switch in
+the portal header then shows only that main branch everywhere: branches, Makatib, schools, teachers, students,
+attendance, results and dashboards. Both main branches are created automatically if they do not exist.
+
+## Printed documents
+
+- **Admission form** (Iqra Islamia Public School): blank from Certificates → Blank admission form, or filled in from a
+  student's profile → Admission form. The extra details (G.R. No, surname, guardian, religion, fees…) are under
+  "Admission form details" on the student's form.
+- **School Leaving Certificate** and **Shahadat al-Alamiyyah**: student's profile → Certificates. They are saved, so
+  they can be reprinted with the same details and number. The Alamiyyah certificate takes its marks (out of 600) and
+  Arabic grade from an exam result and is printed on the original certificate artwork, or text only for pre-printed paper.
+
+## Backup and restore
+
+Users & roles → **Backup** (Super Admin): download one file with all the data (optionally with photos and documents)
+and restore it on this server (merge) or on a new server or local computer (replace everything). A restore runs in one
+transaction, so a failed restore changes nothing. The backup holds private data: keep it safe.
+
+## Working without internet
+
+The portal installs as an app and keeps the pages you open on the device. Without internet those pages still open,
+and forms you save (attendance, marks, progress, registrations) wait on the device and are sent automatically, in order,
+when the connection returns. Pages never opened on that device are not available offline. Signing out removes the
+saved pages from the device.
+
 ## Languages
 
 - **Portal:** English or اردو from the switch in the header. Menus, roles and page titles are translated and the

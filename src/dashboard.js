@@ -16,10 +16,10 @@ function series(months, rows) {
   return months.map((m) => Number((rows.find((r) => r.m === m.key) || {}).v || 0));
 }
 
-async function dashboardData(user) {
+async function dashboardData(user, section) {
   const isAdmin = user.role === "admin";
   // Branch managers see institution numbers for their own branches only
-  const sc = await loadScope(user);
+  const sc = await loadScope(user, section);
   const B = branchSql(sc, "b"), M = maktabSql(sc, "m"), T = personSql(sc, "t", "teacher"), S = personSql(sc, "s", "student");
   const months = lastMonths();
 
@@ -88,8 +88,8 @@ async function dashboardData(user) {
 }
 
 /* Makatib Nazim and School Principal dashboards: their Makatib or schools, people, today's attendance and exams */
-async function unitDashboardData(user) {
-  const sc = await loadScope(user);
+async function unitDashboardData(user, section) {
+  const sc = await loadScope(user, section);
   const nazim = user.role === "nazim";
   const T = personSql(sc, "t", "teacher"), S = personSql(sc, "s", "student");
   const unitWhere = nazim ? "s.maktab_id IS NOT NULL" : "s.school_id IS NOT NULL";

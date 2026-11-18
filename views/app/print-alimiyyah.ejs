@@ -1,0 +1,19 @@
+<%- include('../partials/print-top', { pdfName: 'Shahadat al-Alamiyyah ' + (d.name || ''), pageClass: 'print-page--alim' }) %>
+<%
+  // The original certificate artwork is the background; each value is written centred on its blank line.
+  // Positions are fractions (%) of the artwork's width (x) and height (y) at the dashed line.
+  const spots = [
+    ['name', 36.4, 47.5, 15], ['father_name', 18.6, 47.5, 14],
+    ['place', 77.5, 52.6, 16], ['birth_year', 50.2, 52.6, 12],
+    ['exam_year', 76.6, 57.4, 17], ['grade', 81.2, 62.3, 9],
+    ['marks', 73.0, 77.0, 5], ['issue_date', 74.9, 83.6, 9],
+  ];
+%>
+<article class="alim<%= paper ? ' alim--paper' : '' %>">
+  <img class="alim-art" src="/assets/images/certificates/alimiyyah.jpg" alt="">
+  <% spots.forEach(function (p) { if (!d[p[0]]) return; %>
+    <span class="alim-val alim-val--<%= p[0] %>" lang="ar" dir="rtl" style="left:<%= p[1] %>%;top:<%= p[2] %>%;max-width:<%= p[3] %>%"><%= d[p[0]] %></span>
+  <% }) %>
+</article>
+<p class="print-hint" data-no-print><a href="/app/certificates/<%= c.id %>/edit">Edit the details</a> · <a href="/app/certificates">All certificates</a> · <% if (paper) { %><a href="?">Show the certificate design</a><% } else { %><a href="?paper=1">Print text only, on pre-printed certificate paper</a><% } %></p>
+<%- include('../partials/print-bottom') %>

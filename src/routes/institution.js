@@ -120,14 +120,16 @@ router.get("/branches/new", admin, async (req, res) => {
   await branchForm(res, "Add branch", { code: await nextCode("branches", "BR"), status: "active", public_listing: true }, {});
 });
 
+const sectionOf = (body) => (["boys", "girls"].includes(body.section) ? body.section : null);
+
 router.post("/branches", admin, async (req, res) => {
-  const [v, e] = await unitFields(req.body);
+  const [v, e] = await unitFields(req.body, { section: sectionOf(req.body) });
   if (Object.keys(e).length) return branchForm(res, "Add branch", v, e, 400);
   try {
     const r = await one(`INSERT INTO branches (code, name_en, name_ur, district, tehsil, town, address, manager_id, phone, established_on, status, notes,
-      programmes, public_listing, show_phone) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`,
+      programmes, public_listing, show_phone, section) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`,
       v.code, v.name_en, v.name_ur || null, v.district, v.tehsil || null, v.town || null, v.address || null,
-      v.manager_id, v.phone || null, v.established_on || null, v.status, v.notes || null, v.programmes || null, v.public_listing, v.show_phone);
+      v.manager_id, v.phone || null, v.established_on || null, v.status, v.notes || null, v.programmes || null, v.public_listing, v.show_phone, v.section);
     await log(req.user.id, "branch.create", `${v.code} ${v.name_en}`);
     req.flash("ok", `Branch ${v.name_en} added.`);
     res.redirect("/app/branches/" + r.id);
@@ -173,14 +175,15 @@ router.post("/branches/:id", staff, async (req, res, next) => {
   const { b, canEdit, missing, denied } = await loadBranch(req);
   if (missing) return next();
   if (denied || !canEdit) return forbidden(res);
-  const [v, e] = await unitFields(req.body);
+  // Only an admin moves a branch between the Boys and Girls main branches
+  const [v, e] = await unitFields(req.body, { section: req.user.role === "admin" ? sectionOf(req.body) : b.section });
   if (b.status === "archived") v.status = "archived"; // restore happens through the archive button
   if (Object.keys(e).length) return branchForm(res, "Edit " + b.name_en, { ...v, editId: b.id }, e, 400);
   try {
     await run(`UPDATE branches SET code = ?, name_en = ?, name_ur = ?, district = ?, tehsil = ?, town = ?, address = ?,
-      manager_id = ?, phone = ?, established_on = ?, status = ?, notes = ?, programmes = ?, public_listing = ?, show_phone = ? WHERE id = ?`,
+      manager_id = ?, phone = ?, established_on = ?, status = ?, notes = ?, programmes = ?, public_listing = ?, show_phone = ?, section = ? WHERE id = ?`,
       v.code, v.name_en, v.name_ur || null, v.district, v.tehsil || null, v.town || null, v.address || null,
-      v.manager_id, v.phone || null, v.established_on || null, v.status, v.notes || null, v.programmes || null, v.public_listing, v.show_phone, b.id);
+      v.manager_id, v.phone || null, v.established_on || null, v.status, v.notes || null, v.programmes || null, v.public_listing, v.show_phone, v.section, b.id);
   } catch (err) {
     if (isUnique(err)) return branchForm(res, "Edit " + b.name_en, { ...v, editId: b.id }, { code: "This branch code is already used." }, 400);
     throw err;

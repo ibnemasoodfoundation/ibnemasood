@@ -160,3 +160,70 @@ body { margin: 0; font-family: var(--f-body); color: var(--ink); font-size: 12.5
 
 .report-h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .06em; margin: 6mm 0 2mm; padding: 1mm 2mm; background: #efefef; border-left: 3px solid var(--rule); }
 .print-filters label { display: inline-flex; gap: 4px; align-items: center; }
+
+/* ---------- Iqra Islamia Public School: School Leaving Certificate ---------- */
+.print-page--slc { padding: 10mm 12mm; }
+.slc { position: relative; width: 186mm; height: 214mm; margin: 0 auto; color: #1d2c6b; font-family: Georgia, "Times New Roman", serif; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+.slc-frame { position: absolute; inset: 0; width: 100%; height: 100%; }
+.slc-corner { position: absolute; width: 27mm; height: 27mm; }
+.slc-corner--tl { top: 2mm; left: 2mm; }
+.slc-corner--tr { top: 2mm; right: 2mm; transform: scaleX(-1); }
+.slc-corner--bl { bottom: 2mm; left: 2mm; transform: scaleY(-1); }
+.slc-corner--br { bottom: 2mm; right: 2mm; transform: scale(-1, -1); }
+.slc-serial { position: absolute; top: 13mm; left: 30mm; margin: 0; font: 700 20px Georgia, serif; color: #2b2b2b; letter-spacing: .04em; }
+.slc-head { position: relative; text-align: center; height: 70mm; }
+.slc-arch { position: absolute; top: 4mm; left: 50%; transform: translateX(-50%); width: 158mm; }
+.slc-seal { position: absolute; top: 25mm; left: 50%; transform: translateX(-50%); width: 25mm; height: 25mm; color: #25439b; }
+.slc-place { position: absolute; top: 51mm; left: 0; right: 0; margin: 0; font: italic 700 13.5px Georgia, serif; color: #2b2b2b; letter-spacing: .02em; }
+.slc-pill { position: absolute; top: 58mm; left: 0; right: 0; margin: 0; }
+.slc-pill span { display: inline-block; background: #25439b; color: #fff; font: 800 12.5px Arial, Helvetica, sans-serif; letter-spacing: .03em; padding: 1.3mm 5mm; border-radius: 99px; box-shadow: 0 0 0 .6mm #fff, 0 0 0 1mm #25439b; }
+.slc-body { padding: 0 15mm; }
+.slc-row { display: flex; gap: 3mm; margin: 0 0 3.1mm; }
+.slc-item, .adm-item { display: flex; align-items: baseline; min-width: 0; }
+.slc-item b { font-weight: 700; font-size: 12.5px; white-space: nowrap; color: #2b2b2b; }
+.slc-item i, .adm-item i { flex: 1; min-width: 6mm; font-style: normal; border-bottom: 1px solid #333; padding: 0 1.5mm; margin-left: 1mm; min-height: 4.6mm; font: 600 13px "Jost", Arial, sans-serif; color: #10307a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.slc-dash { border: 0; border-top: 1.2px dashed #333; margin: 4mm 0 2mm; }
+.slc-cert { text-align: center; font-size: 12px; font-weight: 700; color: #2b2b2b; margin: 0; }
+.slc-signs { position: absolute; left: 22mm; right: 22mm; bottom: 15mm; display: flex; justify-content: space-between; align-items: flex-end; text-align: center; font: 700 10.5px Georgia, serif; color: #2b2b2b; line-height: 1.25; }
+.slc-signs div { min-width: 34mm; }
+
+/* ---------- Iqra Islamia Public School: Admission Form ---------- */
+.print-page--adm { padding: 9mm 10mm; }
+.adm { border: 1.4mm double #333; padding: 5mm 7mm 6mm; font-family: Arial, Helvetica, sans-serif; color: #1c1c1c; min-height: 270mm; display: flex; flex-direction: column; }
+.adm-head { display: grid; grid-template-columns: 30mm 1fr; align-items: center; gap: 4mm; }
+.adm-seal { width: 28mm; height: 28mm; color: #333; }
+.adm-titles { text-align: center; }
+.adm-titles h1 { margin: 0; font: 700 31px "Times New Roman", Georgia, serif; letter-spacing: .01em; }
+.adm-pill { display: inline-block; margin: 1.5mm 0 1mm; background: #1c1c1c; color: #fff; font-weight: 700; font-size: 15px; padding: 1mm 4mm; border-radius: 2.5mm; }
+.adm-phones { margin: 0; font-weight: 700; font-size: 15px; letter-spacing: .02em; }
+.adm-top { display: grid; grid-template-columns: 1fr auto 36mm; gap: 4mm; align-items: start; margin-top: 3mm; }
+.adm-instr p { margin: 0 0 .8mm; font-size: 9.5px; }
+.adm-instr .adm-instr-h { font-weight: 700; font-size: 12.5px; text-decoration: underline; margin-bottom: 1.5mm; }
+.adm-badge { margin: 1mm 0 0; background: #1c1c1c; color: #fff; font-weight: 700; font-size: 16px; padding: 1.3mm 4mm; letter-spacing: .02em; justify-self: center; align-self: start; }
+.adm-photo { width: 34mm; height: 40mm; border: 1.6px solid #333; box-shadow: inset 0 0 0 1.2mm #fff, inset 0 0 0 1.5mm #333; display: grid; place-items: center; text-align: center; font-weight: 700; font-size: 13px; overflow: hidden; }
+.adm-photo img { width: 100%; height: 100%; object-fit: cover; }
+.adm-body { margin-top: 2mm; }
+.adm-row { display: flex; gap: 4mm; margin: 0 0 3.4mm; align-items: baseline; }
+.adm-row--short { max-width: 140mm; }
+.adm-item b { font-weight: 600; font-size: 12px; white-space: nowrap; }
+.adm-item i { color: #10307a; text-transform: uppercase; font-size: 12px; }
+.adm-row--nic b { font-weight: 600; font-size: 12px; white-space: nowrap; }
+.adm-boxes { display: inline-flex; margin-left: 2mm; }
+.adm-boxes span { width: 6.4mm; height: 6.6mm; border: 1px solid #333; margin-left: -1px; display: grid; place-items: center; font: 700 12px Arial, sans-serif; color: #10307a; }
+.adm-sign { text-align: center; font-weight: 600; font-size: 12px; width: 44mm; }
+.adm-sign span { display: block; border-top: 1px solid #333; margin-bottom: 1mm; }
+.adm-sign--guardian { margin: 5mm 0 2mm auto; }
+.adm-office { border-top: 1.6px solid #333; margin-top: auto; padding-top: 2mm; }
+.adm-badge--office { display: table; margin: 0 auto 3mm; }
+.adm-office-grid { display: grid; grid-template-columns: 1fr 46mm; gap: 6mm; align-items: end; }
+.adm-office-grid .adm-row { max-width: 125mm; }
+.adm-sign--principal { justify-self: end; margin-bottom: 1mm; }
+
+/* ---------- Jamia: Shahadat al-Alamiyyah (original artwork with the values written on its blanks) ---------- */
+.print-page--alim { width: 297mm; min-height: 210mm; padding: 8mm 10mm; }
+.alim { position: relative; width: 100%; container-type: inline-size; }
+.alim-art { display: block; width: 100%; height: auto; }
+.alim--paper .alim-art { visibility: hidden; }
+.alim-val { position: absolute; transform: translate(-50%, -86%); font: 700 1.62cqw/1.2 Amiri, "Traditional Arabic", serif; color: #0d2a7a; white-space: nowrap; overflow: hidden; text-align: center; }
+.alim-val--marks, .alim-val--issue_date { font-size: 1.7cqw; color: #111; }
+@media print { .print-page--alim { page: wide; padding: 0; width: auto; min-height: 0; } }

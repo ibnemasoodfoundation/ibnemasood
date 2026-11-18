@@ -10,7 +10,7 @@ const { withScope, branchSql, maktabSql, schoolSql, personSql, inMaktab, inSchoo
 const { movePerson } = require("../transfers");
 const {
   GENDERS, TEACHER_STATUSES, STUDENT_STATUSES, HIFZ_STATUSES, TAJWEED_STATUSES, EMPLOYMENT_TYPES,
-  DESIGNATIONS, EDUCATION_LEVELS, QURAN_LEVELS, PROGRAMMES, DOC_CATEGORIES, todayPk,
+  DESIGNATIONS, EDUCATION_LEVELS, QURAN_LEVELS, PROGRAMMES, DOC_CATEGORIES, STUDENT_EXTRA, todayPk,
 } = require("../helpers");
 const { helpers: h } = require("./institution");
 
@@ -33,7 +33,7 @@ const PEOPLE = {
     table: "students", plural: "students", prefix: "ST", statuses: STUDENT_STATUSES, label: "Student", labelPlural: "Students",
     cols: ["code", "full_name", "name_ur", "father_name", "mother_name", "gender", "dob", "cnic_bform", "phone", "guardian_phone", "address",
       "education_level", "quran_level", "previous_institution", "hifz_status", "tajweed_status", "enrolled_on", "programme", "class_name",
-      "teacher_id", "status", "notes", "branch_id", "maktab_id", "school_id", "admission_id"],
+      "teacher_id", "status", "notes", "branch_id", "maktab_id", "school_id", "admission_id", "extra"],
   },
 };
 
@@ -72,6 +72,10 @@ async function personFields(req, type) {
     if (str(b.salary) !== "" && v.salary === null) e.salary = "Enter the monthly salary in rupees, numbers only.";
   } else {
     if (v.cnic_bform && !CNIC_RE.test(v.cnic_bform)) e.cnic_bform = "Enter the 13-digit B-Form or CNIC number.";
+    // Admission-form details (stored together in students.extra)
+    const extra = {};
+    for (const [k] of STUDENT_EXTRA) { const x = str(b["x_" + k], 120); if (x) extra[k] = x; }
+    v.extra = JSON.stringify(extra);
     // Parent portal login (optional): created or linked after the student is saved
     v.parent_email = str(b.parent_email, 120).toLowerCase();
     v.parent_password = String(b.parent_password ?? "").slice(0, 200);

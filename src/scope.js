@@ -14,7 +14,28 @@ const { one, all } = require("./db");
 
 const EMPTY = { branchIds: [], maktabIds: [], schoolIds: [] };
 
-async function loadScope(user) {
+/* section: "boys" or "girls" narrows staff to that main branch (the switch in the portal header) */
+async function loadScope(user, section) {
+  const sc = await baseScope(user);
+  return SECTIONS.includes(section) && SECTION_ROLES.includes(user && user.role) ? narrow(sc, section) : sc;
+}
+
+const SECTIONS = ["boys", "girls"];
+const SECTION_ROLES = ["admin", "manager", "nazim", "principal"];
+
+async function narrow(sc, section) {
+  const branchIds = (await all("SELECT id FROM branches WHERE section = ?", section)).map((r) => r.id);
+  const inB = `branch_id IN (${ids(branchIds)})`;
+  const maktabIds = (await all(`SELECT id FROM makatib WHERE ${inB}`)).map((r) => r.id);
+  const schoolIds = (await all(`SELECT id FROM schools WHERE ${inB}`)).map((r) => r.id);
+  const keep = (mine, sec) => (sc.all ? sec : mine.filter((x) => sec.includes(x)));
+  return {
+    ...sc, all: false, section, wasAll: !!sc.all,
+    branchIds: keep(sc.branchIds, branchIds), maktabIds: keep(sc.maktabIds, maktabIds), schoolIds: keep(sc.schoolIds, schoolIds),
+  };
+}
+
+async function baseScope(user) {
   if (!user) return { none: true, ...EMPTY };
   if (user.role === "admin") return { all: true, canManage: true, role: "admin", ...EMPTY };
   if (user.role === "manager") {
@@ -98,12 +119,12 @@ async function canSeeBranch(scope, branchId) {
 
 /* Express middleware: attaches req.scope */
 async function withScope(req, res, next) {
-  req.scope = await loadScope(req.user);
+  req.scope = await loadScope(req.user, req.session && req.session.section);
   res.locals.access = req.scope; // not "scope": EJS reserves that name
   next();
 }
 
 module.exports = {
-  loadScope, withScope, branchSql, maktabSql, schoolSql, personSql,
+  loadScope, SECTIONS, SECTION_ROLES, withScope, branchSql, maktabSql, schoolSql, personSql,
   inMaktab, inSchool, inBranch, canSeePerson, canSeeBranch, ids,
 };

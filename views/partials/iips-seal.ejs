@@ -1,0 +1,22 @@
+<%# Iqra Islamia Public School seal, redrawn from the printed forms (ring lettering, open book, Bhiria Road) %>
+<svg class="<%= typeof cls !== 'undefined' ? cls : 'iips-seal' %>" viewBox="0 0 120 120" aria-hidden="true">
+  <defs>
+    <path id="seal-top-<%= typeof sid !== 'undefined' ? sid : 'a' %>" d="M18 60a42 42 0 0 1 84 0"/>
+    <path id="seal-bot-<%= typeof sid !== 'undefined' ? sid : 'a' %>" d="M24 64a36 36 0 0 0 72 0"/>
+  </defs>
+  <circle cx="60" cy="60" r="57" fill="#fff" stroke="currentColor" stroke-width="2.4"/>
+  <circle cx="60" cy="60" r="52" fill="none" stroke="currentColor" stroke-width="1"/>
+  <circle cx="60" cy="60" r="31" fill="none" stroke="currentColor" stroke-width="1.4"/>
+  <text font-family="Arial, Helvetica, sans-serif" font-size="9.6" font-weight="700" fill="currentColor" letter-spacing=".6">
+    <textPath href="#seal-top-<%= typeof sid !== 'undefined' ? sid : 'a' %>" startOffset="50%" text-anchor="middle">IQRA ISLAMIA PUBLIC SCHOOL</textPath>
+  </text>
+  <text font-family="Arial, Helvetica, sans-serif" font-size="8.4" font-weight="700" fill="currentColor" letter-spacing="1.2">
+    <textPath href="#seal-bot-<%= typeof sid !== 'undefined' ? sid : 'a' %>" startOffset="50%" text-anchor="middle">BHIRIA ROAD</textPath>
+  </text>
+  <circle cx="17" cy="62" r="1.6" fill="currentColor"/><circle cx="103" cy="62" r="1.6" fill="currentColor"/>
+  <!-- open book on a stand -->
+  <path d="M60 50c-6-4-13-5-19-4v20c6-1 13 0 19 4zM60 50c6-4 13-5 19-4v20c-6-1-13 0-19 4z" fill="#fff" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+  <path d="M60 50v20M45 52h11M45 56h11M45 60h11M64 52h11M64 56h11M64 60h11" stroke="currentColor" stroke-width=".8"/>
+  <path d="M48 76l12-5 12 5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+  <path d="M60 40l1.4 3 3.2.3-2.4 2.1.7 3.1-2.9-1.6-2.9 1.6.7-3.1-2.4-2.1 3.2-.3z" fill="currentColor"/>
+</svg>

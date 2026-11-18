@@ -1,0 +1,22 @@
+<%- include('../partials/app-top') %>
+<div class="page-head">
+  <p>School Leaving Certificates and Shahadat al-Alamiyyah certificates issued so far. To issue one, open a student’s profile and choose <strong>Certificates</strong>; Alimiyyah certificates can take the marks and grade from an exam result.</p>
+  <a class="btn btn--line btn--sm" href="/app/forms/admission" target="_blank"><%- include('../partials/icon', { name: 'file' }) %>Blank admission form</a>
+</div>
+<section class="card card--flush">
+  <% if (!rows.length) { %><p class="empty">No certificates issued yet.</p><% } else { %>
+    <div class="table-wrap"><table class="table">
+      <thead><tr><th>Certificate</th><th>Student</th><th>No.</th><th>Issued</th><th></th></tr></thead>
+      <tbody><% rows.forEach(function (c) { %>
+        <tr>
+          <td><strong><%= KINDS[c.kind] %></strong></td>
+          <td><% if (c.student_id) { %><a href="/app/students/<%= c.student_id %>"><%= c.full_name %></a><small><%= c.code %></small><% } else { %><%= (c.data || {}).name || '—' %><% } %></td>
+          <td><%= c.serial_no || '—' %></td>
+          <td><%= fmtDate(c.issued_on) %></td>
+          <td class="t-right nowrap"><a class="btn-sm" href="/app/certificates/<%= c.id %>" target="_blank">Print</a> <a class="btn-sm" href="/app/certificates/<%= c.id %>/edit">Edit</a></td>
+        </tr>
+      <% }) %></tbody>
+    </table></div>
+  <% } %>
+</section>
+<%- include('../partials/app-bottom') %>

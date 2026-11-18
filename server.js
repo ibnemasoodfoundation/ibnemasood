@@ -103,6 +103,15 @@ app.use(async (req, res, next) => {
   next();
 });
 app.use(i18n);
+app.use((req, res, next) => { res.locals.section = req.session.section || ""; next(); });
+
+/* Main branch switch: /section/boys, /section/girls or /section/all, then back to the same page */
+app.get("/section/:code", (req, res) => {
+  req.session.section = ["boys", "girls"].includes(req.params.code) ? req.params.code : "";
+  let back = "/app";
+  try { const ref = new URL(req.get("referer") || ""); if (ref.host === req.get("host") && ref.pathname.startsWith("/app")) back = ref.pathname; } catch { /* keep /app */ }
+  res.redirect(back);
+});
 
 /* Portal language: /lang/ur or /lang/en, then back to the page the switch was clicked on */
 app.get("/lang/:code", (req, res) => {
@@ -122,6 +131,8 @@ app.use("/app", require("./src/routes/schools"));
 app.use("/app", require("./src/routes/results"));
 app.use("/app", require("./src/routes/finance"));
 app.use("/app", require("./src/routes/parent"));
+app.use("/app", require("./src/routes/certificates"));
+app.use("/app", require("./src/routes/backup"));
 app.use("/app", require("./src/routes/app"));
 
 

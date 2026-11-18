@@ -552,3 +552,12 @@ section[id] { scroll-margin-top: 130px; }
   [dir="rtl"] .side { inset: 0 0 0 auto; transform: translateX(100%); }
   [dir="rtl"] .side.open { transform: none; }
 }
+
+/* Offline / sync status (bottom of the screen) */
+.net-status { position: fixed; left: 50%; bottom: 1rem; transform: translateX(-50%); z-index: 90; max-width: min(560px, calc(100vw - 2rem));
+  padding: .7rem 1.1rem; border-radius: 12px; font-size: .92rem; box-shadow: var(--shadow); background: var(--night); color: #fff; }
+.net-status--off { background: #5A2A0E; color: #FFE7C2; }
+.net-status--sync { background: var(--night); color: var(--gold-2); }
+.net-status--ok { background: #1F6B4A; color: #fff; }
+.net-status--warn { background: #8A1F1F; color: #fff; }
+.section-switch a { font-weight: 500; }

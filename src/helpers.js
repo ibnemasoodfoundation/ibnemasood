@@ -20,6 +20,14 @@ const ROLE_LABELS = {
   admin: "Super Admin", manager: "Branch Manager", nazim: "Makatib Nazim", principal: "School Principal",
   accountant: "Accountant", teacher: "Teacher", parent: "Parent", user: "Member",
 };
+// Admission-form details kept in students.extra, in the order of the printed Iqra Islamia Public School form
+const STUDENT_EXTRA = [
+  ["gr_no", "G.R. No"], ["surname", "Surname"], ["guardian_name", "Guardian's name"], ["guardian_relation", "Relationship"],
+  ["father_occupation", "Father's occupation / designation"], ["religion", "Religion"], ["nationality", "Nationality"], ["caste", "Caste"],
+  ["place_of_birth", "Place of birth"], ["taluka", "Taluka"], ["district", "District"], ["admission_class", "Class in which admission is sought"],
+  ["prev_marks", "Marks in X-XI class"], ["admission_fee", "Admission fee"], ["tuition_fee", "Tuition fee"], ["security_fee", "Security fee"],
+  ["form_fee", "Form fee"],
+];
 const ROLE_ORDER = ["admin", "manager", "nazim", "principal", "accountant", "teacher", "parent", "user"];
 
 const EXPENSE_CATEGORIES = [
@@ -118,7 +126,7 @@ function cap(s) { return s ? s[0].toUpperCase() + s.slice(1) : ""; }
 
 module.exports = {
   BRANCHES, PROGRAMMES, DONATION_KINDS, DONATION_METHODS, ROLE_LABELS, ROLE_ORDER,
-  EXPENSE_CATEGORIES, INCOME_CATEGORIES, PAYMENT_METHODS, EXAM_TYPES, MAKTAB_SUBJECTS, gradeFor,
+  STUDENT_EXTRA, EXPENSE_CATEGORIES, INCOME_CATEGORIES, PAYMENT_METHODS, EXAM_TYPES, MAKTAB_SUBJECTS, gradeFor,
   REPORTED_TOWNS, UNIT_STATUSES, TEACHER_STATUSES, STUDENT_STATUSES, GENDERS, fileSize,
   HIFZ_STATUSES, TAJWEED_STATUSES, EMPLOYMENT_TYPES, DESIGNATIONS, EDUCATION_LEVELS, QURAN_LEVELS,
   ATTENDANCE, SESSIONS, DOC_CATEGORIES, label, todayPk,

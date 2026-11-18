@@ -1,0 +1,43 @@
+<%- include('../partials/app-top') %>
+<% const isAlim = kind === 'alimiyyah'; %>
+<p class="crumb"><% if (s) { %><a href="/app/students/<%= s.id %>">← <%= s.full_name %></a> · <% } %><a href="/app/certificates">All certificates</a></p>
+<section class="card card--form card--wide">
+  <% if (!locals.editing) { %>
+    <nav class="tabs-inline" aria-label="Certificate type">
+      <% Object.keys(KINDS).forEach(function (k) { %><a href="/app/students/<%= s.id %>/certificates/new?kind=<%= k %>" <% if (k === kind) { %>aria-current="page"<% } %>><%= KINDS[k] %></a><% }) %>
+    </nav>
+  <% } %>
+  <% if (isAlim && !locals.editing && exams.length) { %>
+    <form class="filters" method="get">
+      <input type="hidden" name="kind" value="alimiyyah">
+      <label class="filter-label">Take marks and grade from
+        <select name="exam" data-autosubmit-select><% exams.forEach(function (e) { %><option value="<%= e.id %>" <%= examId === e.id ? 'selected' : '' %>><%= e.title %> (<%= e.obtained %>/<%= e.total %>, <%= e.grade %>)</option><% }) %></select>
+      </label>
+      <button class="btn btn--line btn--sm" type="submit">Use this result</button>
+    </form>
+  <% } %>
+  <form method="post" action="<%= action %>" novalidate>
+    <input type="hidden" name="_csrf" value="<%= csrf %>">
+    <input type="hidden" name="exam_id" value="<%= examId || '' %>">
+    <p class="hint"><%= isAlim ? 'Written on the Shahadat al-Alamiyyah exactly as typed. Use Arabic or Urdu script; numbers in ۰۱۲۳ digits look like the printed certificate.' : 'Filled in from the student’s record. Check every line before printing.' %></p>
+    <div class="field-row field-row--3">
+      <% fields.forEach(function (f) { const ar = isAlim; %>
+        <div class="field">
+          <label for="c-<%= f[0] %>"><%= f[1] %></label>
+          <% if (isAlim && f[0] === 'grade') { %>
+            <input id="c-<%= f[0] %>" name="grade" list="ar-grades" value="<%= values.grade || '' %>" dir="rtl" lang="ar" class="ur-input">
+            <datalist id="ar-grades"><% ARABIC_GRADES.forEach(function (g) { %><option value="<%= g %>"><% }) %></datalist>
+          <% } else { %>
+            <input id="c-<%= f[0] %>" name="<%= f[0] %>" value="<%= values[f[0]] || '' %>" <%- ar ? 'dir="rtl" lang="ar" class="ur-input"' : '' %>>
+          <% } %>
+        </div>
+      <% }) %>
+      <div class="field"><label for="c-issued">Issued on (record)</label><input id="c-issued" name="issued_on" type="date" value="<%= issued_on %>"></div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn--gold" type="submit"><%= locals.editing ? 'Save and print' : 'Issue and print' %></button>
+      <a class="btn btn--line" href="<%= s ? '/app/students/' + s.id : '/app/certificates' %>">Cancel</a>
+    </div>
+  </form>
+</section>
+<%- include('../partials/app-bottom') %>

@@ -30,7 +30,7 @@ function canSeeExam(scope, e) {
   return scope.maktabIds.length > 0;
 }
 // "All Makatib" exams are for the Super Admin and the Makatib Nazim
-const canCoverAllMakatib = (scope) => scope.all || scope.allMakatib;
+const canCoverAllMakatib = (scope) => scope.all || scope.allMakatib || scope.wasAll;
 
 async function loadExam(req) {
   const id = int(req.params.id);

@@ -15,7 +15,8 @@ const UR = {
   "My profile": "میری پروفائل", "Accounts": "حسابات", "Income and expenses": "آمدن اور اخراجات", "Financial report": "مالیاتی رپورٹ",
   "My students": "میرے طلبہ", "Mark attendance": "حاضری لگائیں", "Monthly sheet": "ماہانہ شیٹ", "My children": "میرے بچے",
   "Public website": "ویب سائٹ", "Sign out": "لاگ آؤٹ", "portal": "پورٹل", "Language": "زبان", "Open menu": "مینو کھولیں",
-  "Skip to content": "مواد پر جائیں",
+  "Skip to content": "مواد پر جائیں", "Main branch": "مرکزی شاخ", "All": "سب", "Boys": "بنین", "Girls": "بنات",
+  "Certificates": "اسناد", "Backup": "بیک اپ", "Admission form": "داخلہ فارم",
   // Roles
   "Super Admin": "سپر ایڈمن", "Branch Manager": "برانچ منیجر", "Makatib Nazim": "ناظمِ مکاتب", "School Principal": "اسکول پرنسپل",
   "Accountant": "اکاؤنٹنٹ", "Teacher": "استاد", "Parent": "والدین", "Member": "رکن",

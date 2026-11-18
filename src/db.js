@@ -151,4 +151,11 @@ async function health() {
   }
 }
 
-module.exports = { databaseUrl, one, all, run, log, ready, health, logDatabaseError };
+/* Runs a multi-statement SQL script on one connection (used by backup restore inside BEGIN…COMMIT) */
+async function execScript(sql) {
+  const db = await getClient();
+  try { return await db.exec(sql); }
+  catch (err) { await db.exec("ROLLBACK").catch(() => {}); throw err; }
+}
+
+module.exports = { databaseUrl, one, all, run, log, ready, health, logDatabaseError, execScript };

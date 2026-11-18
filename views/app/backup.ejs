@@ -1,0 +1,33 @@
+<%- include('../partials/app-top') %>
+<div class="grid-2">
+  <section class="card">
+    <div class="card-head"><h2>Download a backup</h2></div>
+    <p>One file with every record in the portal. Keep it somewhere safe (a USB drive, Google Drive). If the server ever fails, upload it here on the new server or on a local computer and everything comes back.</p>
+    <div class="btn-row">
+      <a class="btn btn--gold" href="/app/backup/export"><%- include('../partials/icon', { name: 'archive' }) %>Download data backup</a>
+      <a class="btn btn--line" href="/app/backup/export?files=1"><%- include('../partials/icon', { name: 'upload' }) %>With photos and documents</a>
+    </div>
+    <p class="hint">Photos and documents: <%= files.n %> files, <%= fileSize(Number(files.bytes) || 0) %>. The backup with files is much larger; on the online server very large downloads may fail, so make it on the local computer if that happens.</p>
+    <p class="flash flash--err">The backup contains private information (CNIC numbers, phone numbers, password hashes). Never share it or upload it anywhere public.</p>
+    <details class="chart-table"><summary>What is in the backup</summary>
+      <table class="table"><tbody><% TABLES.forEach(function (t) { %><tr><td><%= label(t) %></td><td class="t-right num"><%= counts[t] %></td></tr><% }) %></tbody></table>
+    </details>
+  </section>
+
+  <section class="card">
+    <div class="card-head"><h2>Restore from a backup</h2></div>
+    <form method="post" action="/app/backup/import" enctype="multipart/form-data" data-confirm="Restore this backup into the portal now?">
+      <input type="hidden" name="_csrf" value="<%= csrf %>">
+      <div class="field"><label for="b-file">Backup file (.json)</label><input id="b-file" name="file" type="file" accept=".json,application/json" required></div>
+      <fieldset class="choice">
+        <legend>How to restore</legend>
+        <label><input type="radio" name="mode" value="merge" checked> <strong>Merge</strong>: add missing records and update existing ones with the same number. Nothing is deleted.</label>
+        <label><input type="radio" name="mode" value="replace"> <strong>Replace everything</strong>: delete all current data first, then restore the backup exactly. Use this on a new or empty server.</label>
+      </fieldset>
+      <div class="field"><label for="b-confirm">For “Replace everything”, type REPLACE <span class="opt">required for replace</span></label><input id="b-confirm" name="confirm" autocomplete="off"></div>
+      <button class="btn btn--blue" type="submit"><%- include('../partials/icon', { name: 'upload' }) %>Restore backup</button>
+    </form>
+    <p class="hint">A restore runs as one step: if anything goes wrong, nothing is changed. Download a fresh backup first, so you can go back. The online server accepts files up to about 4 MB; restore larger backups on the local computer.</p>
+  </section>
+</div>
+<%- include('../partials/app-bottom') %>

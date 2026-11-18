@@ -60,7 +60,7 @@ router.get("/", async (req, res) => {
   if (u.role === "accountant") return finance.dashboard(req, res);
 
   if (u.role === "nazim" || u.role === "principal") {
-    const data = await unitDashboardData(u);
+    const data = await unitDashboardData(u, req.session.section);
     return res.render("app/home-unit", {
       title: u.role === "nazim" ? "Makatib dashboard" : "School dashboard", ...data, announcements: await announcementsFor(u, 4),
     });
@@ -80,7 +80,7 @@ router.get("/", async (req, res) => {
     });
   }
 
-  const data = await dashboardData(u);
+  const data = await dashboardData(u, req.session.section);
   res.render("app/dashboard", { title: u.role === "admin" ? "Admin dashboard" : "Manager dashboard", ...data });
 });
 

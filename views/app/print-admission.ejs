@@ -1,0 +1,66 @@
+<%- include('../partials/print-top', { pdfName: 'Admission Form' + (s ? ' ' + s.full_name : ''), pageClass: 'print-page--adm' }) %>
+<%
+  const v = (x) => String(x ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;');
+  // A label with its filled-in rule; grow sets the share of the row
+  const fl = (labelText, value, grow) => `<span class="adm-item" style="flex:${grow || 1}"><b>${labelText}</b><i>${v(value)}</i></span>`;
+  const st = s || {};
+  const cnic = String(st.cnic_bform || '').padEnd(15, ' ').slice(0, 15).split('');
+  const dobFmt = typeof dmy === 'function' ? dmy(st.dob) : '';
+  const fee = (k) => x[k] ? 'Rs ' + x[k] : '';
+%>
+<article class="adm">
+  <header class="adm-head">
+    <%- include('../partials/iips-seal', { cls: 'adm-seal', sid: 'adm' }) %>
+    <div class="adm-titles">
+      <h1>IQRA ISLAMIA PUBLIC SCHOOL</h1>
+      <p class="adm-pill">Bhiria Road Distt: Naushahro Feroze,Sindh</p>
+      <p class="adm-phones">0300-3948748,0300-8911678</p>
+    </div>
+  </header>
+
+  <div class="adm-top">
+    <div class="adm-instr">
+      <p class="adm-instr-h">Instructions:</p>
+      <p>a) Each Form Should be accompanied by two recent Passport size photographs.</p>
+      <p>B) Form to be filled with capital letters.</p>
+    </div>
+    <p class="adm-badge">ADMISSION FORM</p>
+    <div class="adm-photo"><% if (typeof photo !== 'undefined' && photo) { %><img src="/app/files/<%= photo.id %>" alt=""><% } else { %><span>2<br>Photographs</span><% } %></div>
+  </div>
+
+  <div class="adm-body">
+    <div class="adm-row adm-row--short"><%- fl('Gr. No:', x.gr_no, .8) %><%- fl('Date of Admission:', st.enrolled_on ? dmy(st.enrolled_on) : '', 1.4) %></div>
+    <div class="adm-row"><%- fl('Name of Student :', st.full_name && st.full_name.toUpperCase()) %></div>
+    <div class="adm-row"><%- fl('Father’s Name:', st.father_name && st.father_name.toUpperCase()) %></div>
+    <div class="adm-row adm-row--nic"><b>National Identity Card No:</b><span class="adm-boxes"><% cnic.forEach(function (ch) { %><span><%= ch.trim() %></span><% }) %></span></div>
+    <div class="adm-row"><%- fl('Surname:', x.surname, 2.2) %><%- fl('Gender', st.gender ? GENDERS[st.gender] : '') %></div>
+    <div class="adm-row"><%- fl('Guardian’s Name:', x.guardian_name, 2.2) %><%- fl('Relationship', x.guardian_relation) %></div>
+    <div class="adm-row"><%- fl('Father’s Occupation/ Designation:', x.father_occupation) %></div>
+    <div class="adm-row"><%- fl('Religion', x.religion || (s ? 'Islam' : '')) %><%- fl('Nationality', x.nationality || (s ? 'Pakistani' : ''), 1.3) %></div>
+    <div class="adm-row"><%- fl('Date of Birth:', dobFmt) %><%- fl('(In words)', typeof dobWords !== 'undefined' ? dobWords : '', 1.6) %></div>
+    <div class="adm-row"><%- fl('Place of Birth:', x.place_of_birth, 1.2) %><%- fl('Taluka', x.taluka) %><%- fl('District:', x.district, 1.2) %></div>
+    <div class="adm-row"><%- fl('Class in which admission is sought:', x.admission_class || st.class_name) %></div>
+    <div class="adm-row"><%- fl('Marks in X-XI Class:', x.prev_marks) %></div>
+    <div class="adm-row"><%- fl('Last School Attended:', st.previous_institution) %></div>
+    <div class="adm-row"><%- fl('Address:', st.address) %></div>
+    <div class="adm-row adm-row--short"><%- fl('Ph:', st.phone, 1.4) %><%- fl('Mob:', st.guardian_phone, 1.2) %><span style="flex:.9"></span></div>
+    <div class="adm-sign adm-sign--guardian"><span></span>Father / Guardian</div>
+  </div>
+
+  <div class="adm-office">
+    <p class="adm-badge adm-badge--office">FOR OFFICE USE ONLY</p>
+    <div class="adm-office-grid">
+      <div>
+        <div class="adm-row"><%- fl('Admitted in Class:', st.class_name) %></div>
+        <div class="adm-row"><%- fl('Date of Admission:', st.enrolled_on ? dmy(st.enrolled_on) : '') %></div>
+        <div class="adm-row"><%- fl('Admission fee:', fee('admission_fee')) %></div>
+        <div class="adm-row"><%- fl('Tution Fee:', fee('tuition_fee')) %></div>
+        <div class="adm-row"><%- fl('Security fee:', fee('security_fee')) %></div>
+        <div class="adm-row"><%- fl('form fee:', fee('form_fee')) %></div>
+      </div>
+      <div class="adm-sign adm-sign--principal"><span></span>Principal</div>
+    </div>
+  </div>
+</article>
+<% if (!s) { %><p class="print-hint" data-no-print>Blank form. To print a filled form, open a student’s profile and choose <strong>Admission form</strong>.</p><% } %>
+<%- include('../partials/print-bottom') %>

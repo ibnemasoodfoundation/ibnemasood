@@ -4,6 +4,16 @@
 <section class="card card--form card--wide">
   <form method="post" action="<%= editing ? '/app/branches/' + values.editId : '/app/branches' %>" novalidate>
     <input type="hidden" name="_csrf" value="<%= csrf %>">
+    <fieldset class="form-section">
+      <legend>Main branch <span class="legend-ur" lang="ur">مرکزی شاخ</span></legend>
+      <fieldset class="choice">
+        <legend>This branch belongs to</legend>
+        <% [['boys', 'Jamia Arabia Abdullah Bin Masood (Boys)'], ['girls', 'Jamia Arabia Aisha Siddiqa (Girls)'], ['', 'Neither']].forEach(function (o) { %>
+          <label><input type="radio" name="section" value="<%= o[0] %>" <%= (values.section || '') === o[0] ? 'checked' : '' %> <%= user.role !== 'admin' ? 'disabled' : '' %>> <%= o[1] %></label>
+        <% }) %>
+      </fieldset>
+      <p class="hint">The Boys / Girls switch at the top of the portal shows only the branches, Makatib, schools, teachers and students of one main branch.</p>
+    </fieldset>
     <%- include('_unit-fields', { unitLabel: 'Branch' }) %>
     <%- include('_unit-admin-fields', { unitLabel: 'Branch' }) %>
     <% if (!editing) { %><p class="hint">You can add the branch photograph and documents on the next page.</p><% } %>

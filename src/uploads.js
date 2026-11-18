@@ -131,4 +131,23 @@ function removeFile(storedName) {
   }
 }
 
-module.exports = { acceptUpload, sendStored, removeFile, TYPES, remote };
+/* Raw file access for backups: read a stored file (or null) and write one back under the same name */
+async function readStored(storedName) {
+  if (!validName(storedName)) return null;
+  if (!remote) return fs.promises.readFile(path.join(UPLOAD_DIR, storedName)).catch(() => null);
+  const r = await storageFetch(`object/authenticated/${BUCKET}/${storedName}`).catch(() => null);
+  return r && r.ok ? Buffer.from(await r.arrayBuffer()) : null;
+}
+async function writeStored(storedName, buffer, mime) {
+  if (!validName(storedName)) return false;
+  if (!remote) {
+    await fs.promises.mkdir(UPLOAD_DIR, { recursive: true });
+    await fs.promises.writeFile(path.join(UPLOAD_DIR, storedName), buffer);
+    return true;
+  }
+  await ensureBucket();
+  const r = await storageFetch(`object/${BUCKET}/${storedName}`, { method: "POST", headers: { "Content-Type": mime || "application/octet-stream", "x-upsert": "true" }, body: buffer });
+  return r.ok;
+}
+
+module.exports = { acceptUpload, sendStored, removeFile, readStored, writeStored, TYPES, remote };

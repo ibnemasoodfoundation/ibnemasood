@@ -155,7 +155,17 @@
       <%- field('notes', 'Notes', { textarea: true }) %>
     </fieldset>
 
-    <% if (!isT) { %>
+    <% if (!isT) { const ex = typeof values.extra === 'string' ? JSON.parse(values.extra || '{}') : (values.extra || {}); %>
+      <fieldset class="form-section" id="admission-details">
+        <legend>Admission form details <span class="legend-ur" lang="ur">داخلہ فارم</span></legend>
+        <p class="hint">Printed on the admission form and the school leaving certificate. All optional.</p>
+        <div class="field-row field-row--3">
+          <% STUDENT_EXTRA.forEach(function (x) { %>
+            <div class="field"><label for="x-<%= x[0] %>"><%= x[1] %></label><input id="x-<%= x[0] %>" name="x_<%= x[0] %>" value="<%= ex[x[0]] || (x[0] === 'religion' ? '' : '') %>" <%= /fee$/.test(x[0]) ? 'inputmode="numeric"' : '' %> placeholder="<%= x[0] === 'religion' ? 'Islam' : x[0] === 'nationality' ? 'Pakistani' : '' %>"></div>
+          <% }) %>
+        </div>
+      </fieldset>
+
       <fieldset class="form-section" id="parent-access">
         <legend>Parent portal access <span class="legend-ur" lang="ur">والدین کا لاگ اِن</span></legend>
         <p class="hint">With a login, the parent sees this child’s attendance, progress, published results and the Jamia’s announcements. Brothers and sisters can share one parent login: enter the same email on each child’s form.</p>
