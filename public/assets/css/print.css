@@ -163,22 +163,22 @@ body { margin: 0; font-family: var(--f-body); color: var(--ink); font-size: 12.5
 
 /* ---------- Iqra Islamia Public School: School Leaving Certificate ---------- */
 .print-page--slc { padding: 10mm 12mm; }
-.slc { position: relative; width: 186mm; height: 214mm; margin: 0 auto; color: #1d2c6b; font-family: Georgia, "Times New Roman", serif; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+.slc { position: relative; width: 186mm; height: 224mm; margin: 0 auto; color: #1d2c6b; font-family: Georgia, "Times New Roman", serif; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 .slc-frame { position: absolute; inset: 0; width: 100%; height: 100%; }
 .slc-corner { position: absolute; width: 27mm; height: 27mm; }
 .slc-corner--tl { top: 2mm; left: 2mm; }
 .slc-corner--tr { top: 2mm; right: 2mm; transform: scaleX(-1); }
 .slc-corner--bl { bottom: 2mm; left: 2mm; transform: scaleY(-1); }
 .slc-corner--br { bottom: 2mm; right: 2mm; transform: scale(-1, -1); }
-.slc-serial { position: absolute; top: 13mm; left: 30mm; margin: 0; font: 700 20px Georgia, serif; color: #2b2b2b; letter-spacing: .04em; }
-.slc-head { position: relative; text-align: center; height: 70mm; }
-.slc-arch { position: absolute; top: 4mm; left: 50%; transform: translateX(-50%); width: 158mm; }
-.slc-seal { position: absolute; top: 24mm; left: 50%; transform: translateX(-50%); width: 26mm; height: auto; }
-.slc-place { position: absolute; top: 51mm; left: 0; right: 0; margin: 0; font: italic 700 13.5px Georgia, serif; color: #2b2b2b; letter-spacing: .02em; }
-.slc-pill { position: absolute; top: 58mm; left: 0; right: 0; margin: 0; }
+.slc-serial { position: absolute; top: 14mm; left: 40mm; margin: 0; font: 700 20px Georgia, serif; color: #2b2b2b; letter-spacing: .04em; }
+.slc-head { position: relative; text-align: center; height: 73mm; }
+.slc-arch { position: absolute; top: 8mm; left: 50%; transform: translateX(-50%); width: 160mm; }
+.slc-seal { position: absolute; top: 27mm; left: 50%; transform: translateX(-50%); width: 26mm; height: auto; }
+.slc-place { position: absolute; top: 54mm; left: 0; right: 0; margin: 0; font: italic 700 13.5px Georgia, serif; color: #2b2b2b; letter-spacing: .02em; }
+.slc-pill { position: absolute; top: 61mm; left: 0; right: 0; margin: 0; }
 .slc-pill span { display: inline-block; background: #25439b; color: #fff; font: 800 12.5px Arial, Helvetica, sans-serif; letter-spacing: .03em; padding: 1.3mm 5mm; border-radius: 99px; box-shadow: 0 0 0 .6mm #fff, 0 0 0 1mm #25439b; }
 .slc-body { padding: 0 15mm; }
-.slc-row { display: flex; gap: 3mm; margin: 0 0 3.1mm; }
+.slc-row { display: flex; gap: 3mm; margin: 0 0 2.9mm; }
 .slc-item, .adm-item { display: flex; align-items: baseline; min-width: 0; }
 .slc-item b { font-weight: 700; font-size: 12.5px; white-space: nowrap; color: #2b2b2b; }
 .slc-item i, .adm-item i { flex: 1; min-width: 6mm; font-style: normal; border-bottom: 1px solid #333; padding: 0 1.5mm; margin-left: 1mm; min-height: 4.6mm; font: 600 13px "Jost", Arial, sans-serif; color: #10307a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -207,6 +207,7 @@ body { margin: 0; font-family: var(--f-body); color: var(--ink); font-size: 12.5
 .adm-row--short { max-width: 140mm; }
 .adm-item b { font-weight: 600; font-size: 12px; white-space: nowrap; }
 .adm-item i { color: #10307a; text-transform: uppercase; font-size: 12px; }
+.adm-item i.adm-fee { text-transform: none; }
 .adm-row--nic b { font-weight: 600; font-size: 12px; white-space: nowrap; }
 .adm-boxes { display: inline-flex; margin-left: 2mm; }
 .adm-boxes span { width: 6.4mm; height: 6.6mm; border: 1px solid #333; margin-left: -1px; display: grid; place-items: center; font: 700 12px Arial, sans-serif; color: #10307a; }
@@ -224,6 +225,6 @@ body { margin: 0; font-family: var(--f-body); color: var(--ink); font-size: 12.5
 .alim { position: relative; width: 100%; container-type: inline-size; }
 .alim-art { display: block; width: 100%; height: auto; }
 .alim--paper .alim-art { visibility: hidden; }
-.alim-val { position: absolute; transform: translate(-50%, -86%); font: 700 1.62cqw/1.2 Amiri, "Traditional Arabic", serif; color: #0d2a7a; white-space: nowrap; overflow: hidden; text-align: center; }
-.alim-val--marks, .alim-val--issue_date { font-size: 1.7cqw; color: #111; }
+.alim-val { position: absolute; transform: translate(-50%, -86%); font: 700 1.9cqw/1.2 Amiri, "Traditional Arabic", serif; color: #0d2a7a; white-space: nowrap; overflow: hidden; text-align: center; }
+.alim-val--marks, .alim-val--issue_date { font-size: 1.9cqw; color: #111; }
 @media print { .print-page--alim { page: wide; padding: 0; width: auto; min-height: 0; } }

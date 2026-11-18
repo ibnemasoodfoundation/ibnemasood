@@ -7,7 +7,12 @@
   <% } else { %>
     <p>School Leaving Certificates (Iqra Islamia Public School students) and Shahadat al-Alamiyyah certificates (Jamia students). To issue one, open the student’s profile.</p>
   <% } %>
-  <% if (only !== 'alimiyyah') { %><a class="btn btn--line btn--sm" href="/app/forms/admission" target="_blank"><%- include('../partials/icon', { name: 'file' }) %>Blank admission form</a><% } %>
+  <% if (only !== 'alimiyyah') { %>
+    <div class="btn-row">
+      <a class="btn btn--gold btn--sm" href="/app/certificates/leaving/new"><%- include('../partials/icon', { name: 'plus' }) %>Generate leaving certificate manually</a>
+      <a class="btn btn--line btn--sm" href="/app/forms/admission" target="_blank"><%- include('../partials/icon', { name: 'file' }) %>Blank admission form</a>
+    </div>
+  <% } %>
 </div>
 <section class="card card--flush">
   <% if (!rows.length) { %><p class="empty">No certificates issued yet.</p><% } else { %>

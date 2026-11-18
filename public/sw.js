@@ -4,7 +4,7 @@
      and are sent automatically, in order, as soon as the internet is back.
    - Signing out removes the saved pages from the device. */
 "use strict";
-const VERSION = "v1";
+const VERSION = "v2";
 const STATIC = "jaabm-static-" + VERSION;
 const PAGES = "jaabm-pages";
 const PRECACHE = ["/assets/css/style.css", "/assets/css/app.css", "/assets/js/app.js", "/assets/js/offline.js", "/assets/images/logo-sm.jpg"];
@@ -112,12 +112,16 @@ self.addEventListener("fetch", (e) => {
   const isPage = req.mode === "navigate" || (req.headers.get("Accept") || "").includes("text/html") || url.pathname.startsWith("/app");
   if (!isPage) return;
   e.respondWith(fetch(req).then((r) => {
-    const toLogin = r.redirected && new URL(r.url).pathname.startsWith("/login");
-    if (r.ok && !toLogin) caches.open(PAGES).then((c) => c.put(req, r.clone()));
+    // Copy the page now, before the browser starts reading it (a later clone fails silently).
+    // Redirected answers (e.g. to the sign-in page) are never kept: a browser refuses them for navigation.
+    if (r.ok && !r.redirected && (r.headers.get("Content-Type") || "").includes("text/html")) {
+      const copy = r.clone();
+      e.waitUntil(caches.open(PAGES).then((c) => c.put(url.pathname + url.search, copy)));
+    }
     return r;
   }).catch(async () => {
     const c = await caches.open(PAGES);
-    return (await c.match(req)) || (await c.match(req, { ignoreSearch: true })) ||
+    return (await c.match(url.pathname + url.search)) || (await c.match(url.pathname, { ignoreSearch: true })) ||
       page("You are offline", "This page has not been opened on this device yet, so it is not available without internet. Pages you have opened before still work.");
   }));
 });

@@ -23,10 +23,11 @@
 
   <p class="slc-serial"><%= d.certificate_no || '' %></p>
   <header class="slc-head">
-    <svg class="slc-arch" viewBox="0 0 640 250" aria-hidden="true">
-      <defs><path id="slc-arc" d="M40 236A280 214 0 0 1 600 236"/></defs>
-      <text font-family="'Arial Black', 'Archivo Black', Impact, Arial, sans-serif" font-weight="900" font-size="54" fill="#fff" stroke="#25439b" stroke-width="3.2" paint-order="stroke" letter-spacing="1">
-        <textPath href="#slc-arc" startOffset="50%" text-anchor="middle">IQRA ISLAMIA PUBLIC SCHOOL</textPath>
+    <svg class="slc-arch" viewBox="0 0 640 280" aria-hidden="true">
+      <defs><path id="slc-arc" d="M58 236A262 196 0 0 1 582 236"/></defs>
+      <%# Letters sized to the exact length of the arch, outlined like the printed certificate %>
+      <text font-family="Georgia, 'Times New Roman', serif" font-weight="700" font-size="44" fill="#fff" stroke="#25439b" stroke-width="2.6" paint-order="stroke" stroke-linejoin="round">
+        <textPath href="#slc-arc" startOffset="50%" text-anchor="middle" textLength="700" lengthAdjust="spacingAndGlyphs">IQRA ISLAMIA PUBLIC SCHOOL</textPath>
       </text>
     </svg>
     <img class="slc-seal" src="/assets/images/iips-logo-blue.png" alt="">

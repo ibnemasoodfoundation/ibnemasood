@@ -24,6 +24,10 @@
     else if (pending) show("Sending " + pending + " saved change" + (pending === 1 ? "" : "s") + "…", "sync", true);
     else bar.hidden = true;
   }
+  function whenControlled(fn) {
+    if (navigator.serviceWorker.controller) fn();
+    else navigator.serviceWorker.addEventListener("controllerchange", fn, { once: true });
+  }
   function ask(type) { if (navigator.serviceWorker.controller) navigator.serviceWorker.controller.postMessage({ type: type }); }
 
   navigator.serviceWorker.register("/sw.js").then(function () {
@@ -31,7 +35,11 @@
   }).then(function () {
     ask("count");
     if (navigator.onLine) ask("sync");
-    warmUp();
+    // The very first page was loaded before the worker took over, so keep it (and the menu pages) once it is in charge
+    whenControlled(function () {
+      if (navigator.onLine) fetch(location.pathname + location.search, { credentials: "same-origin" }).catch(function () {});
+      warmUp();
+    });
   }).catch(function () {});
 
   navigator.serviceWorker.addEventListener("message", function (e) {

@@ -172,6 +172,27 @@ router.post("/students/:id/certificates", staff, async (req, res, next) => {
   res.redirect("/app/certificates/" + r.id);
 });
 
+/* ================= Leaving certificate typed in by hand (any pupil, registered in the portal or not) ================= */
+router.get("/certificates/leaving/new", staff, async (req, res) => {
+  res.render("app/certificate-form", {
+    title: "Generate leaving certificate manually", kind: "leaving", kinds: ["leaving"], s: null, fields: LEAVING_FIELDS, KINDS,
+    values: { certificate_no: await nextNumber("leaving"), religion: "Islam", leaving_date: dmy(todayPk()) },
+    exams: [], examId: null, issued_on: todayPk(), ARABIC_GRADES, action: "/app/certificates/leaving", manual: true,
+  });
+});
+
+router.post("/certificates/leaving", staff, async (req, res) => {
+  const v = readFields("leaving", req.body);
+  if (!v.dob_words && v.dob) v.dob_words = dateInWords(v.dob.split("-").reverse().join("-"));
+  const issued = DATE_RE.test(str(req.body.issued_on, 10)) ? str(req.body.issued_on, 10) : todayPk();
+  if (!v.name) { req.flash("err", "Enter the name of the pupil."); return res.redirect("/app/certificates/leaving/new"); }
+  const r = await one(`INSERT INTO certificates (kind, serial_no, student_id, data, issued_on, issued_by) VALUES ('leaving', ?, NULL, ?, ?, ?) RETURNING id`,
+    v.certificate_no || null, JSON.stringify(v), issued, req.user.id);
+  await log(req.user.id, "certificate.leaving_manual", v.name);
+  req.flash("ok", "School Leaving Certificate generated. Print it or download the PDF.");
+  res.redirect("/app/certificates/" + r.id);
+});
+
 async function loadCert(req) {
   const id = int(req.params.id);
   const c = id && await one("SELECT * FROM certificates WHERE id = ?", id);

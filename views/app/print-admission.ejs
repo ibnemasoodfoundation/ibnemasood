@@ -7,6 +7,7 @@
   const cnic = String(st.cnic_bform || '').padEnd(15, ' ').slice(0, 15).split('');
   const dobFmt = typeof dmy === 'function' ? dmy(st.dob) : '';
   const fee = (k) => x[k] ? 'Rs ' + x[k] : '';
+  const feeLine = (labelText, k) => `<span class="adm-item"><b>${labelText}</b><i class="adm-fee">${v(fee(k))}</i></span>`;
 %>
 <article class="adm">
   <header class="adm-head">
@@ -53,10 +54,10 @@
       <div>
         <div class="adm-row"><%- fl('Admitted in Class:', st.class_name) %></div>
         <div class="adm-row"><%- fl('Date of Admission:', st.enrolled_on ? dmy(st.enrolled_on) : '') %></div>
-        <div class="adm-row"><%- fl('Admission fee:', fee('admission_fee')) %></div>
-        <div class="adm-row"><%- fl('Tution Fee:', fee('tuition_fee')) %></div>
-        <div class="adm-row"><%- fl('Security fee:', fee('security_fee')) %></div>
-        <div class="adm-row"><%- fl('form fee:', fee('form_fee')) %></div>
+        <div class="adm-row"><%- feeLine('Admission fee:', 'admission_fee') %></div>
+        <div class="adm-row"><%- feeLine('Tution Fee:', 'tuition_fee') %></div>
+        <div class="adm-row"><%- feeLine('Security fee:', 'security_fee') %></div>
+        <div class="adm-row"><%- feeLine('form fee:', 'form_fee') %></div>
       </div>
       <div class="adm-sign adm-sign--principal"><span></span>Principal</div>
     </div>

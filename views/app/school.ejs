@@ -11,6 +11,7 @@
       <% if (canEdit) { %><a class="btn btn--blue btn--sm" href="/app/schools/<%= sc.id %>/edit"><%- include('../partials/icon', { name: 'edit' }) %>Edit</a><% } %>
       <a class="btn btn--gold btn--sm" href="/app/schools/<%= sc.id %>/register"><%- include('../partials/icon', { name: 'student' }) %>Register student</a>
       <a class="btn btn--line btn--sm" href="/app/forms/admission" target="_blank"><%- include('../partials/icon', { name: 'file' }) %>Blank admission form</a>
+      <a class="btn btn--line btn--sm" href="/app/certificates/leaving/new"><%- include('../partials/icon', { name: 'file' }) %>Generate leaving certificate</a>
       <a class="btn btn--line btn--sm" href="/app/teachers/new?school=<%= sc.id %>"><%- include('../partials/icon', { name: 'teacher' }) %>Register teacher</a>
       <a class="btn btn--line btn--sm" href="/app/attendance?school=<%= sc.id %>"><%- include('../partials/icon', { name: 'list' }) %>Attendance</a>
       <a class="btn btn--line btn--sm" href="/app/results/new?school=<%= sc.id %>"><%- include('../partials/icon', { name: 'file' }) %>New exam</a>

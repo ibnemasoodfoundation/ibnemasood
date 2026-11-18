@@ -19,7 +19,7 @@
   <form method="post" action="<%= action %>" novalidate>
     <input type="hidden" name="_csrf" value="<%= csrf %>">
     <input type="hidden" name="exam_id" value="<%= examId || '' %>">
-    <p class="hint"><%= isAlim ? 'Written on the Shahadat al-Alamiyyah exactly as typed. Use Arabic or Urdu script; numbers in ۰۱۲۳ digits look like the printed certificate.' : 'Filled in from the student’s record. Check every line before printing.' %></p>
+    <p class="hint"><%= isAlim ? 'Written on the Shahadat al-Alamiyyah exactly as typed. Use Arabic or Urdu script; numbers in ۰۱۲۳ digits look like the printed certificate.' : locals.manual ? 'Type every line as it should appear on the certificate. Dates as DD-MM-YYYY; the date of birth in words is filled in automatically if left empty.' : 'Filled in from the student’s record. Check every line before printing.' %></p>
     <div class="field-row field-row--3">
       <% fields.forEach(function (f) { const ar = isAlim; %>
         <div class="field">
