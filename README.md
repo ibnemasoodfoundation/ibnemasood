@@ -135,6 +135,26 @@ Menu → **Jamia**: each Jamia has its own pages, and Baneen and Banaat records 
   message** to the parents of a Jamia (or one darja), a school, a Maktab, one student's parent, or to teachers. With
   permission, new notifications also appear as browser notifications while the portal or the installed app is open.
 
+## Android app
+
+`public/downloads/jaabm-portal.apk` is the Android app (download link on the sign-in page:
+https://www.jaabm.com/downloads/jaabm-portal.apk). It opens https://www.jaabm.com/login in a full-screen window and
+adds what a phone needs: photo and document uploads (file or camera), certificate / receipt / slip PDFs saved to
+Downloads, printing through Android's print screen, signed-in downloads (backups), and phone / WhatsApp / outside links
+opening in their own apps. Pages come from the live website, so changes to the portal need no new app.
+
+- Install: open the link on the phone, then allow "Install unknown apps" for the browser when Android asks.
+- Rebuild: `android/build.sh` with `ANDROID_BUILD_TOOLS` (build-tools 34) and `ANDROID_JAR` (platform 34) set;
+  raise `VERSION_CODE` for each new version. The signing key `android/release.keystore` and
+  `android/keystore.properties` are git-ignored: keep a safe copy, because Android installs an update only when it is
+  signed with the same key.
+
+## One parent, several children
+
+Enter the same parent email on each child's form, or open a parent (student profile → "See or add this parent's other
+children", or Users & roles → children) and add a child by Student ID. The Super Admin can link any student; a Branch
+Manager or School Principal links students of their own area.
+
 ## Printed documents
 
 - **Admission form** (Iqra Islamia Public School): blank from Certificates → Blank admission form, or filled in from a

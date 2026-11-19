@@ -38,7 +38,7 @@
     <tbody>
     <% rows.forEach(function (p) { const self = p.id === user.id; %>
       <tr class="<%= p.status === 'suspended' ? 'row-muted' : '' %>">
-        <td><div class="person"><span class="avatar avatar--sm"><%= initials(p.name) %></span><span><strong><%= p.name %><% if (self) { %> (you)<% } %></strong><small><%= p.email %></small></span></div></td>
+        <td><div class="person"><span class="avatar avatar--sm"><%= initials(p.name) %></span><span><strong><%= p.name %><% if (self) { %> (you)<% } %></strong><small><%= p.email %><% if (p.role === 'parent') { %> · <a href="/app/parents/<%= p.id %>">children</a><% } %></small></span></div></td>
         <td><%= p.phone || '—' %></td>
         <td><%= fmtDate(p.created_at) %></td>
         <td><%= p.last_login ? fmtDateTime(p.last_login) : 'Never' %></td>

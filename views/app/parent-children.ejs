@@ -1,0 +1,40 @@
+<%- include('../partials/app-top') %>
+<p class="crumb"><a href="javascript:history.back()">← Back</a></p>
+<div class="grid-2">
+  <section class="card">
+    <div class="card-head"><h2>Parent login</h2><%- include('../partials/badge', { s: p.status }) %></div>
+    <dl class="details">
+      <div><dt>Name</dt><dd><%= p.name %></dd></div>
+      <div><dt>Email (sign-in)</dt><dd><%= p.email %></dd></div>
+      <div><dt>Phone</dt><dd><%= p.phone || '—' %></dd></div>
+      <div><dt>Last sign-in</dt><dd><%= p.last_login ? fmtDateTime(p.last_login) : 'Never' %></dd></div>
+    </dl>
+    <p class="hint">One parent login can hold all their children. The parent sees each child’s attendance, results, fees and messages on one dashboard.<% if (user.role === 'admin') { %> To reset this parent’s password, use <a href="/app/users?q=<%= encodeURIComponent(p.email) %>">Users &amp; roles</a>.<% } %></p>
+  </section>
+  <section class="card">
+    <div class="card-head"><h2>Add a child</h2></div>
+    <form method="post" action="/app/parents/<%= p.id %>/children" class="assign assign--flush">
+      <input type="hidden" name="_csrf" value="<%= csrf %>">
+      <label for="pc-code">Student ID</label>
+      <div class="assign-row">
+        <input id="pc-code" name="code" placeholder="e.g. ST-014, JB-003 or JG-021" autocapitalize="characters" required>
+        <button class="btn btn--blue btn--sm" type="submit">Link to this parent</button>
+      </div>
+      <p class="hint">The Student ID is on the student’s profile and ID card.<%= user.role === 'admin' ? '' : ' You can link students of your own area only.' %></p>
+    </form>
+  </section>
+</div>
+<section class="card card--flush">
+  <div class="card-head card-head--pad"><h2>Children on this login (<%= kids.length %>)</h2></div>
+  <% if (!kids.length) { %><p class="empty">No children linked yet.</p><% } else { %>
+    <div class="table-wrap"><table class="table">
+      <thead><tr><th>Student</th><th>Jamia / school / Maktab</th><th>Class / darja</th><th>Status</th><th></th></tr></thead>
+      <tbody><% kids.forEach(function (k) { %>
+        <tr><td><a class="row-link" href="/app/students/<%= k.id %>"><strong><%= k.full_name %></strong></a><small><%= k.code %></small></td><td><%= k.unit || '—' %></td><td><%= k.class_name || '—' %></td><td><%- include('../partials/badge', { s: k.status }) %></td>
+          <td class="t-right"><form class="inline" method="post" action="/app/parents/<%= p.id %>/children/<%= k.id %>/remove" data-confirm="Remove <%= k.full_name %> from this parent's login?"><input type="hidden" name="_csrf" value="<%= csrf %>"><button class="btn-sm btn-sm--danger" type="submit">Remove</button></form></td></tr>
+      <% }) %></tbody>
+    </table></div>
+  <% } %>
+  <% if (hidden) { %><p class="hint" style="padding:0 1.2rem 1rem"><%= hidden %> more child<%= hidden === 1 ? '' : 'ren' %> outside your area <%= hidden === 1 ? 'is' : 'are' %> also linked to this parent.</p><% } %>
+</section>
+<%- include('../partials/app-bottom') %>

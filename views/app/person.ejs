@@ -157,6 +157,9 @@
     <% } %>
   </section>
 <% } else { %>
+  <% if (x.parent_id && ['admin', 'manager', 'principal'].includes(user.role)) { %>
+    <p class="hint parent-link"><%- include('../partials/icon', { name: 'users' }) %> Parent login: <strong><%= x.parent_email %></strong> · <a href="/app/parents/<%= x.parent_id %>">See or add this parent’s other children</a></p>
+  <% } %>
   <section class="card" id="fees">
     <div class="card-head"><h2>Fees</h2><span class="muted small-inline">Monthly fee: <%= x.monthly_fee ? money(x.monthly_fee) : 'not set' %></span><% if (['admin', 'accountant', 'manager', 'principal'].includes(user.role)) { %><a href="/app/fees?q=<%= encodeURIComponent(x.code) %>">Record a payment</a><% } %></div>
     <% if (!fees.length) { %><p class="empty">No fee payments recorded yet.</p><% } else { %>

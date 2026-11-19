@@ -178,7 +178,7 @@ async function loadPerson(req, type) {
   const cfg = PEOPLE[type];
   const id = int(req.params.id);
   const x = id && await one(`SELECT x.*, b.name_en AS branch, m.name_en AS maktab, m.name_ur AS maktab_ur, sc.name_en AS school
-    ${type === "student" ? ", t.full_name AS teacher, pu.email AS parent_email" : ", u.email AS login_email"}
+    ${type === "student" ? ", t.full_name AS teacher, pu.email AS parent_email, pu.id AS parent_id" : ", u.email AS login_email"}
     FROM ${cfg.table} x LEFT JOIN branches b ON b.id = x.branch_id LEFT JOIN makatib m ON m.id = x.maktab_id
     LEFT JOIN schools sc ON sc.id = x.school_id
     ${type === "student" ? "LEFT JOIN users pu ON pu.id = x.parent_user_id" : ""}

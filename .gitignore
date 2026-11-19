@@ -4,3 +4,9 @@ node_modules/
 *.log
 data/
 uploads/
+
+# Android signing key and build output (keep a safe copy of the key; never commit it)
+android/release.keystore
+android/keystore.properties
+android/build/
+public/downloads/*.idsig

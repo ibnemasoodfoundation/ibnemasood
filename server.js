@@ -155,6 +155,7 @@ app.use("/app", require("./src/routes/deletes"));
 app.use("/app", require("./src/routes/notifications"));
 app.use("/app", require("./src/routes/fees"));
 app.use("/app", require("./src/routes/salaries"));
+app.use("/app", require("./src/routes/parents"));
 app.use("/app", require("./src/routes/backup"));
 app.use("/app", require("./src/routes/app"));
 

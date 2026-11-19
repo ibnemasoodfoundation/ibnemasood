@@ -2,8 +2,10 @@
    The PDF is rendered from the page itself, so Urdu text keeps its Nastaliq shaping. */
 (function () {
   "use strict";
+  // Inside the Android app (window.JAABMApp) printing and saving go through the phone; in a browser, as usual
+  var app = window.JAABMApp;
   var printBtn = document.querySelector("[data-print]");
-  if (printBtn) printBtn.addEventListener("click", function () { window.print(); });
+  if (printBtn) printBtn.addEventListener("click", function () { if (app) app.print(document.title); else window.print(); });
 
   /* PDF settings for the page being exported. Certificates are one page each: the Alimiyyah on landscape A4,
      the school documents on portrait A4, always scaled to fit (never cut off at the edge). */
@@ -98,7 +100,8 @@
     (document.fonts ? document.fonts.ready : Promise.resolve()).then(function () {
       return window.jaabmBuildPdf(area, name);
     }).then(function (pdf) {
-      pdf.save(name + ".pdf");
+      if (app) app.saveFile(pdf.output("datauristring").split(",")[1], "application/pdf", name + ".pdf");
+      else pdf.save(name + ".pdf");
     }).catch(function () {
       alert("The PDF could not be created. Use Print and choose \"Save as PDF\" instead.");
     }).then(function () {
