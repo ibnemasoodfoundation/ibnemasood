@@ -97,11 +97,6 @@ const isOn = (href, n) => {
     <header class="topnav">
       <button class="side-toggle" type="button" aria-controls="side" aria-expanded="false" aria-label="<%= t('Open menu') %>"><%- include('icon', { name: 'menu' }) %></button>
       <h1 class="topnav-title"><%= t(title) %></h1>
-      <% if (['admin', 'manager', 'nazim', 'principal'].includes(user.role)) { const sec = typeof section !== 'undefined' ? section : ''; %>
-        <nav class="lang-switch section-switch" aria-label="<%= t('Main branch') %>">
-          <% [['all', 'All'], ['boys', 'Boys'], ['girls', 'Girls']].forEach(function (o) { %><a href="/section/<%= o[0] %>" <% if ((sec || 'all') === o[0]) { %>aria-current="true"<% } %> title="<%= o[0] === 'boys' ? 'Jamia Arabia Abdullah Bin Masood' : o[0] === 'girls' ? 'Jamia Arabia Aisha Siddiqa' : 'Both main branches' %>"><%= t(o[1]) %></a><% }) %>
-        </nav>
-      <% } %>
       <nav class="lang-switch" aria-label="<%= t('Language') %>">
         <%- include('icon', { name: 'globe' }) %>
         <% Object.keys(LANGS).forEach(function (code) { %><a href="/lang/<%= code %>" lang="<%= code %>" <% if (lang === code) { %>aria-current="true"<% } %>><%= LANGS[code].name %></a><% }) %>

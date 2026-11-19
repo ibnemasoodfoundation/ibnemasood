@@ -28,7 +28,7 @@
     if (navigator.serviceWorker.controller) fn();
     else navigator.serviceWorker.addEventListener("controllerchange", fn, { once: true });
   }
-  function ask(type) { if (navigator.serviceWorker.controller) navigator.serviceWorker.controller.postMessage({ type: type }); }
+  function ask(type, extra) { if (navigator.serviceWorker.controller) navigator.serviceWorker.controller.postMessage(Object.assign({ type: type }, extra || {})); }
 
   navigator.serviceWorker.register("/sw.js").then(function () {
     return navigator.serviceWorker.ready;
@@ -45,6 +45,7 @@
   navigator.serviceWorker.addEventListener("message", function (e) {
     var m = e.data || {};
     if (m.type === "count" || m.type === "queued") { pending = m.left; render(); }
+    if (m.type === "warmed" && m.saved) { try { localStorage.setItem("jaabm-saved-pages", String(m.saved)); } catch (err) { /* ignore */ } }
     if (m.type === "synced") {
       pending = m.left;
       if (m.login) show("Sign in again to send the " + m.left + " saved change" + (m.left === 1 ? "" : "s") + ".", "warn", true);
@@ -55,25 +56,23 @@
       } else render();
     }
   });
-  window.addEventListener("online", function () { render(); ask("sync"); });
+  window.addEventListener("online", function () { render(); ask("sync"); try { localStorage.removeItem("jaabm-warm"); } catch (err) { /* ignore */ } warmUp(); });
   window.addEventListener("offline", render);
 
-  /* Open the menu pages once in the background (online, at most every 15 minutes) so they work offline later */
+  /* Save the whole portal for offline use (online, at most every 30 minutes): the service worker opens the
+     menu pages and the pages they link to in the background */
   function warmUp() {
     if (!navigator.onLine) return;
     try {
-      var last = Number(sessionStorage.getItem("jaabm-warm") || 0);
-      if (Date.now() - last < 15 * 60 * 1000) return;
-      sessionStorage.setItem("jaabm-warm", String(Date.now()));
-    } catch (err) { /* storage blocked: warm up anyway */ }
-    var links = Array.prototype.slice.call(document.querySelectorAll(".side-nav a[href^='/app']"))
+      var last = Number(localStorage.getItem("jaabm-warm") || 0);
+      if (Date.now() - last < 30 * 60 * 1000) return;
+      localStorage.setItem("jaabm-warm", String(Date.now()));
+    } catch (err) { /* storage blocked: save anyway */ }
+    var links = Array.prototype.slice.call(document.querySelectorAll(".side-nav a[href^='/app'], .content a[href^='/app']"))
       .map(function (a) { return a.getAttribute("href"); })
-      .filter(function (h, i, all) { return all.indexOf(h) === i && !/backup|finance\/report/.test(h); });
-    var i = 0;
-    (function next() {
-      if (i >= links.length || !navigator.onLine) return;
-      fetch(links[i++], { credentials: "same-origin" }).catch(function () {}).then(function () { setTimeout(next, 400); });
-    })();
+      .filter(function (h, i, all) { return all.indexOf(h) === i; });
+    links.unshift(location.pathname + location.search);
+    ask("warm", { start: links });
   }
 
   /* Signing out removes saved pages from this device; warn if changes are still waiting */
@@ -81,6 +80,7 @@
     f.addEventListener("submit", function (e) {
       if (pending && !confirm(pending + " change" + (pending === 1 ? " is" : "s are") + " still waiting to be sent. If you sign out now they will be sent only after you sign in again on this device. Sign out anyway?")) { e.preventDefault(); return; }
       ask("logout");
+      try { localStorage.removeItem("jaabm-warm"); } catch (err) { /* ignore */ }
     });
   });
 })();

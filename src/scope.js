@@ -119,7 +119,7 @@ async function canSeeBranch(scope, branchId) {
 
 /* Express middleware: attaches req.scope */
 async function withScope(req, res, next) {
-  req.scope = await loadScope(req.user, req.session && req.session.section);
+  req.scope = await loadScope(req.user);
   res.locals.access = req.scope; // not "scope": EJS reserves that name
   next();
 }

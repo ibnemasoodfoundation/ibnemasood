@@ -104,7 +104,9 @@ app.use(async (req, res, next) => {
 });
 app.use(i18n);
 app.use(async (req, res, next) => {
-  res.locals.section = req.session.section || "";
+  // The Boys / Girls header switch was removed: a choice left in a session no longer filters anything
+  if (req.session && req.session.section) req.session.section = null;
+  res.locals.section = "";
   // Which Jamias appear in the menu: both for the Super Admin, the ones a Branch Manager manages
   res.locals.jamiaNav = [];
   // Notifications: the count on the bell, and the newest unread ones on the dashboard
@@ -124,7 +126,7 @@ app.use(async (req, res, next) => {
 
 /* Main branch switch: /section/boys, /section/girls or /section/all, then back to the same page */
 app.get("/section/:code", (req, res) => {
-  req.session.section = ["boys", "girls"].includes(req.params.code) ? req.params.code : "";
+  req.session.section = null; // the switch is gone; old links show everything again
   let back = "/app";
   try { const ref = new URL(req.get("referer") || ""); if (ref.host === req.get("host") && ref.pathname.startsWith("/app")) back = ref.pathname; } catch { /* keep /app */ }
   res.redirect(back);

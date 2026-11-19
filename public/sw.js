@@ -4,7 +4,7 @@
      and are sent automatically, in order, as soon as the internet is back.
    - Signing out removes the saved pages from the device. */
 "use strict";
-const VERSION = "v3";
+const VERSION = "v4";
 const STATIC = "jaabm-static-" + VERSION;
 const PAGES = "jaabm-pages";
 const PRECACHE = ["/assets/css/style.css", "/assets/css/app.css", "/assets/js/app.js", "/assets/js/offline.js", "/assets/images/logo-sm.jpg"];
@@ -119,12 +119,64 @@ self.addEventListener("fetch", (e) => {
       e.waitUntil(caches.open(PAGES).then((c) => c.put(url.pathname + url.search, copy)));
     }
     return r;
-  }).catch(async () => {
-    const c = await caches.open(PAGES);
-    return (await c.match(url.pathname + url.search)) || (await c.match(url.pathname, { ignoreSearch: true })) ||
-      page("You are offline", "This page has not been opened on this device yet, so it is not available without internet. Pages you have opened before still work.");
-  }));
+  }).catch(() => offlinePage(url)));
 });
+
+/* Offline: the saved copy of the page; if it was never saved, the nearest saved page above it
+   (e.g. the student list for a student) or the dashboard, with a note at the top */
+async function offlinePage(url) {
+  const c = await caches.open(PAGES);
+  const exact = (await c.match(url.pathname + url.search)) || (await c.match(url.pathname, { ignoreSearch: true }));
+  if (exact) return exact;
+  const parts = url.pathname.split("/").filter(Boolean);
+  for (let n = parts.length - 1; n >= 1; n--) {
+    const hit = await c.match("/" + parts.slice(0, n).join("/"), { ignoreSearch: true });
+    if (hit) return withNote(hit, "This page is not saved on this device yet, so its section is shown. It will be saved next time you are online.");
+  }
+  if (url.pathname.startsWith("/app")) return page("You are offline", "Sign in once with internet on this device; the portal is then saved for offline use.");
+  return page("You are offline", "This page will be available offline after you open it once with internet.");
+}
+async function withNote(res, text) {
+  const html = (await res.text()).replace(/<body([^>]*)>/i, `<body$1><div style="background:#5A2A0E;color:#FFE7C2;padding:.6rem 1rem;font:14px system-ui,sans-serif;text-align:center">${text}</div>`);
+  return new Response(html, { headers: { "Content-Type": "text/html; charset=utf-8" } });
+}
+
+/* Saving the whole portal for offline use: the menu pages, then every portal page they link to, and the pages
+   those link to (two steps deep), at most 800 pages. Only safe pages are opened: everything that changes data is a
+   form (POST), and the few links that do something when opened are skipped. */
+const SKIP_WARM = [/^\/app\/files\//, /^\/app\/backup/, /\/open$/, /\.json$/, /^\/lang\//, /^\/section\//, /^\/logout/, /\/export/];
+let warming = null;
+function warm(start) {
+  if (warming) return warming;
+  warming = (async () => {
+    const c = await caches.open(PAGES), seen = new Set(), queue = start.map((u) => [u, 0]);
+    let saved = 0;
+    const one = async () => {
+      while (queue.length && saved < 800) {
+        const [u, depth] = queue.shift();
+        if (seen.has(u)) continue;
+        seen.add(u);
+        let r;
+        try { r = await fetch(u, { credentials: "same-origin", headers: { Accept: "text/html" } }); } catch { return; } // offline again: stop
+        if (r.redirected && new URL(r.url).pathname.startsWith("/login")) { queue.length = 0; return; } // signed out
+        if (!r.ok || r.redirected || !(r.headers.get("Content-Type") || "").includes("text/html")) continue;
+        const html = await r.clone().text();
+        await c.put(u, r);
+        saved++;
+        if (depth >= 2) continue;
+        for (const m of html.matchAll(/href="(\/app[^"#]*)"/g)) {
+          const link = m[1].replace(/&amp;/g, "&");
+          const p = link.split("?")[0];
+          if (!seen.has(link) && !SKIP_WARM.some((rx) => rx.test(p))) queue.push([link, depth + 1]);
+        }
+      }
+    };
+    await Promise.all([one(), one(), one()]);
+    await tell({ type: "warmed", saved });
+    return saved;
+  })().finally(() => { warming = null; });
+  return warming;
+}
 
 self.addEventListener("sync", (e) => { if (e.tag === "jaabm-sync") e.waitUntil(flush()); });
 self.addEventListener("message", (e) => {
@@ -132,6 +184,7 @@ self.addEventListener("message", (e) => {
   if (m.type === "sync") e.waitUntil(flush());
   if (m.type === "count") e.waitUntil(queueAll().then((q) => e.source && e.source.postMessage({ type: "count", left: q.length })));
   if (m.type === "logout") e.waitUntil(caches.delete(PAGES));
+  if (m.type === "warm" && Array.isArray(m.start)) e.waitUntil(warm(m.start.filter((u) => typeof u === "string" && u.startsWith("/app"))));
 });
 
 /* Clicking a browser notification opens it in the portal */

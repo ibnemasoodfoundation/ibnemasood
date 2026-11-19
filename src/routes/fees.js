@@ -15,7 +15,7 @@ const feeRoles = requireRole("admin", "accountant", "manager", "principal");
 const { str, int, DATE_RE, forbidden } = h;
 
 async function feeScope(req, res, next) {
-  const sc = await loadScope(req.user, req.session.section);
+  const sc = await loadScope(req.user);
   req.scope = req.user.role === "accountant" ? { ...sc, all: true } : sc; // the Accountant handles every student's fees
   res.locals.access = req.scope;
   next();
