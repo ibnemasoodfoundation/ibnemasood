@@ -127,3 +127,6 @@
     fill(programme.getAttribute("data-value"));
   }
 })();
+
+/* Inside the Android app, hide the "Download the app" buttons */
+if (window.JAABMApp) document.querySelectorAll(".app-dl, .app-dl-side, .app-download").forEach(function (el) { el.remove(); });

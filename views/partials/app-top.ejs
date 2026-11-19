@@ -83,6 +83,7 @@ const isOn = (href, n) => {
       <% }) %>
     </nav>
     <div class="side-foot">
+      <a class="app-dl-side" href="/downloads/jaabm-portal.apk" download><%- include('icon', { name: 'upload' }) %><span><%= t('Download app') %></span></a>
       <a href="/"><%- include('icon', { name: 'globe' }) %><span><%= t('Public website') %></span></a>
       <form method="post" action="/logout">
         <input type="hidden" name="_csrf" value="<%= csrf %>">

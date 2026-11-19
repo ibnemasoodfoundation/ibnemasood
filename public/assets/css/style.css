@@ -702,3 +702,10 @@ body { top: 0 !important; }
   --pattern: url("/assets/images/logo-watermark.png?v=3") center / 260px 260px repeat;
   --pattern-light: none;
 }
+
+/* Footer: Download the Android app */
+.app-dl { display: inline-flex; align-items: center; gap: .6rem; margin-top: 1rem; padding: .55rem 1.1rem .55rem .85rem; border-radius: 12px; background: #000; color: #fff; text-decoration: none; border: 1px solid rgba(255,255,255,.25); line-height: 1.15; }
+.app-dl:hover { background: #111; border-color: var(--gold-2); color: #fff; }
+.app-dl svg { width: 26px; height: 26px; color: #3DDC84; flex: none; }
+.app-dl span { display: flex; flex-direction: column; font-weight: 600; font-size: 1rem; }
+.app-dl small { font-size: .68rem; font-weight: 400; color: #C8CFEA; text-transform: uppercase; letter-spacing: .05em; }
