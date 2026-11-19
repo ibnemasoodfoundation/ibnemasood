@@ -1,0 +1,29 @@
+<%- include('../partials/app-top') %>
+<% const kindLabel = { message: 'Message', announcement: 'Announcement', fee: 'Fee', salary: 'Salary', result: 'Result', system: 'Reminder' }; %>
+<div class="page-head">
+  <p>Messages, fee notices, salary notices, results and reminders for you. New ones also appear on your dashboard.</p>
+  <div class="btn-row">
+    <% if (canSend) { %><a class="btn btn--blue btn--sm" href="/app/notifications/send"><%- include('../partials/icon', { name: 'mail' }) %>Send a message</a><% } %>
+    <button class="btn btn--line btn--sm" type="button" data-enable-browser-notes hidden><%- include('../partials/icon', { name: 'bell' }) %>Turn on browser notifications</button>
+    <% if (rows.some(r => !r.read_at)) { %>
+      <form class="inline" method="post" action="/app/notifications/read-all"><input type="hidden" name="_csrf" value="<%= csrf %>"><button class="btn btn--line btn--sm" type="submit">Mark all as read</button></form>
+    <% } %>
+  </div>
+</div>
+<section class="card card--flush">
+  <% if (!rows.length) { %><p class="empty">No notifications yet.</p><% } else { %>
+    <ul class="notes-list">
+      <% rows.forEach(function (n) { %>
+        <li class="note <%= n.read_at ? '' : 'note--unread' %> note--<%= n.kind %>">
+          <a href="/app/notifications/<%= n.id %>/open">
+            <span class="note-kind"><%= kindLabel[n.kind] || 'Message' %></span>
+            <strong><%= n.title %></strong>
+            <% if (n.body) { %><span class="note-body"><%= n.body %></span><% } %>
+            <small><%= fmtDateTime(n.created_at) %><%= n.sender ? ' · from ' + n.sender : '' %></small>
+          </a>
+        </li>
+      <% }) %>
+    </ul>
+  <% } %>
+</section>
+<%- include('../partials/app-bottom') %>

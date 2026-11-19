@@ -8,6 +8,7 @@ const { BRANCHES, PROGRAMMES, DONATION_KINDS, DONATION_METHODS, todayPk } = requ
 const { dashboardData, unitDashboardData } = require("../dashboard");
 const { parentHome } = require("./parent");
 const finance = require("./finance");
+const { notifyRoles } = require("../notify");
 
 const router = express.Router();
 router.use(requireLogin, checkCsrf);
@@ -54,7 +55,7 @@ router.get("/", async (req, res) => {
   }
 
   if (u.role === "parent") {
-    return res.render("app/home-parent", { title: "Parent dashboard", kids: await parentHome(u), announcements: await announcementsFor(u, 5) });
+    return res.render("app/home-parent", { title: "Parent dashboard", kids: await parentHome(u), announcements: await announcementsFor(u, 5), monthName: require("./parent").monthName });
   }
 
   if (u.role === "accountant") return finance.dashboard(req, res);
@@ -71,8 +72,9 @@ router.get("/", async (req, res) => {
       LEFT JOIN makatib m ON m.id = t.maktab_id LEFT JOIN branches b ON b.id = t.branch_id WHERE t.user_id = ?`, u.id);
     const today = todayPk();
     const where = teacher ? `s.status = 'active' AND (s.maktab_id = ${Number(teacher.maktab_id) || 0} OR s.teacher_id = ${teacher.id})` : "FALSE";
+    const salaries = teacher ? await all("SELECT id, month, net, paid_on FROM salary_payments WHERE teacher_id = ? ORDER BY month DESC LIMIT 6", teacher.id) : [];
     return res.render("app/home-teacher", {
-      title: "Teacher dashboard", teacher, today,
+      title: "Teacher dashboard", teacher, today, salaries, monthName: require("./parent").monthName,
       students: await all(`SELECT s.id, s.code, s.full_name, s.class_name, s.quran_level, a.status AS mark FROM students s
         LEFT JOIN student_attendance a ON a.student_id = s.id AND a.att_date = ? AND a.session = 'morning'
         WHERE ${where} ORDER BY s.class_name NULLS LAST, s.full_name`, today),
@@ -265,6 +267,10 @@ router.post("/announcements", announcers, async (req, res) => {
     return res.status(400).render("app/announcements", { title: "Announcements", rows: await announcementsFor(req.user), values: v, errors });
   }
   await run("INSERT INTO announcements (title, body, audience, author_id) VALUES (?, ?, ?, ?)", v.title, v.body, v.audience, req.user.id);
+  // Everyone the announcement is for also gets a notification
+  const roles = v.audience === "all" ? ["admin", "manager", "nazim", "principal", "accountant", "teacher", "parent", "user"]
+    : v.audience === "staff" ? [...STAFF_ROLES, "accountant"] : ["parent", ...STAFF_ROLES];
+  await notifyRoles(roles, { kind: "announcement", title: v.title, body: v.body.slice(0, 300), link: "/app/announcements", by: req.user.id, skip: req.user.id });
   await log(req.user.id, "announcement.create", v.title);
   req.flash("ok", "Announcement posted.");
   res.redirect("/app/announcements");

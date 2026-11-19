@@ -33,7 +33,7 @@ const PEOPLE = {
     table: "students", plural: "students", prefix: "ST", statuses: STUDENT_STATUSES, label: "Student", labelPlural: "Students",
     cols: ["code", "full_name", "name_ur", "father_name", "mother_name", "gender", "dob", "cnic_bform", "phone", "guardian_phone", "address",
       "education_level", "quran_level", "previous_institution", "hifz_status", "tajweed_status", "enrolled_on", "programme", "class_name",
-      "teacher_id", "status", "notes", "branch_id", "maktab_id", "school_id", "admission_id", "extra", "darja"],
+      "teacher_id", "status", "notes", "branch_id", "maktab_id", "school_id", "admission_id", "extra", "darja", "monthly_fee"],
   },
 };
 
@@ -72,6 +72,8 @@ async function personFields(req, type) {
     if (str(b.salary) !== "" && v.salary === null) e.salary = "Enter the monthly salary in rupees, numbers only.";
   } else {
     if (v.cnic_bform && !CNIC_RE.test(v.cnic_bform)) e.cnic_bform = "Enter the 13-digit B-Form or CNIC number.";
+    v.monthly_fee = str(b.monthly_fee) === "" ? null : int(String(b.monthly_fee).replace(/[,\s]/g, ""));
+    if (str(b.monthly_fee) !== "" && v.monthly_fee === null) e.monthly_fee = "Enter the monthly fee in rupees, numbers only.";
     // Admission-form details (stored together in students.extra)
     const extra = {};
     for (const [k] of STUDENT_EXTRA) { const x = str(b["x_" + k], 120); if (x) extra[k] = x; }
@@ -278,7 +280,7 @@ for (const [type, cfg] of Object.entries(PEOPLE)) {
     const { x, missing, denied } = await loadPerson(req, type);
     if (missing) return next();
     if (denied) return forbidden(res);
-    const [files, photo, att, transfers, extra, results] = await Promise.all([
+    const [files, photo, att, transfers, extra, results, fees] = await Promise.all([
       h.filesFor(type, x.id), photoOf(type, x.id), attendanceSummary(type, x.id),
       all(`SELECT tr.*, f.name_en AS from_name, t.name_en AS to_name, u.name AS by_name FROM transfers tr
            LEFT JOIN makatib f ON f.id = tr.from_maktab_id LEFT JOIN makatib t ON t.id = tr.to_maktab_id
@@ -291,9 +293,10 @@ for (const [type, cfg] of Object.entries(PEOPLE)) {
         ? all(`SELECT r.*, e.title, e.exam_type, e.session_year, e.status AS exam_status FROM results r JOIN exams e ON e.id = r.exam_id
                WHERE r.student_id = ? ORDER BY e.held_on DESC NULLS LAST, e.id DESC`, x.id)
         : [],
+      type === "student" ? all("SELECT id, month, amount_due, amount_paid, paid_on, method FROM fee_payments WHERE student_id = ? ORDER BY month DESC LIMIT 12", x.id) : [],
     ]);
     res.render("app/person", {
-      title: x.full_name, x, type, cfg, files, photo, att, transfers, results,
+      title: x.full_name, x, type, cfg, files, photo, att, transfers, results, fees,
       students: type === "teacher" ? extra : [], progress: type === "student" ? extra : [],
       makatib: req.scope.canManage ? (await h.maktabList(req.scope)).filter((m) => m.id !== x.maktab_id) : [],
       branches: req.scope.canManage ? await h.branchList(req.scope) : [],

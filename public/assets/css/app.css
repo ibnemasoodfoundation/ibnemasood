@@ -585,3 +585,32 @@ section[id] { scroll-margin-top: 130px; }
 .darja-opt input[type="radio"] { width: auto; flex: none; margin: .25rem 0 0; accent-color: var(--gold); }
 .darja-opt span { min-width: 0; }
 .jamia-darjat td:first-child strong { white-space: nowrap; }
+
+/* Notifications */
+.bell { position: relative; display: grid; place-items: center; width: 42px; height: 42px; border-radius: 999px; background: #fff; border: 1px solid var(--line); color: var(--night); flex: none; }
+.bell svg { width: 20px; height: 20px; }
+.bell:hover { border-color: var(--gold); }
+.bell-count { position: absolute; top: -4px; right: -4px; min-width: 20px; height: 20px; padding: 0 5px; border-radius: 999px; background: #B42318; color: #fff; font-size: .72rem; font-weight: 700; display: grid; place-items: center; border: 2px solid #fff; }
+.notes-list { list-style: none; margin: 0; padding: 0; }
+.note a { display: grid; gap: .15rem; padding: .9rem 1.2rem; text-decoration: none; color: var(--ink); border-bottom: 1px solid var(--line); border-left: 4px solid transparent; }
+.note a:hover { background: #FBF8F0; }
+.note--unread a { background: #FFFBF0; border-left-color: var(--gold); }
+.note--unread strong { color: var(--night); }
+.note-kind { font-size: .7rem; text-transform: uppercase; letter-spacing: .08em; color: var(--gold); font-weight: 600; }
+.note-body { color: var(--muted); font-size: .92rem; }
+.note small { color: var(--muted); font-size: .78rem; }
+.note--fee .note-kind { color: #7A5A12; } .note--salary .note-kind { color: #1F6B4A; } .note--result .note-kind { color: var(--lapis); }
+.fresh-notes { border-left: 4px solid var(--gold); }
+.fresh-notes .card-head h2 { display: flex; align-items: center; gap: .5rem; font-size: 1.2rem; }
+.fresh-notes .card-head svg { width: 20px; height: 20px; color: var(--gold); }
+.notes-list--compact .note a { padding: .6rem .2rem; border-left: 0; background: none; }
+
+/* Fees and salaries */
+.fee-actions { margin: 0 0 1rem; align-items: center; flex-wrap: wrap; }
+.fee-set { display: inline-flex; gap: .4rem; align-items: center; }
+.fee-set input { width: 6rem; }
+.fee-pay { display: flex; gap: .3rem; align-items: center; flex-wrap: wrap; margin: 0; }
+.fee-pay input, .fee-pay select { padding: .35rem .45rem; border: 1px solid var(--line); border-radius: 8px; font: inherit; font-size: .85rem; background: #fff; width: auto; }
+.fee-pay input[name="amount"], .fee-pay input[name="basic"] { width: 5.5rem; }
+.fee-pay input[name="allowance"], .fee-pay input[name="deduction"] { width: 4.8rem; }
+.fee-table td { vertical-align: middle; }

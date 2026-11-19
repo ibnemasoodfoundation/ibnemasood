@@ -7,6 +7,7 @@ const { one, all, run, log } = require("../db");
 const { checkCsrf, requireRole } = require("../auth");
 const { EXPENSE_CATEGORIES, INCOME_CATEGORIES, PAYMENT_METHODS, todayPk } = require("../helpers");
 const { helpers: h } = require("./institution");
+const { notify } = require("../notify");
 
 const router = express.Router();
 const finance = [requireRole("admin", "accountant"), checkCsrf];
@@ -73,7 +74,18 @@ async function dashboard(req, res) {
     expenseByCategory: { labels: expenseCats.map((c) => c.label), values: expenseCats.map((c) => c.v), money: true },
   };
   const pending = await one("SELECT COUNT(*) AS n, COALESCE(SUM(amount), 0) AS v FROM donations WHERE status = 'pending'");
-  res.render("app/finance-dashboard", { title: "Accounts dashboard", month, year, charts, recent, pending, TYPES });
+  const thisMonth = today.slice(0, 7);
+  const monthLabel = new Date(thisMonth + "-01T00:00:00Z").toLocaleDateString("en-GB", { month: "long", year: "numeric", timeZone: "UTC" });
+  const fees = await one("SELECT COALESCE(SUM(amount_paid), 0) AS paid, COUNT(*) FILTER (WHERE amount_paid > 0) AS payers FROM fee_payments WHERE month = ?", thisMonth);
+  const salaries = await one(`SELECT (SELECT COUNT(*) FROM teachers WHERE status IN ('active','on_leave')) AS teachers,
+      (SELECT COUNT(*) FROM salary_payments WHERE month = ?) AS paid, (SELECT COALESCE(SUM(net), 0) FROM salary_payments WHERE month = ?) AS amount`, thisMonth, thisMonth);
+  const unpaidTeachers = Math.max(0, salaries.teachers - salaries.paid);
+  // One reminder per person per month while teachers are still unpaid
+  if (unpaidTeachers && !(await one("SELECT 1 FROM notifications WHERE user_id = ? AND kind = 'system' AND title LIKE ?", req.user.id, `Salaries for ${monthLabel}%`))) {
+    await notify([req.user.id], { kind: "system", title: `Salaries for ${monthLabel}: ${unpaidTeachers} teacher${unpaidTeachers === 1 ? "" : "s"} not paid yet`,
+      body: "Open Teacher salaries to pay them; each teacher is notified when paid.", link: "/app/salaries?status=unpaid" });
+  }
+  res.render("app/finance-dashboard", { title: "Accounts dashboard", month, year, charts, recent, pending, TYPES, fees, salaries, unpaidTeachers, monthLabel });
 }
 
 router.get("/finance", finance, dashboard);

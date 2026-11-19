@@ -30,8 +30,21 @@
   </section>
 <% }) %>
 
+<section class="stat-group">
+  <h2 class="group-title">Fees and salaries · <%= monthLabel %></h2>
+  <div class="stats">
+    <a class="stat stat--gold" href="/app/fees"><small>Student fees collected</small><strong><%= money(fees.paid) %></strong><span><%= fees.payers %> students paid</span></a>
+    <a class="stat" href="/app/fees?status=unpaid"><small>Fees not paid yet</small><strong class="stat-link">Open list</strong><span>Remind parents in one click</span></a>
+    <a class="stat" href="/app/salaries?status=paid"><small>Salaries paid</small><strong><%= money(salaries.amount) %></strong><span><%= salaries.paid %> of <%= salaries.teachers %> teachers</span></a>
+    <a class="stat <%= unpaidTeachers ? 'stat--warn' : '' %>" href="/app/salaries?status=unpaid"><small>Salaries still to pay</small><strong><%= unpaidTeachers %></strong><span>teachers</span></a>
+  </div>
+</section>
+
 <section class="card quick-card" aria-label="Quick actions">
   <div class="quick-grid">
+    <a class="quick-action" href="/app/fees"><span class="action-icon"><%- include('../partials/icon', { name: 'student' }) %></span><span>Student fees</span></a>
+    <a class="quick-action" href="/app/salaries"><span class="action-icon"><%- include('../partials/icon', { name: 'teacher' }) %></span><span>Teacher salaries</span></a>
+    <a class="quick-action" href="/app/notifications/send"><span class="action-icon"><%- include('../partials/icon', { name: 'mail' }) %></span><span>Message parents</span></a>
     <a class="quick-action" href="/app/finance/entries"><span class="action-icon"><%- include('../partials/icon', { name: 'list' }) %></span><span>All entries</span></a>
     <a class="quick-action" href="/app/finance/report" target="_blank"><span class="action-icon"><%- include('../partials/icon', { name: 'file' }) %></span><span>Monthly report</span></a>
     <a class="quick-action" href="/app/finance/report?from=<%= yearNow %>-01-01" target="_blank"><span class="action-icon"><%- include('../partials/icon', { name: 'file' }) %></span><span>Yearly report</span></a>

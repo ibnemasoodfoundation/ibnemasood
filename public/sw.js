@@ -4,7 +4,7 @@
      and are sent automatically, in order, as soon as the internet is back.
    - Signing out removes the saved pages from the device. */
 "use strict";
-const VERSION = "v2";
+const VERSION = "v3";
 const STATIC = "jaabm-static-" + VERSION;
 const PAGES = "jaabm-pages";
 const PRECACHE = ["/assets/css/style.css", "/assets/css/app.css", "/assets/js/app.js", "/assets/js/offline.js", "/assets/images/logo-sm.jpg"];
@@ -132,4 +132,14 @@ self.addEventListener("message", (e) => {
   if (m.type === "sync") e.waitUntil(flush());
   if (m.type === "count") e.waitUntil(queueAll().then((q) => e.source && e.source.postMessage({ type: "count", left: q.length })));
   if (m.type === "logout") e.waitUntil(caches.delete(PAGES));
+});
+
+/* Clicking a browser notification opens it in the portal */
+self.addEventListener("notificationclick", (e) => {
+  e.notification.close();
+  const url = (e.notification.data && e.notification.data.url) || "/app/notifications";
+  e.waitUntil(self.clients.matchAll({ type: "window" }).then((list) => {
+    for (const c of list) if ("focus" in c) { c.navigate(url); return c.focus(); }
+    return self.clients.openWindow(url);
+  }));
 });

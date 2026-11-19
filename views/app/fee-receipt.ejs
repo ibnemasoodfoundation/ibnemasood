@@ -1,0 +1,17 @@
+<%- include('../partials/print-top', { pdfName: 'Fee receipt ' + fp.code + ' ' + fp.month, pageClass: 'print-page--cert' }) %>
+<% const left = Math.max(0, fp.amount_due - fp.amount_paid); %>
+<%- include('../partials/print-letterhead', { docTitle: 'Fee Receipt' }) %>
+<table class="report-table receipt-table">
+  <tbody>
+    <tr><th>Receipt no.</th><td><%= fp.receipt_no || ('F-' + fp.id) %></td><th>Date</th><td><%= fp.paid_on ? fmtDate(fp.paid_on) : '—' %></td></tr>
+    <tr><th>Student</th><td><%= fp.full_name %><small><%= fp.code %></small></td><th>Father’s name</th><td><%= fp.father_name || '—' %></td></tr>
+    <tr><th>Jamia / school / Maktab</th><td><%= fp.unit || '—' %></td><th>Class / darja</th><td><%= fp.class_name || '—' %></td></tr>
+    <tr><th>Fee for</th><td colspan="3"><strong><%= monthName %></strong></td></tr>
+    <tr><th>Fee</th><td class="t-right"><%= money(fp.amount_due) %></td><th>Paid</th><td class="t-right"><strong><%= money(fp.amount_paid) %></strong></td></tr>
+    <tr><th>Still due</th><td class="t-right"><%= money(left) %></td><th>Method</th><td><%= fp.method || '—' %></td></tr>
+  </tbody>
+</table>
+<p class="report-meta"><strong><%= left ? 'Partly paid' : 'Paid in full' %></strong><%= fp.by_name ? ' · received by ' + fp.by_name : '' %></p>
+<div class="pp-sign"><div><span></span>Received by (Accountant)</div><div><span></span>Stamp</div></div>
+<p class="report-foot">Printed <%= fmtDate(printedOn) %></p>
+<%- include('../partials/print-bottom') %>

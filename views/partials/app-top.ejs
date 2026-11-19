@@ -51,7 +51,10 @@ if (r === 'admin' || r === 'accountant') {
 if (r === 'user' || officeRole) nav.push({ href: '/app/admissions', label: officeRole ? 'Admissions' : 'My applications', icon: 'file' });
 if (r === 'user' || officeRole || r === 'accountant') nav.push({ href: '/app/donations', label: r === 'user' ? 'My donations' : 'Donations', icon: 'heart' });
 if (officeRole) nav.push({ href: '/app/messages', label: 'Messages', icon: 'mail' });
+if (['admin', 'accountant', 'manager', 'principal'].includes(r)) nav.push({ href: '/app/fees', label: 'Student fees', icon: 'heart' });
+if (['admin', 'accountant'].includes(r)) nav.push({ href: '/app/salaries', label: 'Teacher salaries', icon: 'teacher' });
 nav.push({ href: '/app/announcements', label: 'Announcements', icon: 'bell' });
+nav.push({ href: '/app/notifications', label: 'Notifications', icon: 'mail', also: ['/app/notifications/'] });
 if (r === 'admin') {
   nav.push({ href: '/app/users', label: 'Users & roles', icon: 'users' });
   nav.push({ href: '/app/activity', label: 'Activity log', icon: 'list' });
@@ -102,6 +105,9 @@ const isOn = (href, n) => {
         <%- include('icon', { name: 'globe' }) %>
         <% Object.keys(LANGS).forEach(function (code) { %><a href="/lang/<%= code %>" lang="<%= code %>" <% if (lang === code) { %>aria-current="true"<% } %>><%= LANGS[code].name %></a><% }) %>
       </nav>
+      <a class="bell" href="/app/notifications" title="<%= t('Notifications') %>" aria-label="<%= t('Notifications') %><%= unread ? ': ' + unread + ' new' : '' %>">
+        <%- include('icon', { name: 'bell' }) %><% if (unread) { %><span class="bell-count" data-bell-count><%= unread > 99 ? '99+' : unread %></span><% } else { %><span class="bell-count" data-bell-count hidden></span><% } %>
+      </a>
       <a class="me" href="/app/profile" title="My profile">
         <span class="avatar"><%= initials(user.name) %></span>
         <span class="me-text"><strong><%= user.name %></strong><small><%= t(ROLE_LABELS[user.role]) %></small></span>
@@ -109,3 +115,11 @@ const isOn = (href, n) => {
     </header>
     <main id="app-main" class="content">
       <% if (flash) { %><div class="flash flash--<%= flash.type %>" role="status"><%= flash.msg %></div><% } %>
+      <% if (typeof freshNotes !== 'undefined' && freshNotes.length) { %>
+        <section class="card fresh-notes" aria-label="<%= t('Notifications') %>">
+          <div class="card-head"><h2><%- include('icon', { name: 'bell' }) %> <%= unread %> new notification<%= unread === 1 ? '' : 's' %></h2><a href="/app/notifications">View all</a></div>
+          <ul class="notes-list notes-list--compact"><% freshNotes.forEach(function (n) { %>
+            <li class="note note--unread note--<%= n.kind %>"><a href="/app/notifications/<%= n.id %>/open"><strong><%= n.title %></strong><% if (n.body) { %><span class="note-body"><%= n.body %></span><% } %><small><%= fmtDateTime(n.created_at) %></small></a></li>
+          <% }) %></ul>
+        </section>
+      <% } %>

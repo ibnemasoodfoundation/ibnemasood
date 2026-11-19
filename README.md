@@ -119,6 +119,22 @@ Menu → **Jamia**: each Jamia has its own pages, and Baneen and Banaat records 
 - A Jamia's students are the ones placed directly in its main branch (not in one of its Makatib or schools).
 - The Super Admin manages both Jamias. A Branch Manager set as manager of a main branch (Branch → Edit) manages only that Jamia.
 
+## Fees, salaries and notifications
+
+- **Student fees** (Super Admin, Accountant; Branch Managers and Principals for their own students): each student's
+  monthly fee is set on the student's form (school students may use the tuition fee from the admission form). The fee
+  page lists who has paid, partly paid or not paid for a month; recording a payment adds income to the accounts, prints
+  a receipt and notifies the parent. One click reminds the parents of every unpaid student. Undoing a payment is for
+  Admins and Managers.
+- **Teacher salaries** (Super Admin, Accountant): the monthly salary sheet for Jamia, school and Makatib teachers, using
+  the monthly salary on each teacher's profile. Pay one (with allowance and deduction) or all; each payment is an
+  expense in the accounts, has a salary slip, and the teacher is notified. The accounts dashboard reminds the accountant
+  while salaries for the month are unpaid.
+- **Notifications**: the bell in the header and the dashboard show new ones. Fee receipts and reminders, salary
+  payments, published results and announcements notify the right people automatically, and staff can **send a
+  message** to the parents of a Jamia (or one darja), a school, a Maktab, one student's parent, or to teachers. With
+  permission, new notifications also appear as browser notifications while the portal or the installed app is open.
+
 ## Printed documents
 
 - **Admission form** (Iqra Islamia Public School): blank from Certificates → Blank admission form, or filled in from a

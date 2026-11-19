@@ -22,6 +22,8 @@
       <div class="stat"><small>Attendance this month</small><strong><%= a.month.pct === null ? '—' : a.month.pct + '%' %></strong><span><%= a.month.present %> present · <%= a.month.absent %> absent · <%= a.month.leave %> leave</span></div>
       <div class="stat"><small>All-time attendance</small><strong><%= a.total.pct === null ? '—' : a.total.pct + '%' %></strong></div>
       <div class="stat"><small>Quran level</small><strong class="stat-text"><%= k.quran_level || '—' %></strong></div>
+      <% const fn = k.feeNow, left = Math.max(0, fn.due - fn.paid); %>
+      <div class="stat <%= fn.due && left ? 'stat--warn' : '' %>"><small>Fee · <%= monthName(fn.month) %></small><strong class="stat-text"><%= !fn.due && !fn.paid ? 'No fee set' : left ? 'Rs ' + left.toLocaleString('en-PK') + ' due' : 'Paid' %></strong><span><% if (fn.id && fn.paid) { %><a href="/app/fees/<%= fn.id %>/receipt" target="_blank">Receipt</a><% } else if (fn.due) { %>Monthly fee <%= money(fn.due) %><% } %></span></div>
       <div class="stat stat--gold"><small>Latest result</small><strong class="stat-text"><%= k.results[0] ? Number(k.results[0].percentage).toFixed(0) + '% · ' + k.results[0].grade : '—' %></strong><span><%= k.results[0] ? k.results[0].title : 'No published results yet' %></span></div>
     </div>
     <div class="grid-2">
@@ -35,6 +37,10 @@
         <h3 class="sub">Results</h3>
         <% if (!k.results.length) { %><p class="empty">No published results yet.</p><% } else { %>
           <ul class="rows"><% k.results.forEach(function (r) { %><li><a href="/app/results/<%= r.exam_id %>/certificate/<%= k.id %>" target="_blank"><span><strong><%= r.title %></strong><small><%= r.obtained %> / <%= r.total %> · <%= Number(r.percentage).toFixed(1) %>% · Certificate</small></span><span class="badge <%= r.grade === 'Fail' ? 'badge--absent' : 'badge--present' %>"><%= r.grade %></span></a></li><% }) %></ul>
+        <% } %>
+        <h3 class="sub">Fees</h3>
+        <% if (!k.fees.length) { %><p class="empty">No fee payments recorded yet.</p><% } else { %>
+          <ul class="rows"><% k.fees.forEach(function (f) { const done = f.amount_paid >= f.amount_due && f.amount_paid > 0; %><li><a href="/app/fees/<%= f.id %>/receipt" target="_blank"><span><strong><%= monthName(f.month) %></strong><small><%= money(f.amount_paid) %> of <%= money(f.amount_due) %></small></span><span class="badge <%= done ? 'badge--present' : f.amount_paid ? 'badge--pending' : 'badge--absent' %>"><%= done ? 'Paid' : f.amount_paid ? 'Partly paid' : 'Not paid' %></span></a></li><% }) %></ul>
         <% } %>
         <h3 class="sub">Latest lessons</h3>
         <% if (!k.progress.length) { %><p class="empty">No lessons recorded yet.</p><% } else { %>

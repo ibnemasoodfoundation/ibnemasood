@@ -9,6 +9,7 @@ const { checkCsrf, requireRole, STAFF_ROLES } = require("../auth");
 const { withScope, maktabSql, schoolSql, personSql, inMaktab, inSchool, inBranch, canSeePerson, ids } = require("../scope");
 const { EXAM_TYPES, MAKTAB_SUBJECTS, gradeFor, todayPk } = require("../helpers");
 const { helpers: h } = require("./institution");
+const { notifyParentsOf } = require("../notify");
 
 const router = express.Router();
 const staff = [requireRole(...STAFF_ROLES), withScope, checkCsrf];
@@ -194,6 +195,10 @@ router.post("/results/:id/publish", staff, async (req, res, next) => {
   const publish = req.body.publish === "1";
   await run("UPDATE exams SET status = ? WHERE id = ?", publish ? "published" : "draft", e.id);
   await log(req.user.id, publish ? "exam.publish" : "exam.unpublish", e.title);
+  if (publish) {
+    const kids = (await all("SELECT student_id FROM results WHERE exam_id = ?", e.id)).map((r) => r.student_id);
+    await notifyParentsOf(kids, { kind: "result", title: `Result published: ${e.title}`, body: "Open your dashboard to see the marks and print the result certificate.", link: "/app", by: req.user.id });
+  }
   req.flash("ok", publish ? "Results published. Parents can now see them and print certificates." : "Results moved back to draft. Parents no longer see them.");
   res.redirect("/app/results/" + e.id);
 });

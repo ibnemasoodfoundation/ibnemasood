@@ -7,7 +7,7 @@
   const cnic = String(st.cnic_bform || '').padEnd(15, ' ').slice(0, 15).split('');
   const dobFmt = typeof dmy === 'function' ? dmy(st.dob) : '';
   const fee = (k) => x[k] ? 'Rs ' + x[k] : '';
-  const feeLine = (labelText, k) => `<span class="adm-item"><b>${labelText}</b><i class="adm-fee">${v(fee(k))}</i></span>`;
+  const feeLine = (labelText, k) => `<span class="adm-item" style="flex:1"><b>${labelText}</b><i class="adm-fee">${v(fee(k))}</i></span>`;
 %>
 <article class="adm">
   <header class="adm-head">

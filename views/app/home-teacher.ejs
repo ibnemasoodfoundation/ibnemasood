@@ -28,6 +28,10 @@
       <% } %>
     </section>
     <section class="card">
+      <div class="card-head"><h2>My salary</h2></div>
+      <% if (!salaries.length) { %><p class="empty">No salary payments recorded yet.</p><% } else { %>
+        <ul class="rows"><% salaries.forEach(function (s) { %><li><a href="/app/salaries/<%= s.id %>/slip" target="_blank"><span><strong><%= monthName(s.month) %></strong><small>Paid <%= fmtDate(s.paid_on) %> · slip</small></span><span class="num"><%= money(s.net) %></span></a></li><% }) %></ul>
+      <% } %>
       <div class="card-head"><h2>Announcements</h2><a href="/app/announcements">All</a></div>
       <%- include('_announcement-list', { list: announcements }) %>
     </section>

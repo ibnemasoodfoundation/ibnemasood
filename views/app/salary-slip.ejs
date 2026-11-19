@@ -1,0 +1,15 @@
+<%- include('../partials/print-top', { pdfName: 'Salary slip ' + sp.code + ' ' + sp.month, pageClass: 'print-page--cert' }) %>
+<%- include('../partials/print-letterhead', { docTitle: 'Salary Slip · ' + monthName }) %>
+<table class="report-table receipt-table">
+  <tbody>
+    <tr><th>Teacher</th><td><%= sp.full_name %><small><%= sp.code %></small></td><th>Designation</th><td><%= sp.designation || '—' %></td></tr>
+    <tr><th>Teaches at</th><td><%= sp.place || '—' %></td><th>Employment</th><td><%= EMPLOYMENT_TYPES[sp.employment_type] || '—' %></td></tr>
+    <tr><th>Basic salary</th><td class="t-right"><%= money(sp.basic) %></td><th>Allowance</th><td class="t-right"><%= money(sp.allowance) %></td></tr>
+    <tr><th>Deduction</th><td class="t-right"><%= money(sp.deduction) %></td><th>Net paid</th><td class="t-right"><strong><%= money(sp.net) %></strong></td></tr>
+    <tr><th>Paid on</th><td><%= fmtDate(sp.paid_on) %></td><th>Method</th><td><%= sp.method || '—' %></td></tr>
+    <% if (sp.note) { %><tr><th>Note</th><td colspan="3"><%= sp.note %></td></tr><% } %>
+  </tbody>
+</table>
+<div class="pp-sign"><div><span></span>Teacher’s signature</div><div><span></span>Accountant<%= sp.by_name ? ' (' + sp.by_name + ')' : '' %></div></div>
+<p class="report-foot">Printed <%= fmtDate(printedOn) %></p>
+<%- include('../partials/print-bottom') %>

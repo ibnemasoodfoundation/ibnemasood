@@ -1,0 +1,56 @@
+<%- include('../partials/app-top') %>
+<% const bad = (k) => errors[k] ? 'invalid' : ''; const sel = (v) => values.to === v ? 'selected' : ''; %>
+<p class="crumb"><a href="/app/notifications">← Notifications</a></p>
+<section class="card card--form card--wide">
+  <div class="card-head"><h2>Send a message</h2></div>
+  <p class="hint">The message appears on the receivers’ dashboard and under the bell, and as a browser notification if they turned those on. Only people with a portal login receive it.</p>
+  <form method="post" action="/app/notifications/send" novalidate>
+    <input type="hidden" name="_csrf" value="<%= csrf %>">
+    <div class="field-row">
+      <div class="field <%= bad('to') %>">
+        <label for="n-to">Send to</label>
+        <select id="n-to" name="to" required data-toggle-student>
+          <option value="">Choose…</option>
+          <option value="student" <%= sel('student') %>>One student’s parent (by Student ID)</option>
+          <% if (jamias.length) { %><optgroup label="Parents · Jamia">
+            <% jamias.forEach(function (j) { const J = JAMIAS[j.section]; %>
+              <option value="p:j:<%= j.id %>" <%= sel('p:j:' + j.id) %>>Parents of <%= J.name %> (<%= J.group %>), all darjat</option>
+              <% DARJAT[j.section].forEach(function (d) { %><option value="p:j:<%= j.id %>:<%= d[0] %>" <%= sel('p:j:' + j.id + ':' + d[0]) %>>   Parents · <%= J.group %> · <%= d[1] %></option><% }) %>
+            <% }) %>
+          </optgroup><% } %>
+          <% if (schools.length) { %><optgroup label="Parents · School"><% schools.forEach(function (s) { %><option value="p:s:<%= s.id %>" <%= sel('p:s:' + s.id) %>>Parents of <%= s.name_en %></option><% }) %></optgroup><% } %>
+          <% if (makatib.length) { %><optgroup label="Parents · Maktab"><% makatib.forEach(function (m) { %><option value="p:m:<%= m.id %>" <%= sel('p:m:' + m.id) %>>Parents of <%= m.name_en %></option><% }) %></optgroup><% } %>
+          <optgroup label="Teachers">
+            <option value="r:teacher" <%= sel('r:teacher') %>>All my teachers</option>
+            <% jamias.forEach(function (j) { %><option value="t:j:<%= j.id %>" <%= sel('t:j:' + j.id) %>>Teachers of <%= JAMIAS[j.section].name %></option><% }) %>
+            <% schools.forEach(function (s) { %><option value="t:s:<%= s.id %>" <%= sel('t:s:' + s.id) %>>Teachers of <%= s.name_en %></option><% }) %>
+          </optgroup>
+          <% if (sc.all) { %><optgroup label="Everyone in a role">
+            <option value="p:all" <%= sel('p:all') %>>All parents</option>
+            <% [['manager', 'Branch Managers'], ['nazim', 'Makatib Nazims'], ['principal', 'School Principals'], ['accountant', 'Accountants'], ['admin', 'Super Admins']].forEach(function (r) { %><option value="r:<%= r[0] %>" <%= sel('r:' + r[0]) %>><%= r[1] %></option><% }) %>
+          </optgroup><% } %>
+        </select>
+        <span class="err"><%= errors.to || '' %></span>
+      </div>
+      <div class="field <%= bad('student') %>" data-student-field <%= values.to === 'student' ? '' : 'hidden' %>>
+        <label for="n-student">Student ID</label>
+        <input id="n-student" name="student" value="<%= values.student || '' %>" placeholder="e.g. ST-014 or JB-003" autocapitalize="characters">
+        <span class="err"><%= errors.student || '' %></span>
+      </div>
+    </div>
+    <fieldset class="choice">
+      <legend>Type</legend>
+      <% [['message', 'General message'], ['fee', 'Fee notice'], ['result', 'Report / result'], ['announcement', 'Announcement']].forEach(function (k) { %><label><input type="radio" name="kind" value="<%= k[0] %>" <%= (values.kind || 'message') === k[0] ? 'checked' : '' %>> <%= k[1] %></label><% }) %>
+    </fieldset>
+    <div class="field <%= bad('title') %>"><label for="n-title">Title</label><input id="n-title" name="title" value="<%= values.title || '' %>" maxlength="160" placeholder="e.g. Fee for November is due"><span class="err"><%= errors.title || '' %></span></div>
+    <div class="field <%= bad('body') %>"><label for="n-body">Message</label><textarea id="n-body" name="body" rows="5" maxlength="1000"><%= values.body || '' %></textarea><span class="err"><%= errors.body || '' %></span></div>
+    <div class="btn-row"><button class="btn btn--gold" type="submit"><%- include('../partials/icon', { name: 'mail' }) %>Send</button></div>
+  </form>
+</section>
+<script>
+  (function () {
+    var to = document.querySelector("[data-toggle-student]"), f = document.querySelector("[data-student-field]");
+    if (to && f) to.addEventListener("change", function () { f.hidden = to.value !== "student"; });
+  })();
+</script>
+<%- include('../partials/app-bottom') %>

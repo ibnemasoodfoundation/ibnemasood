@@ -157,6 +157,20 @@
     <% } %>
   </section>
 <% } else { %>
+  <section class="card" id="fees">
+    <div class="card-head"><h2>Fees</h2><span class="muted small-inline">Monthly fee: <%= x.monthly_fee ? money(x.monthly_fee) : 'not set' %></span><% if (['admin', 'accountant', 'manager', 'principal'].includes(user.role)) { %><a href="/app/fees?q=<%= encodeURIComponent(x.code) %>">Record a payment</a><% } %></div>
+    <% if (!fees.length) { %><p class="empty">No fee payments recorded yet.</p><% } else { %>
+      <div class="table-wrap"><table class="table">
+        <thead><tr><th>Month</th><th class="t-right">Fee</th><th class="t-right">Paid</th><th>Status</th><th></th></tr></thead>
+        <tbody><% fees.forEach(function (f) { const done = f.amount_paid >= f.amount_due && f.amount_paid > 0; %>
+          <tr><td><%= new Date(f.month + '-01T00:00:00Z').toLocaleDateString('en-GB', { month: 'long', year: 'numeric', timeZone: 'UTC' }) %></td><td class="t-right num"><%= money(f.amount_due) %></td><td class="t-right num"><%= money(f.amount_paid) %><% if (f.paid_on) { %><small><%= fmtDate(f.paid_on) %> · <%= f.method || '' %></small><% } %></td>
+            <td><span class="badge <%= done ? 'badge--present' : f.amount_paid ? 'badge--pending' : 'badge--absent' %>"><%= done ? 'Paid' : f.amount_paid ? 'Partly paid' : 'Not paid' %></span></td>
+            <td class="t-right"><a class="btn-sm" href="/app/fees/<%= f.id %>/receipt" target="_blank">Receipt</a></td></tr>
+        <% }) %></tbody>
+      </table></div>
+    <% } %>
+  </section>
+
   <section class="card" id="results">
     <div class="card-head"><h2>Exam results</h2><% if (canManage) { %><a href="/app/results">All exams</a><% } %></div>
     <% if (!results.length) { %><p class="empty">No results recorded yet.</p><% } else { %>

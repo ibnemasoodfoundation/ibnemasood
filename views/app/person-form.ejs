@@ -150,6 +150,7 @@
             <span class="err"><%= errors.darja %></span>
           </div>
           <%- field('class_name', 'Class or department', { list: 'dl-class', placeholder: 'e.g. Hifz A, Nazra 2 (set by the darja)' }) %>
+          <%- field('monthly_fee', 'Monthly fee (Rs)', { type: 'number', extra: ' min="0" step="1" inputmode="numeric"' }) %>
           <%- field('programme', 'Programme', { list: 'dl-programmes' }) %>
         </div>
         <datalist id="dl-class"><% classes.forEach(function (c) { %><option value="<%= c %>"><% }) %></datalist>

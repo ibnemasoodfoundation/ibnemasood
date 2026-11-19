@@ -1,0 +1,80 @@
+<%- include('../partials/app-top') %>
+<%
+  const qs = (o) => new URLSearchParams(Object.assign({ month: f.month, unit: f.unit, status: f.status, q: f.q }, o)).toString();
+  const stateLabel = { paid: 'Paid', partial: 'Partly paid', unpaid: 'Not paid', nofee: 'No fee set' };
+  const stateBadge = { paid: 'badge--present', partial: 'badge--pending', unpaid: 'badge--absent', nofee: '' };
+%>
+<div class="page-head">
+  <p>Fees for <strong><%= monthName %></strong>. Recording a payment adds it to the accounts as income and tells the parent. Students pay their <em>monthly fee</em> (set on the student’s form), or the tuition fee from the school admission form.</p>
+</div>
+
+<form class="filters" method="get">
+  <label class="filter-label">Month <input type="month" name="month" value="<%= f.month %>"></label>
+  <select name="unit" aria-label="Jamia, school or Maktab">
+    <option value="">All my students</option>
+    <% if (jamias.length) { %><optgroup label="Jamia"><% jamias.forEach(function (j) { %><option value="j:<%= j.id %>" <%= f.unit === 'j:' + j.id ? 'selected' : '' %>><%= JAMIAS[j.section].name %> (<%= JAMIAS[j.section].group %>)</option><% }) %></optgroup><% } %>
+    <% if (schools.length) { %><optgroup label="School"><% schools.forEach(function (s) { %><option value="s:<%= s.id %>" <%= f.unit === 's:' + s.id ? 'selected' : '' %>><%= s.name_en %></option><% }) %></optgroup><% } %>
+    <% if (makatib.length) { %><optgroup label="Maktab"><% makatib.forEach(function (m) { %><option value="m:<%= m.id %>" <%= f.unit === 'm:' + m.id ? 'selected' : '' %>><%= m.name_en %></option><% }) %></optgroup><% } %>
+  </select>
+  <select name="status" aria-label="Status">
+    <option value="">Everyone</option>
+    <% Object.keys(stateLabel).forEach(function (k) { %><option value="<%= k %>" <%= f.status === k ? 'selected' : '' %>><%= stateLabel[k] %></option><% }) %>
+  </select>
+  <input type="search" name="q" placeholder="Name, ID or father" value="<%= f.q %>" aria-label="Search">
+  <button class="btn btn--line btn--sm" type="submit">Show</button>
+</form>
+
+<div class="stats">
+  <div class="stat"><small>Expected</small><strong><%= money(totals.due) %></strong><span><%= totals.students %> students</span></div>
+  <a class="stat stat--gold" href="?<%= qs({ status: 'paid' }) %>"><small>Collected</small><strong><%= money(totals.paid) %></strong><span><%= totals.paidCount %> paid in full</span></a>
+  <a class="stat <%= totals.outstanding ? 'stat--warn' : '' %>" href="?<%= qs({ status: 'unpaid' }) %>"><small>Outstanding</small><strong><%= money(totals.outstanding) %></strong><span><%= totals.unpaidCount %> not fully paid</span></a>
+  <a class="stat" href="?<%= qs({ status: 'nofee' }) %>"><small>No fee set</small><strong><%= totals.noFee %></strong></a>
+</div>
+
+<div class="btn-row fee-actions">
+  <form class="inline" method="post" action="/app/fees/remind" data-confirm="Send a fee reminder to the parents of every student shown who has not fully paid for <%= monthName %>?">
+    <input type="hidden" name="_csrf" value="<%= csrf %>"><input type="hidden" name="month" value="<%= f.month %>"><input type="hidden" name="unit" value="<%= f.unit %>">
+    <button class="btn btn--blue btn--sm" type="submit"><%- include('../partials/icon', { name: 'bell' }) %>Remind parents of unpaid fees</button>
+  </form>
+  <% if (totals.noFee) { %>
+    <form class="inline fee-set" method="post" action="/app/fees/set-fee">
+      <input type="hidden" name="_csrf" value="<%= csrf %>"><input type="hidden" name="month" value="<%= f.month %>"><input type="hidden" name="unit" value="<%= f.unit %>">
+      <label class="filter-label">Monthly fee for the <%= totals.noFee %> without one <input name="fee" inputmode="numeric" placeholder="Rs" size="6"></label>
+      <button class="btn btn--line btn--sm" type="submit">Set</button>
+    </form>
+  <% } %>
+</div>
+
+<section class="card card--flush">
+  <% if (!rows.length) { %><p class="empty">No students for this selection.</p><% } else { %>
+    <div class="table-wrap"><table class="table fee-table">
+      <thead><tr><th>Student</th><th>Place</th><th class="t-right">Fee</th><th class="t-right">Paid</th><th>Status</th><th>Record payment</th><th></th></tr></thead>
+      <tbody><% rows.forEach(function (r) { %>
+        <tr>
+          <td><a class="row-link" href="/app/students/<%= r.id %>"><strong><%= r.full_name %></strong></a><small><%= r.code %><%= r.father_name ? ' · ' + r.father_name : '' %><%= r.class_name ? ' · ' + r.class_name : '' %><%= r.parent_user_id ? '' : ' · no parent login' %></small></td>
+          <td><%= r.unit || '—' %></td>
+          <td class="t-right num"><%= r.due ? money(r.due) : '—' %></td>
+          <td class="t-right num"><%= r.paid ? money(r.paid) : '—' %><% if (r.paid_on) { %><small><%= fmtDate(r.paid_on) %></small><% } %></td>
+          <td><span class="badge <%= stateBadge[r.state] %>"><%= stateLabel[r.state] %></span></td>
+          <td>
+            <% if (r.state !== 'paid') { %>
+              <form class="fee-pay" method="post" action="/app/fees/pay">
+                <input type="hidden" name="_csrf" value="<%= csrf %>"><input type="hidden" name="student_id" value="<%= r.id %>"><input type="hidden" name="month" value="<%= f.month %>">
+                <input type="hidden" name="unit" value="<%= f.unit %>"><input type="hidden" name="status" value="<%= f.status %>"><input type="hidden" name="q" value="<%= f.q %>">
+                <input name="amount" inputmode="numeric" value="<%= Math.max(0, r.due - r.paid) || '' %>" placeholder="Rs" aria-label="Amount for <%= r.full_name %>" size="6">
+                <select name="method" aria-label="Method"><% PAYMENT_METHODS.forEach(function (m) { %><option><%= m %></option><% }) %></select>
+                <input name="receipt_no" placeholder="Receipt no." aria-label="Receipt number" size="8">
+                <button class="btn-sm btn-sm--ok" type="submit">Paid</button>
+              </form>
+            <% } %>
+          </td>
+          <td class="t-right nowrap">
+            <% if (r.fee_id) { %><a class="btn-sm" href="/app/fees/<%= r.fee_id %>/receipt" target="_blank">Receipt</a><% } %>
+            <% if (r.fee_id && canUndo) { %><form class="inline" method="post" action="/app/fees/<%= r.fee_id %>/delete" data-confirm="Remove the fee record of <%= r.full_name %> for <%= monthName %>, and its income entries?"><input type="hidden" name="_csrf" value="<%= csrf %>"><button class="btn-sm btn-sm--danger" type="submit">Undo</button></form><% } %>
+          </td>
+        </tr>
+      <% }) %></tbody>
+    </table></div>
+  <% } %>
+</section>
+<%- include('../partials/app-bottom') %>

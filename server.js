@@ -107,6 +107,14 @@ app.use(async (req, res, next) => {
   res.locals.section = req.session.section || "";
   // Which Jamias appear in the menu: both for the Super Admin, the ones a Branch Manager manages
   res.locals.jamiaNav = [];
+  // Notifications: the count on the bell, and the newest unread ones on the dashboard
+  res.locals.unread = 0; res.locals.freshNotes = [];
+  if (req.user && req.path.startsWith("/app")) {
+    res.locals.unread = (await one("SELECT COUNT(*) AS n FROM notifications WHERE user_id = ? AND read_at IS NULL", req.user.id)).n;
+    if (res.locals.unread && (req.path === "/app" || req.path === "/app/")) {
+      res.locals.freshNotes = await all("SELECT id, kind, title, body, created_at FROM notifications WHERE user_id = ? AND read_at IS NULL ORDER BY id DESC LIMIT 4", req.user.id);
+    }
+  }
   if (req.user && req.user.role === "admin") res.locals.jamiaNav = ["boys", "girls"];
   else if (req.user && req.user.role === "manager") {
     res.locals.jamiaNav = [...new Set((await all("SELECT section FROM branches WHERE manager_id = ? AND section IS NOT NULL", req.user.id)).map((r) => r.section))];
@@ -144,6 +152,9 @@ app.use("/app", require("./src/routes/certificates"));
 app.use("/app", require("./src/routes/school-admissions"));
 app.use("/app", require("./src/routes/jamia"));
 app.use("/app", require("./src/routes/deletes"));
+app.use("/app", require("./src/routes/notifications"));
+app.use("/app", require("./src/routes/fees"));
+app.use("/app", require("./src/routes/salaries"));
 app.use("/app", require("./src/routes/backup"));
 app.use("/app", require("./src/routes/app"));
 

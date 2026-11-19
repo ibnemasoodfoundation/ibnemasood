@@ -6,13 +6,15 @@ const { one, all } = require("../db");
 const { checkCsrf, requireRole } = require("../auth");
 const { attendanceSummary } = require("./people");
 const { helpers: h } = require("./institution");
+const dueOf = (s) => Number(s.monthly_fee) || Number(String((s.extra || {}).tuition_fee || "").replace(/[^\d]/g, "")) || 0;
+const monthName = (m) => new Date(m + "-01T00:00:00Z").toLocaleDateString("en-GB", { month: "long", year: "numeric", timeZone: "UTC" });
 
 const router = express.Router();
 const parentOnly = [requireRole("parent"), checkCsrf];
 
 /* Only columns a parent should see; CNIC, notes and documents stay with the office */
 const CHILD_COLS = `s.id, s.code, s.full_name, s.name_ur, s.father_name, s.gender, s.dob, s.class_name, s.programme, s.quran_level,
-  s.hifz_status, s.status, s.enrolled_on, m.name_en AS maktab, m.name_ur AS maktab_ur, sc.name_en AS school, b.name_en AS branch, t.full_name AS teacher`;
+  s.hifz_status, s.status, s.enrolled_on, s.monthly_fee, s.extra, m.name_en AS maktab, m.name_ur AS maktab_ur, sc.name_en AS school, b.name_en AS branch, t.full_name AS teacher`;
 const CHILD_FROM = `FROM students s LEFT JOIN makatib m ON m.id = s.maktab_id LEFT JOIN schools sc ON sc.id = s.school_id
   LEFT JOIN branches b ON b.id = s.branch_id LEFT JOIN teachers t ON t.id = s.teacher_id`;
 
@@ -26,13 +28,18 @@ const publishedResults = (id, limit = 50) => all(`SELECT r.exam_id, r.obtained, 
 async function parentHome(user) {
   const kids = await children(user.id);
   for (const k of kids) {
-    const [photo, att, recent, results, progress] = await Promise.all([
+    const [photo, att, recent, results, progress, fees] = await Promise.all([
       photoOf(k.id), attendanceSummary("student", k.id),
       all("SELECT att_date, session, status FROM student_attendance WHERE student_id = ? ORDER BY att_date DESC, session LIMIT 10", k.id),
       publishedResults(k.id, 3),
       all("SELECT recorded_on, quran_level, lesson, remarks FROM student_progress WHERE student_id = ? ORDER BY recorded_on DESC, id DESC LIMIT 3", k.id),
+      all("SELECT id, month, amount_due, amount_paid, paid_on FROM fee_payments WHERE student_id = ? ORDER BY month DESC LIMIT 6", k.id),
     ]);
-    Object.assign(k, { photo, att, recent, results, progress });
+    const month = new Date().toISOString().slice(0, 7);
+    const now = fees.find((f) => f.month === month);
+    const due = now ? now.amount_due : dueOf(k);
+    k.feeNow = { month, due, paid: now ? now.amount_paid : 0, id: now ? now.id : null };
+    Object.assign(k, { photo, att, recent, results, progress, fees });
   }
   return kids;
 }
@@ -53,3 +60,4 @@ router.get("/children/:id", parentOnly, async (req, res, next) => {
 
 module.exports = router;
 module.exports.parentHome = parentHome;
+module.exports.monthName = monthName;
