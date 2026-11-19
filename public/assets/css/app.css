@@ -651,3 +651,8 @@ section[id] { scroll-margin-top: 130px; }
   .lang-switch a[lang="en"] { font-size: 0; padding: .2rem .5rem; }
   .lang-switch a[lang="en"]::after { content: "EN"; font-size: .75rem; }
 }
+
+/* Nothing may make the page wider than the screen sideways (either direction, English or Urdu) */
+html, body { overflow-x: clip; }
+/* An English page title in the Urdu interface is shortened at its end ("Jamia Arabia…"), not its start */
+[dir="rtl"] .topnav-title { unicode-bidi: plaintext; text-align: right; }

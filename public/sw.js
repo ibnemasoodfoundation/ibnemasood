@@ -4,10 +4,10 @@
      and are sent automatically, in order, as soon as the internet is back.
    - Signing out removes the saved pages from the device. */
 "use strict";
-const VERSION = "v4";
+const VERSION = "v5";
 const STATIC = "jaabm-static-" + VERSION;
 const PAGES = "jaabm-pages";
-const PRECACHE = ["/assets/css/style.css", "/assets/css/app.css", "/assets/js/app.js", "/assets/js/offline.js", "/assets/images/logo-sm.jpg"];
+const PRECACHE = ["/assets/css/style.css?v=5", "/assets/css/app.css?v=5", "/assets/js/app.js", "/assets/js/offline.js", "/assets/images/logo-sm.jpg"];
 // Never kept on the device or queued: private files, backups, sign-in, health checks
 const NO_CACHE = [/^\/app\/files\//, /^\/app\/backup/, /^\/api\//, /^\/login/, /^\/signup/, /^\/lang\//, /^\/section\//];
 const NO_QUEUE = [/^\/app\/backup/, /^\/login/, /^\/signup/, /^\/logout/];

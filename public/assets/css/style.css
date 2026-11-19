@@ -69,8 +69,9 @@ p { margin: 0 0 1em; }
 .wrap { width: min(var(--wrap), 100% - 2.5rem); margin-inline: auto; }
 .narrow { max-width: 68ch; }
 .center { text-align: center; margin-inline: auto; }
-.skip { position: absolute; left: -999px; top: 0; background: var(--gold); color: var(--night); padding: .6rem 1rem; z-index: 999; }
-.skip:focus { left: 1rem; }
+/* Hidden above the page (not to one side: in Urdu, right-to-left, a side offset widens the page) */
+.skip { position: absolute; inset-inline-start: 1rem; top: 0; transform: translateY(-120%); background: var(--gold); color: var(--night); padding: .6rem 1rem; z-index: 999; }
+.skip:focus { transform: none; }
 
 /* ---------- Section rhythm (light / sand / dark) ---------- */
 .sec { padding: clamp(4.5rem, 9vw, 7.5rem) 0; position: relative; }
